@@ -6,7 +6,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
+try:
+    engine = create_engine(DATABASE_URL)
+    print("Connected")
+except Exception as e:
+    print("Connection falied: ", e)
 
 # managing transactions and DB state
 SessionLocal = sessionmaker(bind=engine)
