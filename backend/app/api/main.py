@@ -33,9 +33,20 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db)):
     return new_content
 
 
+# gets all content for a specific user 
 @app.get("/content", response_model=list[ContentRead])
 def get_user_content(user_id: UUID = Query(...), db: Session = Depends(get_db)):
     return db.query(Content).filter(Content.user_id == user_id).all()
+
+
+# gets a single piece of content for a specific user
+@app.get("/content/{content_id}", response_model=ContentRead)
+def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session = Depends(get_db)):
+    content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
+
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found for this user")
+    return content
 
 
 app.delete("/content/{content_id}", status_code=204)
