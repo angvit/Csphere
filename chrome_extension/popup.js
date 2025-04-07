@@ -1,4 +1,3 @@
-alert("Popup script loaded!");
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("bookMarkBtn");
   console.log("Popup script loaded and running...");
@@ -12,6 +11,20 @@ document.addEventListener("DOMContentLoaded", () => {
       console.log("popup.js running...");
       if (tab && tab.url) {
         console.log("Bookmarking URL: ", tab.url);
+
+        fetch("http://localhost:8000/content/saveUrl", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({
+            url: tab.url,
+            title: tab.title,
+          }),
+        }).then((response) => {
+          console.log("Response from server: ", response);
+        });
       }
     });
   } else {
