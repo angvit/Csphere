@@ -1,5 +1,5 @@
-from sqlalchemy import Column, String, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Column, String, ARRAY, Text, ForeignKey
+from sqlalchemy.dialects.postgresql import UUID, Vector
 from app.db.database import Base
 
 class ContentAI(Base):
