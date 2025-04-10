@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (tab && tab.url) {
         console.log("Bookmarking URL: ", tab.url);
 
-        fetch("http://localhost:8000/content/saveUrl", {
+        fetch("http://localhost:8000/content/save", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({
             url: tab.url,
             title: tab.title,
+            source: "chrome_extension",
           }),
         }).then((response) => {
           console.log("Response from server: ", response);
