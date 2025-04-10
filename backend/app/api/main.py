@@ -19,16 +19,7 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.schemas.content import ContentCreate, ContentRead
-from app.data_models.user import User, UserCreate
-
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-if DATABASE_URL is None:
-    raise ValueError("DATABASE_URL environment variable not set")
-
-print("DATABASE_URL: ", DATABASE_URL)
-
-# engine = create_engine(DATABASE_URL)
+from app.db import init_db
 
 app = FastAPI()
 
@@ -125,11 +116,3 @@ def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db))
     db.delete(content)
     db.commit()
     return
-
-
-
-
-
-
-
-
