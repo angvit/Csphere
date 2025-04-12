@@ -1,4 +1,6 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -19,13 +21,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className="bg-amber-50 bg-gradient-to-r from-amber-50 to-amber-100 relative">
+      <body className="relative">
         <header
           style={{
             fontFamily: `${geistSans.style.fontFamily}, ${geistMono.style.fontFamily}`,
             padding: "8px 8px",
             lineHeight: "8px",
-            height: "auto",
+            height: "60px",
           }}
           className="flex items-center justify-between px-40 w-full bg-black "
         >
@@ -71,7 +73,7 @@ export default function RootLayout({ children }) {
               }}
               className="bg-white text-gray px-4 py-2 rounded hover:bg-gray-100 "
             >
-              Get Demo
+              <Link href="/login">Log in</Link>
             </button>
           </div>
         </header>
