@@ -1,6 +1,8 @@
 from sqlalchemy import Column, String, ARRAY, Text, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID, Vector
+from sqlalchemy.dialects.postgresql import UUID
+from pgvector.sqlalchemy import Vector
 from app.db.database import Base
+
 
 class ContentAI(Base):
     __tablename__ = "content_ai"
