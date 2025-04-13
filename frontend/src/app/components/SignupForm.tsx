@@ -66,7 +66,7 @@ export default function SignupForm() {
 
       //MAKE THE API REQUEST
       const client = new HttpClient({
-        baseUrl: "http://localhost:3000",
+        baseUrl: "http://127.0.0.1:8000",
         defaultOpts: {
           headers: {
             "Content-Type": "application/json",
