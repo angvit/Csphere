@@ -1,8 +1,10 @@
 "use client";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -13,22 +15,34 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import Link from "next/link";
 import { PasswordInput } from "@/components/ui/password-input";
+import Link from "next/link";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
+  email: z.string(),
+  confirmemail: z.string(),
   password: z.string(),
+  confirmpassword: z.string(),
 });
 
-export default function LoginForm() {
+export default function SignupForm() {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
+      email: "",
+      confirmemail: "",
       password: "",
+      confirmpassword: "",
     },
   });
+
+  const watchedEmail = form.watch("email");
+
+  useEffect(() => {
+    console.log("Email changed:", watchedEmail);
+  }, [watchedEmail]);
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     try {
@@ -54,8 +68,38 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Username</FormLabel>
               <FormControl>
-                <Input placeholder="username or email" type="text" {...field} />
+                <Input placeholder="username" type="text" {...field} />
               </FormControl>
+
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email </FormLabel>
+              <FormControl>
+                <Input placeholder="Email " type="email" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="confirmemail"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Email </FormLabel>
+              <FormControl>
+                <Input placeholder="confirm email " type="email" {...field} />
+              </FormControl>
+
               <FormMessage />
             </FormItem>
           )}
@@ -68,7 +112,21 @@ export default function LoginForm() {
             <FormItem>
               <FormLabel>Password</FormLabel>
               <FormControl>
-                <PasswordInput placeholder="password" {...field} />
+                <PasswordInput placeholder="Enter your password" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="confirmpassword"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Confirm Pasword</FormLabel>
+              <FormControl>
+                <PasswordInput placeholder="Confirm Password" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -85,10 +143,10 @@ export default function LoginForm() {
 
       <hr />
       <div className="text-center text-gray-400 mt-4">
-        <p className="text-sm">Don't have an account?</p>
-        <Link href="/signup">
+        <p className="text-sm">Have an account?</p>
+        <Link href="/login">
           <Button variant="link" className="text-blue-500 hover:text-blue-700">
-            Sign Up
+            Login
           </Button>
         </Link>
       </div>
