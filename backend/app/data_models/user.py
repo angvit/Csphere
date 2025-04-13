@@ -10,6 +10,8 @@ class User(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid)
     email = Column(String, unique=True, nullable=False)
     created_at = Column(TIMESTAMP, server_default="NOW()")
+    username = Column(String,  nullable=False)
+    password = Column(String, nullable=False)
 
 
 
