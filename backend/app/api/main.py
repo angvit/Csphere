@@ -46,26 +46,30 @@ def read_root():
     return {"Hello": "World"}
 
 
-@app.post("/users", response_model=UserCreate)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    # Check if user already exists by email
-    print("User being created: ", user)
-    existing_user = db.query(User).filter(User.email == user.email).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
 
-    # Create new user
-    new_user = User(
-        id=uuid4(),  # Generate UUID for the user
-        email=user.email,
-        created_at=datetime.utcnow() if not user.created_at else user.created_at,
-    )
+
+
+
+# @app.post("/users", response_model=UserCreate)
+# def create_user(user: UserCreate, db: Session = Depends(get_db)):
+#     # Check if user already exists by email
+#     print("User being created: ", user)
+#     existing_user = db.query(User).filter(User.email == user.email).first()
+#     if existing_user:
+#         raise HTTPException(status_code=400, detail="Email already registered")
+
+#     # Create new user
+#     new_user = User(
+#         id=uuid4(),  # Generate UUID for the user
+#         email=user.email,
+#         created_at=datetime.utcnow() if not user.created_at else user.created_at,
+#     )
     
-    db.add(new_user)
-    db.commit()  # Commit the transaction
-    db.refresh(new_user)  # Refresh to get the user with the generated ID
+#     db.add(new_user)
+#     db.commit()  # Commit the transaction
+#     db.refresh(new_user)  # Refresh to get the user with the generated ID
     
-    return new_user
+#     return new_user
 
 @app.post("/content/saveUrl")
 def save_url(ContentFromUrl: ContentFromUrl):

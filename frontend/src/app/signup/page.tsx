@@ -1,8 +1,5 @@
-"use client";
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-
+import React from "react";
+import SignupForm from "@/app/components/SignupForm";
 import {
   Card,
   CardDescription,
@@ -10,17 +7,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-import LoginForm from "@/app/components/LoginForm";
-
-function page() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-
+export default function page() {
   return (
-    <div className="min-h-screen w-auto bg-gray-900 bg-gradient-to-br from-gray-900 to-gray-800 text-white flex items-center justify-center">
+    <main>
       <Card
         style={{
-          padding: "10px",
+          padding: "20px",
         }}
         className="mx-auto w-[400px] bg-gray-800 border border-gray-700 shadow-md rounded-2xl p-6"
       >
@@ -33,10 +25,8 @@ function page() {
           </CardDescription>
           <hr className="border-gray-700 mb-4" />
         </CardHeader>
-        <LoginForm />
+        <SignupForm />
       </Card>
-    </div>
+    </main>
   );
 }
-
-export default page;
