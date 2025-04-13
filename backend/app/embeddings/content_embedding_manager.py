@@ -51,7 +51,7 @@ class ContentEmbeddingManager:
 
             # Use an LLM to summarize the content. If this fails, default to the title for the summary
             ai_summary = self._summarize_content(placeholder_sent) # REPLACE W/ content
-            summary = ai_summary if ai_summary else content.tile
+            summary = ai_summary if ai_summary else content_data.get("title")
             if summary is None: 
                 raise Exception("Failed to summarize content and/or there is no title")
 
