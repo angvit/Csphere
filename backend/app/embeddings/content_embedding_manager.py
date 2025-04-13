@@ -38,43 +38,53 @@ class ContentEmbeddingManager:
     def insert_embedded_content(self, content_data, placeholder_sent):
         '''
         Inserts content into the database if it doesn't exist, summarizes it, and embeds the summary
+        If any exceptions occur, the transaction will be rolled back
         '''
+        try:
+            if self._url_exists(content_data.get("url")):
+                return None, None
+            
+            # Add content data to the db
+            content = self._insert_db(Content, content_data)
+            if content is None: 
+                raise Exception("Failed to insert content into the database")
 
-        if self._url_exists(content_data.get("url")):
-            return None, None
+            # Use an LLM to summarize the content. If this fails, default to the title for the summary
+            ai_summary = self._summarize_content(placeholder_sent) # REPLACE W/ content
+            summary = ai_summary if ai_summary else content.tile
+            if summary is None: 
+                raise Exception("Failed to summarize content and/or there is no title")
+
+            # Embed the summary associated with the content ORM
+            embedding = self.generate_embedding(summary)
+            if embedding is None: 
+                raise Exception("Failed to generate embedding") 
+
+            # Insert the embedding data into the db
+            content_ai_data = {
+                "content_id": content.content_id, 
+                "ai_summary": summary, 
+                "embedding": embedding
+            }
+            content_ai = self._insert_db(ContentAI, content_ai_data)
+            if content_ai is None: 
+                raise Exception("Failed to insert embedding data") 
+            
+            # If all steps succeed, then commit transaction to db
+            self.db.commit()
+
+            print(
+                f"Created Content ID: {content.content_id},\n"
+                f"Content AI ID: {content_ai.content_id},\n"
+                f"Embedding (first 10): {content_ai.embedding[:10]}\n\n"
+            )
+
+            return content, content_ai
         
-        # Add content data to the db
-        content = self._insert_db(Content, content_data)
-        if content is None: 
+        except (SQLAlchemyError, Exception) as e:
+            self.db.rollback()
+            print(f"Error occured in the insert_embedded_content function. Nothing commited to database: {e}")
             return None, None
-
-        # Use an LLM to summarize the content
-        ai_summary = self._summarize_content(placeholder_sent) # REPLACE W/ content
-        if ai_summary is None: 
-            return None, None
-
-        # Embed the summary associated with the content ORM
-        embedding = self.generate_embedding(ai_summary)
-        if embedding is None: 
-            return None, None
-
-        # Insert the embedding data into the db
-        content_ai_data = {
-            "content_id": content.content_id, 
-            "ai_summary": ai_summary, 
-            "embedding": embedding
-        }
-        content_ai = self._insert_db(ContentAI, content_ai_data)
-        if content_ai is None: 
-            return None, None
-
-        print(
-            f"Created Content ID: {content.content_id},\n"
-            f"Content AI ID: {content_ai.content_id},\n"
-            f"Embedding (first 10): {content_ai.embedding[:10]}\n\n"
-        )
-
-        return content, content_ai
 
 
     def generate_embedding(self, text):
@@ -98,8 +108,7 @@ class ContentEmbeddingManager:
         try:
             db_data = Data_Model(**data)
             self.db.add(db_data)
-            self.db.commit()
-            self.db.refresh(db_data)
+            self.db.flush()     # Flush for content_ai insertion
             return db_data
         except SQLAlchemyError as e:
             self.db.rollback()
