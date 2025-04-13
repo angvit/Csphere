@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
 
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -84,6 +85,7 @@ export default function RootLayout({ children }) {
             <p>&copy; 2023 Amane Soft. All rights reserved.</p>
           </div>
         </footer>
+        <Toaster className="bg-white text-red-200" />
       </body>
     </html>
   );

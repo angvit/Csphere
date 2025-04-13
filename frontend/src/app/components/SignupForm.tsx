@@ -1,10 +1,9 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -17,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import Link from "next/link";
+import HttpClient from "@/app/classes/fetchclass";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
@@ -25,6 +25,12 @@ const formSchema = z.object({
   password: z.string(),
   confirmpassword: z.string(),
 });
+
+interface responseData {
+  status?: number;
+  data?: JSON;
+  error?: string;
+}
 
 export default function SignupForm() {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -44,14 +50,45 @@ export default function SignupForm() {
     console.log("Email changed:", watchedEmail);
   }, [watchedEmail]);
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(
+    values: z.infer<typeof formSchema>
+  ): Promise<responseData> {
     try {
       console.log(values);
-      toast(
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      );
+      if (values.password !== values.confirmpassword) {
+        toast.error("Passwords do not match.");
+        return;
+      }
+      if (values.email !== values.confirmemail) {
+        toast.error("Emails do not match.");
+        return;
+      }
+
+      //MAKE THE API REQUEST
+      const client = new HttpClient({
+        baseUrl: "http://localhost:3000",
+        defaultOpts: {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      });
+
+      const response = await client.post("/api/signup", {
+        body: JSON.stringify({
+          username: values.username,
+          email: values.email,
+          password: values.password,
+        }),
+      });
+
+      console.log("Response:", response);
+
+      if (response.status === 200) {
+        toast.success("Signup successful!");
+      } else {
+        toast.error("Signup failed. Please try again.");
+      }
     } catch (error) {
       console.error("Form submission error", error);
       toast.error("Failed to submit the form. Please try again.");
