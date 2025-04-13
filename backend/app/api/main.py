@@ -19,7 +19,10 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.schemas.content import ContentCreate, ContentRead
+from app.data_models.user import User
 from app.db import init_db
+
+from app.utils.hashing import get_password_hash, verify_password
 
 app = FastAPI()
 
@@ -47,29 +50,73 @@ def read_root():
 
 
 
+class UserCreate(BaseModel):
+    username: str
+    email: str
+    password: str
+    created_at: datetime = None  # Optional: you can default this to now on the server-side
+
+class UserSignIn(BaseModel):
+    username: str
+    password: str
 
 
+@app.post("/api/signup", response_model=UserCreate)
+def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
-# @app.post("/users", response_model=UserCreate)
-# def create_user(user: UserCreate, db: Session = Depends(get_db)):
-#     # Check if user already exists by email
-#     print("User being created: ", user)
-#     existing_user = db.query(User).filter(User.email == user.email).first()
-#     if existing_user:
-#         raise HTTPException(status_code=400, detail="Email already registered")
 
-#     # Create new user
-#     new_user = User(
-#         id=uuid4(),  # Generate UUID for the user
-#         email=user.email,
-#         created_at=datetime.utcnow() if not user.created_at else user.created_at,
-#     )
+    print("User being created: ", user)
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid user data")
     
-#     db.add(new_user)
-#     db.commit()  # Commit the transaction
-#     db.refresh(new_user)  # Refresh to get the user with the generated ID
+
+    hashed_password = get_password_hash(user.password)
+    print("Hashed password: ", hashed_password)
+    user.password = hashed_password
+
+    # Check if user already exists by username
+    existing_user = db.query(User).filter(User.username == user.username).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Username already registered")
     
-#     return new_user
+    #Insert user into the database
+    new_user = User(
+        id=uuid4(),  # Generate UUID for the user
+        username=user.username,
+        email=user.email,
+        password=user.password,
+        created_at=datetime.utcnow() if not user.created_at else user.created_at,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)  # Refresh to get the user with the generated ID
+
+    print("User created: ", new_user)
+
+
+
+    return {"username": user.username, "email": user.email, "password": user.password}
+
+
+@app.post("/api/login")
+def login(user: UserSignIn, db: Session = Depends(get_db)):
+    print("User being logged in: ", user)
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid user data")
+
+    # Check if the user exists
+    db_user = db.query(User).filter(User.username == user.username).first()
+    if not db_user:
+        raise HTTPException(status_code=400, detail="User not found")
+
+    # Verify the password
+    if not verify_password(user.password, db_user.password):
+        raise HTTPException(status_code=400, detail="Incorrect password")
+
+    return {"username": db_user.username, "email": db_user.email}
+   
 
 @app.post("/content/saveUrl")
 def save_url(ContentFromUrl: ContentFromUrl):

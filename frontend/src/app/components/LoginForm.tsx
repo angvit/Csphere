@@ -15,11 +15,18 @@ import {
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { PasswordInput } from "@/components/ui/password-input";
+import HttpClient from "@/app/classes/fetchclass";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
   password: z.string(),
 });
+
+interface responseData {
+  status?: number;
+  data?: JSON;
+  error?: string;
+}
 
 export default function LoginForm() {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -30,14 +37,36 @@ export default function LoginForm() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(
+    values: z.infer<typeof formSchema>
+  ): Promise<responseData> {
     try {
       console.log(values);
-      toast(
-        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-          <code className="text-white">{JSON.stringify(values, null, 2)}</code>
-        </pre>
-      );
+
+      const client = new HttpClient({
+        baseUrl: "http://127.0.0.1:8000",
+        defaultOpts: {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
+      });
+
+      const response = await client.post("/api/login", {
+        body: JSON.stringify({
+          username: values.username,
+          password: values.password,
+        }),
+      });
+
+      if (!response.ok) {
+        toast.error("Login failed. Please check your credentials.");
+        return;
+      }
+      const data = response.json();
+      console.log("Login successful", data);
+
+      toast.success("Login successful!");
     } catch (error) {
       console.error("Form submission error", error);
       toast.error("Failed to submit the form. Please try again.");
