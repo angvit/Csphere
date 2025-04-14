@@ -1,4 +1,3 @@
-# test_conn.py
 import psycopg2
 
 try:
