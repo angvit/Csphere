@@ -2,6 +2,8 @@
 frontend/node_modules/
 __pycache__/
 .env
-**/venv
-
 **/__pycache__/
+.DS_Store
+backend/app/data_models/__pycache__/content.cpython-312.pyc
+backend/app/db/__pycache__/database.cpython-312.pyc
+**/venv
