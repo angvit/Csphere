@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Content Curator</title>
+    <link rel="stylesheet" href="popup.css" />
+    <script src="popup.js" type="module"></script>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <div class="logo">
+          <i class="fas fa-robot"></i>
+        </div>
+        <h1>AI Content Curator</h1>
+        <button id="settingsBtn" class="icon-button" title="Settings">
+          <i class="fas fa-cog"></i>
+        </button>
+      </header>
+
+      <div class="search-container">
+        <div class="search-input-wrapper">
+          <i class="fas fa-search search-icon"></i>
+          <input
+            type="text"
+            id="searchInput"
+            placeholder="Search your bookmarks..."
+          />
+        </div>
+      </div>
+
+      <div id="content" class="content-container">
+        <!-- Content will be loaded dynamically -->
+        <div class="empty-state">
+          <div class="empty-icon">
+            <i class="fas fa-bookmark"></i>
+          </div>
+          <p>No bookmarks yet</p>
+          <span>Bookmark interesting content to see it here</span>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button id="bookMarkBtn" class="primary-button">
+          <i class="fas fa-bookmark"></i>
+          Bookmark Page
+        </button>
+      </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+  </body>
+</html>
