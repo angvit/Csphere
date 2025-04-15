@@ -21,6 +21,7 @@ Base = declarative_base()
 
 # yield a fresh session per request (FASTAPI)
 def get_db():
+    print("Creating new session")
     # session instance
     db = SessionLocal()
     try:

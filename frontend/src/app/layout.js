@@ -1,5 +1,8 @@
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
+
 import "./globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,8 +22,70 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+      <body className="relative">
+        <header
+          style={{
+            fontFamily: `${geistSans.style.fontFamily}, ${geistMono.style.fontFamily}`,
+            padding: "8px 8px",
+            lineHeight: "8px",
+            height: "60px",
+          }}
+          className="flex items-center justify-between px-40 w-full bg-black "
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+            className="flex items-center space-x-8 w-auto text-white"
+          >
+            <a className=" font-semibold">Amane Soft</a>
+            <a href="#" className="text-gray-500 hover:text-gray-700">
+              Solutions
+            </a>
+            <a href="#" className="text-gray-500 hover:text-gray-700">
+              Industries
+            </a>
+            <a href="#" className="text-gray-500 hover:text-gray-700">
+              About us
+            </a>
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+            }}
+            className="flex items-center space-x-4"
+          >
+            <button
+              style={{
+                padding: "10px 8px",
+              }}
+              className="bg-black p-2  text-white px-4 py-2 rounded hover:bg-gray-400"
+            >
+              Contact
+            </button>
+            <button
+              style={{
+                padding: "10px 8px",
+              }}
+              className="bg-white text-gray px-4 py-2 rounded hover:bg-gray-100 "
+            >
+              <Link href="/login">Log in</Link>
+            </button>
+          </div>
+        </header>
         {children}
+
+        <footer className="bg-gray-800 text-white  mt-8 absolute bottom-0 w-full ">
+          <div className="  text-center">
+            <p>&copy; 2023 Amane Soft. All rights reserved.</p>
+          </div>
+        </footer>
+        <Toaster className="bg-white text-red-200" />
       </body>
     </html>
   );
