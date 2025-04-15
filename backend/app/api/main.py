@@ -19,8 +19,7 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.schemas.content import ContentCreate, ContentRead
-from app.semantic_search.search import search_pgvector
-from app.semantic_search.enrich import enrich_content
+from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
 
@@ -45,11 +44,6 @@ app.add_middleware(
 class ContentFromUrl(BaseModel):
     url: str
     title: str
-
-@app.get("/")
-def read_root():
-    return {"Hello": "World"}
-
 
 
 class UserCreate(BaseModel):
@@ -96,8 +90,6 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
     print("User created: ", new_user)
 
-
-
     return {"username": user.username, "email": user.email, "password": user.password}
 
 
@@ -128,10 +120,20 @@ def save_url(ContentFromUrl: ContentFromUrl):
     print("URL being saved: ", url ,"\n Title: ", title)
     return {"url": "saved", "title": title}
 
+
 @app.post("/search")
-def search(query: str, db: Session = Depends(get_db)):
-    results = search_pgvector(query, db)
-    return results
+def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db)):
+    manager = ContentEmbeddingManager(db)
+    results = manager.query_similar_content(query, user_id=user_id)
+    return [
+        {
+            "content_id": content_ai.content_id,
+            "title": content.title,
+            "ai_summary": content_ai.ai_summary,
+            "url": content.url
+        }
+        for content_ai, content in results
+    ]
 
 
 @app.post("/content/save", response_model=ContentRead)
@@ -148,7 +150,7 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db)):
     db.refresh(new_content)
     
     # create ai summarization immeadietly
-    enrich_content(content.url, new_content.content_id, db)
+    # enrich_content(content.url, new_content.content_id, db)
     print("cool4")
     return new_content
 

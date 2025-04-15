@@ -36,7 +36,7 @@ class ContentEmbeddingManager:
     # METHODS
     ###############################################################################
 
-    def query_similar_content(self, query, limit=3):
+    def query_similar_content(self, query, user_id:UUID, limit=3):
         ''' Generates a query embedding and searches the db for related content '''
         
         query_embedding = self.embedding_model.encode(query) 
@@ -44,6 +44,7 @@ class ContentEmbeddingManager:
         results = (
             self.db.query(ContentAI, Content)
             .join(Content, ContentAI.content_id == Content.content_id)
+            .filter(Content.user_id == user_id)
             .order_by(ContentAI.embedding.l2_distance(query_embedding))
             .limit(limit)
             .all()
