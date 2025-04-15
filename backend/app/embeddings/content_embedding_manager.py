@@ -2,17 +2,34 @@ from sentence_transformers import SentenceTransformer
 from app.data_models.content_ai import ContentAI
 from app.data_models.content import Content
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.orm import Session
+from transformers import pipeline
+from readability import Document
+from bs4 import BeautifulSoup
 from sqlalchemy import select
+from uuid import UUID
+import requests
 
 
 class ContentEmbeddingManager:
     '''
-    Manages content embeddings, database interactions, and similarity queries
+    Manages:
+        - Generating vector embeddings for content summaries
+        - Inserting and retrieving content and their embeddings from the db
+        - Enriching raw HTML content for a summarization model
+        - Performing similarity queries on content embeddings
+        - Handling database interactions for both `Content` and `ContentAI` models
     '''
 
-    def __init__(self, db, model_name='sentence-transformers/all-MiniLM-L6-v2'):
+    def __init__(
+            self, 
+            db, 
+            embedding_model_name='sentence-transformers/all-MiniLM-L6-v2', 
+            summary_model_name='google-t5/t5-small' # We can always change the model
+    ):
         self.db = db
-        self.model = SentenceTransformer(model_name)
+        self.embedding_model = SentenceTransformer(embedding_model_name)
+        self.summary_model = pipeline("summarization", model=summary_model_name)
 
 
     ###############################################################################
@@ -22,7 +39,7 @@ class ContentEmbeddingManager:
     def query_similar_content(self, query, limit=3):
         ''' Generates a query embedding and searches the db for related content '''
         
-        query_embedding = self.model.encode(query) 
+        query_embedding = self.embedding_model.encode(query) 
 
         results = (
             self.db.query(ContentAI, Content)
@@ -35,13 +52,16 @@ class ContentEmbeddingManager:
         return results
 
 
-    def insert_embedded_content(self, content_data, placeholder_sent):
+    def insert_embedded_content(self, content_data):
         '''
         Inserts content into the database if it doesn't exist, summarizes it, and embeds the summary
         If any exceptions occur, the transaction will be rolled back
         '''
         try:
-            if self._url_exists(content_data.get("url")):
+
+            # Check if the url exists in the db already
+            url = content_data.get("url")
+            if self._url_exists(url):
                 return None, None
             
             # Add content data to the db
@@ -49,9 +69,14 @@ class ContentEmbeddingManager:
             if content is None: 
                 raise Exception("Failed to insert content into the database")
 
+            # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
+            summary_input = self._enrich_content(url, content.content_id, self.db)
+            if summary_input is None:
+                summary_input = content_data.get("title")
+
             # Use an LLM to summarize the content. If this fails, default to the title for the summary
-            ai_summary = self._summarize_content(placeholder_sent) # REPLACE W/ content
-            summary = ai_summary if ai_summary else content_data.get("title")
+            ai_summary = self._summarize_content(summary_input) 
+            summary = ai_summary if ai_summary else summary_input
             if summary is None: 
                 raise Exception("Failed to summarize content and/or there is no title")
 
@@ -76,7 +101,8 @@ class ContentEmbeddingManager:
             print(
                 f"Created Content ID: {content.content_id},\n"
                 f"Content AI ID: {content_ai.content_id},\n"
-                f"Embedding (first 10): {content_ai.embedding[:10]}\n\n"
+                f"Embedding (first 10): {content_ai.embedding[:10]},\n"
+                f"Summary that was embedded {summary}\n\n"
             )
 
             return content, content_ai
@@ -89,8 +115,9 @@ class ContentEmbeddingManager:
 
     def generate_embedding(self, text):
         ''' Generates an embedding for a piece of text using a Sentence Transformer embedding model '''
+
         try:
-            return self.model.encode(text)
+            return self.embedding_model.encode(text)
         except Exception as e: 
             print(f"An unexpected error occurred during embedding: {e}")
             return None
@@ -99,6 +126,78 @@ class ContentEmbeddingManager:
     ###############################################################################
     # HELPER METHODS
     ###############################################################################
+
+
+    def _enrich_content(self, url: str, content_id: UUID, db: Session):
+        response = requests.get(url, timeout=5)
+        if response.status_code != 200:
+            print(f"Error: {response.status_code}: failed get request for {url}, defaulting to title for summarization input")
+            return None
+        
+        raw_html = response.text
+        metadata = self._extract_metadata_and_body(raw_html)
+        summary_input = self._build_summary_input(metadata)
+
+        print(f"THE SUMMARY INPUT AFTER ENRICHING IS = {summary_input}")
+
+        return summary_input
+
+
+    def _extract_metadata_and_body(self, html: str) -> dict:
+        soup = BeautifulSoup(html, "html.parser")
+        
+        title = soup.title.string.strip() if soup.title else ""
+        description = ""
+        tags = []
+
+        for meta in soup.find_all("meta"):
+            if meta.get("name") == "description":
+                description = meta.get("content", "")
+            if meta.get("property") == "og:description":
+                description = meta.get("content", "") or description
+            if meta.get("name") == "keywords":
+                tags = [tag.strip() for tag in meta.get("content", "").split(",")]
+
+        readable_doc = Document(html)
+        # html snippet of main content body with boilerplate (nav bars, ads, footers) removed
+        body_html = readable_doc.summary() 
+        body_text = BeautifulSoup(body_html, "html.parser").get_text()
+
+        # We m
+        print(f"The title from soup is: {title}")
+
+        return {
+            "title": title,
+            "description": description,
+            "tags": tags,
+            "body_text": body_text.strip()
+        }
+
+
+    def _build_summary_input(self, metadata: dict) -> str:
+        input_parts = []
+
+        if metadata["title"]:
+            input_parts.append(f"Title: {metadata["title"]}")
+        if metadata["description"]:
+            input_parts.append(f"Description: {metadata["description"]}")
+        if metadata["tags"]:
+            input_parts.append(f"Tags: {", ".join(metadata["tags"])}")
+        
+        '''
+        Content snippet seems to be messing up the summarizer
+        The content may not be relavant 
+        Example:
+            for https://www.lancasterpuppies.com/puppy-search/state/NY?sortBy=prod_all_listings
+            Content snippet is copyright info
+            and the summary that gets embeeded is: site logo, Web Layout, and all pictures and text are copyright 2014-2024 by PMG US, LLC.
+        Commenting put the content snippet seems to help
+        '''
+        # snippet = metadata["body_text"][:500]
+        # input_parts.append(f"Content Snippet: {snippet}")
+
+        return "\n".join(input_parts)
+
 
     def _insert_db(self, Data_Model, data):
         '''
@@ -126,7 +225,22 @@ class ContentEmbeddingManager:
         return False
     
     
-    # TODO
-    def _summarize_content(self, content):
-        # Place holder for now
-        return content # For now
+    def _summarize_content(self, summary_input):
+        ''' Uses a summary model to get a more detailed summary for the content embeddings '''
+        
+        # Debug (TO REMOVE)
+        print(f"The summary input being passed to summary model is: {summary_input}")
+
+        # Check if there is input first
+        if summary_input is None:
+            return None
+
+        try:
+            input_length = len(self.embedding_model.tokenizer.encode(summary_input)) # Get actual token length
+            max_length = int(input_length * 0.6)  # Set the max length to about 60 % of input (we can change)
+            max_length = max(30, min(max_length, 150)) # Ensure the max length is within a reasonable range
+            summary = self.summary_model(summary_input, max_length=max_length, min_length=15, do_sample=False)[0]['summary_text']
+            return summary
+        except Exception as e:
+            print(f"An error occurred during summarization: {e}")
+            return None
