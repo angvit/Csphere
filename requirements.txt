@@ -4,5 +4,6 @@ sqlalchemy
 pydantic
 psycopg2-binary
 pgvector
-openai
+sentence-transformers
+readability-lxml
 python-dotenv

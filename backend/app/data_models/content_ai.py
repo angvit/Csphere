@@ -8,4 +8,4 @@ class ContentAI(Base):
 
     content_id = Column(UUID(as_uuid=True), ForeignKey("content.content_id"), primary_key=True)
     ai_summary = Column(String, nullable=True)
-    embedding = Column(Vector(1536)) # pgvector integration may need different type
+    embedding = Column(Vector(768)) # pgvector integration may need different type
