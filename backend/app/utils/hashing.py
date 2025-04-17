@@ -1,11 +1,13 @@
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-
+from dotenv import load_dotenv
+import os
 
 from pydantic import BaseModel
 
+load_dotenv()
+SECRET_KEY = os.getenv('SECRET_KEY')
 
-SECRET_KEY="512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -42,7 +44,6 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
-
 
 
 # def authenticate_user(fake_db, username: str, password: str):
