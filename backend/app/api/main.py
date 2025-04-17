@@ -1,29 +1,29 @@
 import uvicorn 
 from fastapi import FastAPI, Depends, Query, HTTPException
-from sqlalchemy.orm import Session
-from uuid import UUID
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-import os 
-from uuid import uuid4
-from datetime import datetime
-
-from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-
-
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from uuid import uuid4
+from uuid import UUID
 from dotenv import load_dotenv
-load_dotenv()
+from datetime import datetime
+import os 
 
 from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.schemas.content import ContentCreate, ContentRead
+from app.schemas.user import UserCreate, UserSignIn
+from app.utils.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
 
 from app.utils.hashing import get_password_hash, verify_password
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -46,27 +46,14 @@ class ContentFromUrl(BaseModel):
     title: str
 
 
-class UserCreate(BaseModel):
-    username: str
-    email: str
-    password: str
-    created_at: datetime = None  # Optional: you can default this to now on the server-side
-
-class UserSignIn(BaseModel):
-    username: str
-    password: str
-
 
 @app.post("/api/signup", response_model=UserCreate)
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
-
-
     print("User being created: ", user)
 
     if not user:
         raise HTTPException(status_code=400, detail="Invalid user data")
     
-
     hashed_password = get_password_hash(user.password)
     print("Hashed password: ", hashed_password)
     user.password = hashed_password
@@ -123,8 +110,17 @@ def save_url(ContentFromUrl: ContentFromUrl):
 
 @app.post("/search")
 def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db)):
+    preprocessor = QueryPreprocessor()
+    parsed_query = preprocessor.preprocess_query(query)
+
+
     manager = ContentEmbeddingManager(db)
-    results = manager.query_similar_content(query, user_id=user_id)
+    results = manager.query_similar_content(
+        query=parsed_query,
+        user_id=user_id,
+        
+    )
+
     return [
         {
             "content_id": content_ai.content_id,
