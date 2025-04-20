@@ -3,7 +3,7 @@ import Image from "next/image";
 export default function Home() {
   return (
     <div className="pt-serif-bold">
-      <main className="h-screen w-screen  flex items-center justify-center bg-gray-900 bg-gradient-to-br from-gray-900 to-gray-800 text-white relative">
+      <main className="h-screen w-screen  flex items-center justify-center  text-white ">
         <div className="flex flex-col items-center justify-center w-10/12 md:w-8/12 h-full space-y-10 gap-10">
           <section className="max-w-3xl">
             <h1 className="text-5xl md:text-6xl pt-serif-regular-italic  text-center  text-white  mb-8">
