@@ -75,7 +75,7 @@ export default function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="text-black">
         <FormField
           control={form.control}
           name="username"
@@ -105,7 +105,7 @@ export default function LoginForm() {
         />
 
         <Button
-          className="bg-gray-300 hover:bg-gray-400 transition-all duration-200 text-gray-900 font-semibold py-2 px-4 rounded w-full"
+          className="bg-gray-400 hover:bg-gray-500 transition-all duration-200 text-gray-900 font-semibold py-2 px-4 rounded w-full"
           type="submit"
         >
           Submit
