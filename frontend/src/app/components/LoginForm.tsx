@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { PasswordInput } from "@/components/ui/password-input";
 import HttpClient from "@/app/classes/fetchclass";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
@@ -26,6 +27,7 @@ interface responseData {
   status?: number;
   data?: JSON;
   error?: string;
+  token?: string;
 }
 
 export default function LoginForm() {
@@ -36,6 +38,8 @@ export default function LoginForm() {
       password: "",
     },
   });
+
+  const router = useRouter();
 
   async function onSubmit(
     values: z.infer<typeof formSchema>
@@ -63,10 +67,18 @@ export default function LoginForm() {
         toast.error("Login failed. Please check your credentials.");
         return;
       }
-      const data = response.json();
+      const data = await response.json();
       console.log("Login successful", data);
 
-      toast.success("Login successful!");
+      if (data.token) {
+        localStorage.setItem("cshere_token", data.token);
+      }
+
+      document.cookie = `token=${data.token}; path=/; max-age=3600`;
+
+      router.push("/home");
+
+      // toast.success("Login successful!");
     } catch (error) {
       console.error("Form submission error", error);
       toast.error("Failed to submit the form. Please try again.");
