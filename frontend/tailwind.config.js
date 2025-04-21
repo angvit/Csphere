@@ -10,6 +10,9 @@ module.exports = {
       fontFamily: {
         ptserif: "var(--font-pt-serif)",
       },
+      colors: {
+        "custom-teal": "#202A29",
+      },
     },
   },
   plugins: [],
