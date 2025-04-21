@@ -1,4 +1,5 @@
-from sqlalchemy import Column, String, TIMESTAMP, Text, ForeignKey
+from sqlalchemy import Column, String, TIMESTAMP, ForeignKey
+from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.database import Base
 import uuid
@@ -11,4 +12,4 @@ class Content(Base):
     url = Column(String, unique=True, nullable=False)   
     title = Column(String, nullable=True)
     source = Column(String, nullable=True)
-    first_saved_at = Column(TIMESTAMP, Text(server_default="NOW()"))
+    first_saved_at = Column(TIMESTAMP(timezone=True), server_default=text("NOW()"))
