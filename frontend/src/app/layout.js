@@ -108,9 +108,9 @@ export default async function RootLayout({ children }) {
                 <button>Log out</button>
               ) : (
                 <>
-                  <button className="hidden sm:inline-block bg-[#202A29] text-white px-4 py-2 rounded-lg hover:bg-[#2D3B3A] text-sm font-medium">
+                  {/* <button className="hidden sm:inline-block bg-[#202A29] text-white px-4 py-2 rounded-lg hover:bg-[#2D3B3A] text-sm font-medium">
                     Contact
-                  </button>
+                  </button> */}
                   <Link href="/login">Log in</Link>
                 </>
               )}
