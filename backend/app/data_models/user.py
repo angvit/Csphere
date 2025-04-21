@@ -1,9 +1,11 @@
 from sqlalchemy import Column, String, TIMESTAMP
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.database import Base
-import uuid
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
+import uuid
+
+
 class User(Base):
     __tablename__ = "users"
 
@@ -15,9 +17,9 @@ class User(Base):
 
 
 
-class UserCreate(BaseModel):
-    email: EmailStr  # email field is validated as a proper email format
-    created_at: datetime = None  # Optional: you can default this to now on the server-side
+# class UserCreate(BaseModel):
+#     email: EmailStr  # email field is validated as a proper email format
+#     created_at: datetime = None  # Optional: you can default this to now on the server-side
 
-    class Config:
-        orm_mode = True
+#     class Config:
+#         orm_mode = True
