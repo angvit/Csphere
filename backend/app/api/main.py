@@ -22,7 +22,7 @@ from app.schemas.content import ContentCreate, ContentRead
 from app.data_models.user import User
 from app.db import init_db
 
-from app.utils.hashing import get_password_hash, verify_password
+from app.utils.hashing import get_password_hash, verify_password, create_access_token
 
 app = FastAPI()
 
@@ -110,12 +110,17 @@ def login(user: UserSignIn, db: Session = Depends(get_db)):
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="User not found")
+    
+    print("User found: ", db_user, "id of user: ", db_user.id)
 
     # Verify the password
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Incorrect password")
+    
+    token = create_access_token(data={"sub": str(db_user.id)})
+    print("Token created: ", token)
 
-    return {"username": db_user.username, "email": db_user.email}
+    return {"username": db_user.username, "token": token}
    
 
 @app.post("/content/saveUrl")
