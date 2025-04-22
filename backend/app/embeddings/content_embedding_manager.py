@@ -9,6 +9,7 @@ from bs4 import BeautifulSoup
 from sqlalchemy import select
 from uuid import UUID
 import requests
+import re
 
 
 class ContentEmbeddingManager:
@@ -25,11 +26,17 @@ class ContentEmbeddingManager:
             self, 
             db, 
             embedding_model_name='sentence-transformers/all-MiniLM-L6-v2', 
-            summary_model_name='google-t5/t5-small' # We can always change the model
+            summary_model_name='google/flan-t5-small' # We can always change the model
     ):
         self.db = db
         self.embedding_model = SentenceTransformer(embedding_model_name)
-        self.summary_model = pipeline("summarization", model=summary_model_name)
+        # self.summary_model = pipeline("summarization", model=summary_model_name)
+        self.summary_model = pipeline(
+            "text2text-generation",
+            model=summary_model_name,
+            tokenizer=summary_model_name,
+            device_map="auto",
+        )
 
 
     ###############################################################################
@@ -134,6 +141,25 @@ class ContentEmbeddingManager:
     # HELPER METHODS
     ###############################################################################
 
+    def _fetch_html(self, url: str) -> str:
+        resp = requests.get(url, timeout=5)
+        return resp.text if resp.status_code == 200 else ""
+    
+
+    def _clean_body(self, text:str, max_chars=1000):    
+        lines = text.split("\n")
+        cleaned = []
+
+        for line in lines:
+            line = line.strip()
+            if not line: 
+                continue
+            if re.search(r"(©|\ball rights\b|cookie|advertisement)", line, re.I):
+                continue
+            cleaned.append(line)
+        joined = " ".join(cleaned)
+        return joined[:max_chars]
+    
 
     def _enrich_content(self, url: str, content_id: UUID, db: Session):
         response = requests.get(url, timeout=5)
@@ -141,8 +167,10 @@ class ContentEmbeddingManager:
             print(f"Error: {response.status_code}: failed get request for {url}, defaulting to title for summarization input")
             return None
         
-        raw_html = response.text
+        raw_html = self._fetch_html(url)
         metadata = self._extract_metadata_and_body(raw_html)
+        metadata["body_text"] = self._clean_body(metadata["body_text"])
+
         summary_input = self._build_summary_input(metadata)
 
         print(f"THE SUMMARY INPUT AFTER ENRICHING IS = {summary_input}")
@@ -165,10 +193,9 @@ class ContentEmbeddingManager:
             if meta.get("name") == "keywords":
                 tags = [tag.strip() for tag in meta.get("content", "").split(",")]
 
-        readable_doc = Document(html)
+        doc = Document(html)
         # html snippet of main content body with boilerplate (nav bars, ads, footers) removed
-        body_html = readable_doc.summary() 
-        body_text = BeautifulSoup(body_html, "html.parser").get_text()
+        body = BeautifulSoup(doc.summary(), "html.parser").get_text()
 
         # We m
         print(f"The title from soup is: {title}")
@@ -177,12 +204,16 @@ class ContentEmbeddingManager:
             "title": title,
             "description": description,
             "tags": tags,
-            "body_text": body_text.strip()
+            "body_text": body.strip()
         }
 
 
     def _build_summary_input(self, metadata: dict) -> str:
-        input_parts = []
+        input_parts = [
+            "Summarize the following article in **two sentences** for a technical reader. "
+            "Focus on the core idea; ignore boilerplate like copyright notices or ads.\n"
+        ]
+        # input_parts = []
 
         if metadata["title"]:
             input_parts.append(f"Title: {metadata["title"]}")
@@ -190,6 +221,8 @@ class ContentEmbeddingManager:
             input_parts.append(f"Description: {metadata["description"]}")
         if metadata["tags"]:
             input_parts.append(f"Tags: {", ".join(metadata["tags"])}")
+        if metadata["body_text"]:
+            input_parts.append(f"Content:\n{metadata['body_text']}")
         
         '''
         Content snippet seems to be messing up the summarizer
@@ -202,7 +235,7 @@ class ContentEmbeddingManager:
         '''
         # snippet = metadata["body_text"][:500]
         # input_parts.append(f"Content Snippet: {snippet}")
-
+        print("\n".join(input_parts))
         return "\n".join(input_parts)
 
 
@@ -246,8 +279,18 @@ class ContentEmbeddingManager:
             input_length = len(self.embedding_model.tokenizer.encode(summary_input)) # Get actual token length
             max_length = int(input_length * 0.6)  # Set the max length to about 60 % of input (we can change)
             max_length = max(30, min(max_length, 150)) # Ensure the max length is within a reasonable range
-            summary = self.summary_model(summary_input, max_length=max_length, min_length=15, do_sample=False)[0]['summary_text']
+            summary = self.summary_model(
+                summary_input, 
+                max_length=max_length, 
+                num_beams=4,
+                no_repeat_ngram_size=3,
+                repetition_penalty=2.0,
+                early_stopping=True,
+                min_length=15, 
+                do_sample=False
+            )[0]['summary_text']
             return summary
+        
         except Exception as e:
             print(f"An error occurred during summarization: {e}")
             return None

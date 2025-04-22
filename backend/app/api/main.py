@@ -113,12 +113,11 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
     preprocessor = QueryPreprocessor()
     parsed_query = preprocessor.preprocess_query(query)
 
-
     manager = ContentEmbeddingManager(db)
     results = manager.query_similar_content(
         query=parsed_query,
         user_id=user_id,
-        
+
     )
 
     return [
