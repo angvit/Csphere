@@ -26,7 +26,7 @@ class ContentEmbeddingManager:
             self, 
             db, 
             embedding_model_name='sentence-transformers/all-MiniLM-L6-v2', 
-            summary_model_name='google/flan-t5-small' # We can always change the model
+            summary_model_name='google/flan-t5-base' # We can always change the model
     ):
         self.db = db
         self.embedding_model = SentenceTransformer(embedding_model_name)
@@ -46,7 +46,7 @@ class ContentEmbeddingManager:
     def query_similar_content(self, query, user_id:UUID, start_date=None,end_date=None, limit=3):
         ''' Generates a query embedding and searches the db for related content '''
         
-        query_embedding = self.embedding_model.encode(query) 
+        query_embedding = self.embedding_model.encode(query["semantic_query"]) 
 
         results = (
             self.db.query(ContentAI, Content)
@@ -210,8 +210,8 @@ class ContentEmbeddingManager:
 
     def _build_summary_input(self, metadata: dict) -> str:
         input_parts = [
-            "Summarize the following article in **two sentences** for a technical reader. "
-            "Focus on the core idea; ignore boilerplate like copyright notices or ads.\n"
+            "You are a technical editor. In **two sentences**, summarize **only** the key idea of this article. "
+            "Drop any boilerplate, ads, copyright notices, or tangential details.\n\n"
         ]
         # input_parts = []
 
@@ -222,7 +222,7 @@ class ContentEmbeddingManager:
         if metadata["tags"]:
             input_parts.append(f"Tags: {", ".join(metadata["tags"])}")
         if metadata["body_text"]:
-            input_parts.append(f"Content:\n{metadata['body_text']}")
+            input_parts.append(f"Content:\n\n{metadata['body_text']}")
         
         '''
         Content snippet seems to be messing up the summarizer
@@ -287,8 +287,10 @@ class ContentEmbeddingManager:
                 repetition_penalty=2.0,
                 early_stopping=True,
                 min_length=15, 
-                do_sample=False
-            )[0]['summary_text']
+                top_k=50,
+                top_p=0.9,
+                temperature=0.8
+            )[0]['generated_text']
             return summary
         
         except Exception as e:

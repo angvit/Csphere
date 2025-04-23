@@ -1,5 +1,5 @@
 from dateparser.search import search_dates
-from datetime import datetime
+from datetime import datetime, timezone 
 from typing import Optional, Tuple
 import re
 
@@ -39,7 +39,7 @@ class QueryPreprocessor:
         and converts them to actual datetime ranges that we can use to filter search results. 
         '''
 
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.now(timezone.utc)
         matches = search_dates(text, settings={"RELATIVE_BASE": now}) # list of tuples of phrases and datetime representations of them
 
         if matches:
