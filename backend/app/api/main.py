@@ -108,7 +108,7 @@ def save_url(ContentFromUrl: ContentFromUrl):
     return {"url": "saved", "title": title}
 
 
-@app.post("/search")
+@app.get("/search")
 def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db)):
     preprocessor = QueryPreprocessor()
     parsed_query = preprocessor.preprocess_query(query)
