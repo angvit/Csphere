@@ -23,6 +23,12 @@ from app.db import init_db
 
 from app.utils.hashing import get_password_hash, verify_password
 
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
+from app.db.database import get_db
+from app.data_models.user import User
+from app.utils.auth import create_access_token
+
 load_dotenv()
 
 app = FastAPI()
@@ -44,7 +50,6 @@ app.add_middleware(
 class ContentFromUrl(BaseModel):
     url: str
     title: str
-
 
 
 @app.post("/api/signup", response_model=UserCreate)
@@ -78,6 +83,16 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     print("User created: ", new_user)
 
     return {"username": user.username, "email": user.email, "password": user.password}
+
+
+@app.post("/token")
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.username == form_data.username).first()
+    if not user or not verify_password(form_data.password, user.password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+    token = create_access_token(data={"sub": str(user.id)})
+    return {"access_token": token, "token_type": "bearer"}
 
 
 @app.post("/api/login")
@@ -117,7 +132,6 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
     results = manager.query_similar_content(
         query=parsed_query,
         user_id=user_id,
-
     )
 
     return [
@@ -134,19 +148,39 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
 @app.post("/content/save", response_model=ContentRead)
 def save_content(content: ContentCreate, db: Session = Depends(get_db)):
     print("Content being saved: ", content)
-    new_content = Content(**content.model_dump())
-    print("cool1 ")
-    db.add(new_content)
-    print("Session state before commit:", db.is_active)  # Check if session is active
 
-    print("cool2")
-    db.commit()
-    print("cool3")
-    db.refresh(new_content)
+    # check if content exists globally by URL
+    existing_content = db.query(Content).filter(Content.url == content.url).first()
+
+    if not existing_content:
+        # create Content if it does not exist
+        new_content = Content(**content.model_dump())
+        db.add(new_content)
+        db.flush()
+    else:
+        new_content = existing_content
+
+    # check if user already saved this content
+    existing_item = db.query(ContentItem).filter(
+        ContentItem.user_id == content.user_id,
+        ContentItem.content_id == new_content.content_id
+    ).first()
+
+    if existing_item:
+        print("User already saved this content. ")
+        return new_content
     
-    # create ai summarization immeadietly
-    # enrich_content(content.url, new_content.content_id, db)
-    print("cool4")
+    # if not, create a ContentItem linking user to content
+    content_item = ContentItem (
+        user_id=content.user_id,
+        content_id=new_content.content_id
+    )
+
+    db.add(content_item)
+    db.commit()
+    db.refresh(new_content)
+
+    print("Successfully saved content for user. ")
     return new_content
 
 

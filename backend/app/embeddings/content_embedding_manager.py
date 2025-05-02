@@ -1,7 +1,8 @@
 from sentence_transformers import SentenceTransformer
 from app.data_models.content_ai import ContentAI
+from app.data_models.content_item import ContentItem
 from app.data_models.content import Content
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import SQLAlchemyError, IntegrityError
 from sqlalchemy.orm import Session
 from transformers import pipeline
 from readability import Document
@@ -76,54 +77,68 @@ class ContentEmbeddingManager:
             # Check if the url exists in the db already
             url = content_data.get("url")
             if self._url_exists(url):
-                return None, None
+                raise Exception("Missing URL in content_data")
+            
+            user_id = content_data.get("user_id")
+            if not user_id:
+                raise Exception("Missing user_id in content_data. Cannot insert content")
             
             # Add content data to the db
-            content = self._insert_db(Content, content_data)
-            if content is None: 
-                raise Exception("Failed to insert content into the database")
+            content = self.db.query(Content).filter(Content.url == url).first()
 
-            # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
-            summary_input = self._enrich_content(url, content.content_id, self.db)
-            if summary_input is None:
-                summary_input = content_data.get("title")
+            # check if content already exists
+            if not content: 
+                # insert new content
+                content = Content (
+                    url=url,
+                    title=content_data.get("title"),
+                    source=content_data.get("source")
+                )
+                self.db.add(content)
+                self.db.flush() # we need content_id
 
-            # Use an LLM to summarize the content. If this fails, default to the title for the summary
-            ai_summary = self._summarize_content(summary_input) 
-            summary = ai_summary if ai_summary else summary_input
-            if summary is None: 
-                raise Exception("Failed to summarize content and/or there is no title")
+                # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
+                summary_input = self._enrich_content(url, content.content_id, self.db)
+                if summary_input is None:
+                    summary_input = content_data.get("title")
 
-            # Embed the summary associated with the content ORM
-            embedding = self.generate_embedding(summary)
-            if embedding is None: 
-                raise Exception("Failed to generate embedding") 
+                # Use an LLM to summarize the content. If this fails, default to the title for the summary
+                ai_summary = self._summarize_content(summary_input) 
+                summary = ai_summary if ai_summary else summary_input
+                if summary is None: 
+                    raise Exception("Failed to summarize content and/or there is no title")
 
-            # Insert the embedding data into the db
-            content_ai_data = {
-                "content_id": content.content_id, 
-                "ai_summary": summary, 
-                "embedding": embedding
-            }
-            content_ai = self._insert_db(ContentAI, content_ai_data)
-            if content_ai is None: 
-                raise Exception("Failed to insert embedding data") 
-            
-            # If all steps succeed, then commit transaction to db
+                # Embed the summary associated with the content ORM
+                embedding = self.generate_embedding(summary)
+                if embedding:
+                    # Insert the embedding data into the db
+                    content_ai = ContentAI (
+                        content_id=content.content_id,
+                        ai_summary=summary,
+                        embedding=embedding
+                    )
+                    
+                    self.db.add(content_ai)
+                
+            # linking the user to the content
+            existing_link = self.db.query(ContentItem).filter_by(
+                user_id=user_id, 
+                content_id=content.content_id
+            ).first()
+
+            if not existing_link:
+                content_item = ContentItem(
+                    user_id=user_id,
+                    content_id=content.content_id
+                )
+            self.db.add(content_item)
             self.db.commit()
-
-            print(
-                f"Created Content ID: {content.content_id},\n"
-                f"Content AI ID: {content_ai.content_id},\n"
-                f"Embedding (first 10): {content_ai.embedding[:10]},\n"
-                f"Summary that was embedded {summary}\n\n"
-            )
-
-            return content, content_ai
+            return content, None
         
+
         except (SQLAlchemyError, Exception) as e:
             self.db.rollback()
-            print(f"Error occured in the insert_embedded_content function. Nothing commited to database: {e}")
+            print(f"Error inserting content: {e}")
             return None, None
 
 
@@ -249,9 +264,9 @@ class ContentEmbeddingManager:
             self.db.add(db_data)
             self.db.flush()     # Flush for content_ai insertion
             return db_data
-        except SQLAlchemyError as e:
+        except IntegrityError:
             self.db.rollback()
-            print(f"Error Inserting into {Data_Model.__tablename__}: {e}")
+            print(f"[Skipped duplicate] {Data_Model.__tablename__}: {data.get('url')}")
             return None
 
 
