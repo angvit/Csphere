@@ -31,7 +31,9 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const isTokenPresent = await cookies().has("token");
+  const isTokenPresent = await cookies().has("token"); //cookies().has("token"); // Check if token exists in cookies
+
+  console.log("isTokenPresent: ", isTokenPresent);
 
   // const handleLogout = async () => {
   //   const cookieStore = cookies();

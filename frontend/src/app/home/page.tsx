@@ -49,12 +49,12 @@ function page() {
       <main className=" w-full  py-8 ">
         <div className="flex flex-col gap-8 md:flex-row">
           {/* Sidebar */}
-          <aside className="w-full md:w-60 shrink-0">
+          {/* <aside className="w-full md:w-60 shrink-0">
             <div className="sticky top-20">
               <h2 className="mb-4 text-xl font-semibold">Categories</h2>
               <CategoryFilter />
             </div>
-          </aside>
+          </aside> */}
 
           {/* Main content */}
           <div className="flex-1">
