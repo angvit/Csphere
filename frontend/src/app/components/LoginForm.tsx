@@ -56,6 +56,18 @@ export default function LoginForm() {
         },
       });
 
+      // const response = await fetch("http://localhost:5000/api/data", {
+      //   method: "POST",
+      //   credentials: "include",
+      //   body: JSON.stringify({
+      //     username: values.username,
+      //     password: values.password,
+      //   }),
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      // });
+
       const response = await client.post("/api/login", {
         body: JSON.stringify({
           username: values.username,

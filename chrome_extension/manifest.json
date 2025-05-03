@@ -3,12 +3,19 @@
   "name": "My Chrome Extension",
   "version": "1.0",
   "description": "A simple Chrome extension.",
-  "permissions": ["storage", "tabs", "activeTab", "scripting"],
+  "permissions": ["storage", "tabs", "activeTab", "scripting", "cookies"],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
     "default_icon": "images/popup.png"
-  }
+  },
+
+  "host_permissions": [
+    "http://localhost:3000/",
+    "http://127.0.0.1:3000/",
+    "http://localhost:8000/",
+    "http://127.0.0.1:8000/"
+  ]
 }
