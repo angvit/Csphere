@@ -17,25 +17,25 @@ function page() {
   const [password, setPassword] = useState("");
 
   return (
-    <div className="min-h-screen w-auto bg-gray-900 bg-gradient-to-br from-gray-900 to-gray-800 text-white flex items-center justify-center">
+    <main className="text-black">
       <Card
         style={{
           padding: "10px",
         }}
-        className="mx-auto w-[400px] bg-gray-800 border border-gray-700 shadow-md rounded-2xl p-6"
+        className="mx-auto w-[400px]  border border-black shadow-md rounded-2xl "
       >
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold mb-4">
+          <CardTitle className="text-2xl font-bold mb-4 text-black">
             Welcome Back
           </CardTitle>
-          <CardDescription className="text-gray-300 mb-4">
+          <CardDescription className=" mb-4 text-black">
             Please log in to your account
           </CardDescription>
-          <hr className="border-gray-700 mb-4" />
+          <hr className="border-black mb-4" />
         </CardHeader>
         <LoginForm />
       </Card>
-    </div>
+    </main>
   );
 }
 
