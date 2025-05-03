@@ -1,5 +1,7 @@
 import uvicorn 
-from fastapi import FastAPI, Depends, Query, HTTPException
+from fastapi import FastAPI, Depends, Query, HTTPException, Request, Header
+from sqlalchemy.orm import Session
+from uuid import UUID
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
@@ -21,7 +23,7 @@ from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
 
-from app.utils.hashing import get_password_hash, verify_password
+from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token
 
 load_dotenv()
 
@@ -81,8 +83,10 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 
 @app.post("/api/login")
-def login(user: UserSignIn, db: Session = Depends(get_db)):
-    print("User being logged in: ", user)
+def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
+
+
+
 
     if not user:
         raise HTTPException(status_code=400, detail="Invalid user data")
@@ -90,17 +94,38 @@ def login(user: UserSignIn, db: Session = Depends(get_db)):
     # Check if the user exists
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user:
+        print("User not found: ", user.username)
         raise HTTPException(status_code=400, detail="User not found")
+    
+    print("User found: ", db_user, "id of user: ", db_user.id)
 
     # Verify the password
     if not verify_password(user.password, db_user.password):
+        print("Incorrect password for user: ", user.username)
+         # If the password is incorrect, raise an HTTPException
+         # This will return a 400 status code with the detail "Incorrect password"
         raise HTTPException(status_code=400, detail="Incorrect password")
+    
+    token = create_access_token(data={"sub": str(db_user.id)})
+    print("Token created: ", token)
 
-    return {"username": db_user.username, "email": db_user.email}
+    return {"username": db_user.username, "token": token}
    
 
 @app.post("/content/saveUrl")
-def save_url(ContentFromUrl: ContentFromUrl):
+def save_url(ContentFromUrl, request: Request):
+    token = request.cookies.get("token")
+
+    print("Token from cookie:", token)
+    #decode the token to get the user id
+    user_id = None
+    if token:
+        token_data = decode_token(token)
+
+        print("Decoded token data: ", token_data)
+        user_id = token_data.username if token_data else None
+        print("User ID from token: ", user_id)
+
     url = ContentFromUrl.url
     title = ContentFromUrl.title
     

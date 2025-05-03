@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { PasswordInput } from "@/components/ui/password-input";
 import HttpClient from "@/app/classes/fetchclass";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
@@ -26,6 +27,7 @@ interface responseData {
   status?: number;
   data?: JSON;
   error?: string;
+  token?: string;
 }
 
 export default function LoginForm() {
@@ -36,6 +38,8 @@ export default function LoginForm() {
       password: "",
     },
   });
+
+  const router = useRouter();
 
   async function onSubmit(
     values: z.infer<typeof formSchema>
@@ -52,6 +56,18 @@ export default function LoginForm() {
         },
       });
 
+      // const response = await fetch("http://localhost:5000/api/data", {
+      //   method: "POST",
+      //   credentials: "include",
+      //   body: JSON.stringify({
+      //     username: values.username,
+      //     password: values.password,
+      //   }),
+      //   headers: {
+      //     "Content-Type": "application/json",
+      //   },
+      // });
+
       const response = await client.post("/api/login", {
         body: JSON.stringify({
           username: values.username,
@@ -63,10 +79,18 @@ export default function LoginForm() {
         toast.error("Login failed. Please check your credentials.");
         return;
       }
-      const data = response.json();
+      const data = await response.json();
       console.log("Login successful", data);
 
-      toast.success("Login successful!");
+      if (data.token) {
+        localStorage.setItem("cshere_token", data.token);
+      }
+
+      document.cookie = `token=${data.token}; path=/; max-age=3600`;
+
+      router.push("/home");
+
+      // toast.success("Login successful!");
     } catch (error) {
       console.error("Form submission error", error);
       toast.error("Failed to submit the form. Please try again.");
@@ -75,7 +99,7 @@ export default function LoginForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="text-black">
         <FormField
           control={form.control}
           name="username"
@@ -105,7 +129,7 @@ export default function LoginForm() {
         />
 
         <Button
-          className="bg-gray-300 hover:bg-gray-400 transition-all duration-200 text-gray-900 font-semibold py-2 px-4 rounded w-full"
+          className="bg-gray-400 hover:bg-gray-500 transition-all duration-200 text-gray-900 font-semibold py-2 px-4 rounded w-full"
           type="submit"
         >
           Submit

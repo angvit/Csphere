@@ -9,21 +9,21 @@ import {
 
 export default function page() {
   return (
-    <main>
+    <main className="text-black">
       <Card
         style={{
           padding: "20px",
         }}
-        className="mx-auto w-[400px] bg-gray-800 border border-gray-700 shadow-md rounded-2xl p-6"
+        className="mx-auto w-[400px] border-black  shadow-md rounded-2xl p-6"
       >
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold mb-4">
+          <CardTitle className="text-2xl font-bold mb-4 text-black">
             Welcome Back
           </CardTitle>
-          <CardDescription className="text-gray-300 mb-4">
+          <CardDescription className="text-black mb-4">
             Please log in to your account
           </CardDescription>
-          <hr className="border-gray-700 mb-4" />
+          <hr className="border-black mb-4" />
         </CardHeader>
         <SignupForm />
       </Card>
