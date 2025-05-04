@@ -97,7 +97,7 @@ export default function SignupForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="text-black">
         <FormField
           control={form.control}
           name="username"
@@ -171,7 +171,7 @@ export default function SignupForm() {
         />
 
         <Button
-          className="bg-gray-300 hover:bg-gray-400 transition-all duration-200 text-gray-900 font-semibold py-2 px-4 rounded w-full"
+          className="bg-[#202A29] hover:bg-gray-600 transition-all duration-200 text-white font-semibold py-2 px-4 rounded w-full"
           type="submit"
         >
           Submit

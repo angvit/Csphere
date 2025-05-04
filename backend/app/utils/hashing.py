@@ -1,9 +1,20 @@
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from dotenv import load_dotenv
-import os
+from datetime import datetime, timedelta
+from fastapi import Request, Depends, HTTPException, status
+from typing import Annotated
+from uuid import UUID
+
+from jose import JWTError
+
+import jwt
+
 
 from pydantic import BaseModel
+import os
+from dotenv import load_dotenv
+
+
 
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
@@ -18,7 +29,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    username: str | None = None
+    user_id: UUID | None = None
 
 
 class User(BaseModel):
@@ -46,19 +57,48 @@ def get_password_hash(password):
     return pwd_context.hash(password)
 
 
-# def authenticate_user(fake_db, username: str, password: str):
-#     user = get_user(fake_db, username)
-#     if not user:
-#         return False
-#     if not verify_password(password, user.hashed_password):
-#         return False
-#     return user
+def create_access_token(data: dict, expires_delta=None):
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.utcnow() + expires_delta
+    else:
+        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    if "sub" not in to_encode:
+        raise ValueError("Token data must include 'sub' key for username")
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return encoded_jwt
 
 
-# def authenticate_user(fake_db, username: str, password: str):
-#     user = get_user(fake_db, username)
-#     if not user:
-#         return False
-#     if not verify_password(password, user.hashed_password):
-#         return False
-#     return user
+def decode_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id_str = payload.get("sub")
+        if user_id_str is None:
+            return None
+        return TokenData(user_id=UUID(user_id_str))
+    except (JWTError, ValueError):
+        return None
+
+
+def get_current_user_id(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id: str = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        return UUID(user_id)
+    except JWTError:
+        raise credentials_exception
+
+    # You can fetch the user from your DB here, but for example purposes:
+    
+
+  
+    
+    return True

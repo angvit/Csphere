@@ -1,10 +1,53 @@
+@import url("https://fonts.googleapis.com/css2?family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
+@theme {
+  --font-ptserif: "PT+Serif";
+}
+
 main {
-  @apply min-h-screen w-auto bg-gray-900 bg-gradient-to-br from-gray-900 to-gray-800 text-white flex items-center justify-center;
+  @apply min-h-screen w-auto bg-gray-300 bg-gradient-to-br from-gray-300 to-gray-200 text-white flex items-center justify-center;
 }
 
 form {
-  @apply space-y-6 p-6 rounded-2xl w-full max-w-lg bg-gray-800;
+  @apply space-y-6 p-6 rounded-2xl w-full max-w-lg;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply text-[#202A29];
+}
+
+button {
+  @apply cursor-pointer;
+}
+
+.pt-serif-regular {
+  font-family: "PT Serif", serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.pt-serif-bold {
+  font-family: "PT Serif", serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.pt-serif-regular-italic {
+  font-family: "PT Serif", serif;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.pt-serif-bold-italic {
+  font-family: "PT Serif", serif;
+  font-weight: 700;
+  font-style: italic;
 }
