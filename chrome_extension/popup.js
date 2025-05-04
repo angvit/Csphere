@@ -106,6 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
           const response = await fetch("http://127.0.0.1:8000/content/save", {
             method: "POST",
+            credentials: "include", // store cookies in browser if server sends them
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
