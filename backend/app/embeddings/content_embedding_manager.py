@@ -1,15 +1,17 @@
-from sentence_transformers import SentenceTransformer
-from app.data_models.content_ai import ContentAI
-from app.data_models.content import Content
+import os
+import re
+import requests
+
+from openai import OpenAI
+from uuid import UUID
+from bs4 import BeautifulSoup
+from readability import Document
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-from transformers import pipeline
-from readability import Document
-from bs4 import BeautifulSoup
 from sqlalchemy import select
-from uuid import UUID
-import requests
-import re
+
+from app.data_models.content import Content
+from app.data_models.content_ai import ContentAI
 
 
 class ContentEmbeddingManager:
@@ -22,29 +24,67 @@ class ContentEmbeddingManager:
         - Handling database interactions for both `Content` and `ContentAI` models
     '''
 
-    def __init__(
-            self, 
-            db, 
-            embedding_model_name='sentence-transformers/all-MiniLM-L6-v2', 
-            summary_model_name='google/flan-t5-base' # We can always change the model
-    ):
+    def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo'):
         self.db = db
-        self.embedding_model = SentenceTransformer(embedding_model_name)
-        # self.summary_model = pipeline("summarization", model=summary_model_name)
-        self.summary_model = pipeline(
-            "text2text-generation",
-            model=summary_model_name,
-            tokenizer=summary_model_name,
-            device_map="auto",
-        )
+        self.embedding_model = embedding_model_name
+        self.embedding_model_name = embedding_model_name
+        self.summary_model = summary_model_name
+        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
     ###############################################################################
     # METHODS
     ###############################################################################
 
+
+    def process_content(self, content: Content) -> ContentAI | None:
+        '''
+        Inserts content into the database if it doesn't exist, summarizes it, and embeds the summary
+        If any exceptions occur, the transaction will be rolled back
+        '''
+        try:
+            if self._content_ai_exists(content.content_id):
+                print(f"Embedding already exists for content ID: {content.content_id}")
+                return None
+
+            # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
+            summary_input = self._enrich_content(content.url, content.content_id, self.db)
+            if not summary_input:
+                summary_input = content.title or "No title avaliable"
+
+            # Use LLM to summarize the content
+            summary = self._summarize_content(summary_input) 
+            print(f"Generated summary: {summary}")
+            
+            if not summary: 
+                raise Exception("Failed to summarize content and/or there is no title")
+
+            # Embed the summary associated with the content ORM
+            embedding = self._generate_embedding(summary)
+            if not embedding: 
+                raise Exception("Failed to generate embedding") 
+
+            # Insert the summary/embedding data into the ContentAI table
+            content_ai = ContentAI(
+                content_id=content.content_id,
+                ai_summary=summary,
+                embedding=embedding
+            )
+
+            self.db.add(content_ai)
+            self.db.commit()
+            print(f"ContentAI created for content_id={content.content_id}")
+            return content_ai
+        
+        
+        except Exception as e:
+            self.db.rollback()
+            print(f"[ContentEmbeddingManager] failed to process content: {e}")
+            return None
+        
+
     def query_similar_content(self, query, user_id:UUID, start_date=None,end_date=None, limit=3):
-        ''' Generates a query embedding and searches the db for related content '''
+        ''' Generates a query embedding and vector search the db for related content '''
         
         query_embedding = self.embedding_model.encode(query["semantic_query"]) 
 
@@ -66,117 +106,59 @@ class ContentEmbeddingManager:
         return results
 
 
-    def insert_embedded_content(self, content_data):
-        '''
-        Inserts content into the database if it doesn't exist, summarizes it, and embeds the summary
-        If any exceptions occur, the transaction will be rolled back
-        '''
-        try:
-
-            # Check if the url exists in the db already
-            url = content_data.get("url")
-            if self._url_exists(url):
-                return None, None
-            
-            # Add content data to the db
-            content = self._insert_db(Content, content_data)
-            if content is None: 
-                raise Exception("Failed to insert content into the database")
-
-            # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
-            summary_input = self._enrich_content(url, content.content_id, self.db)
-            if summary_input is None:
-                summary_input = content_data.get("title")
-
-            # Use an LLM to summarize the content. If this fails, default to the title for the summary
-            ai_summary = self._summarize_content(summary_input) 
-            summary = ai_summary if ai_summary else summary_input
-            if summary is None: 
-                raise Exception("Failed to summarize content and/or there is no title")
-
-            # Embed the summary associated with the content ORM
-            embedding = self.generate_embedding(summary)
-            if embedding is None: 
-                raise Exception("Failed to generate embedding") 
-
-            # Insert the embedding data into the db
-            content_ai_data = {
-                "content_id": content.content_id, 
-                "ai_summary": summary, 
-                "embedding": embedding
-            }
-            content_ai = self._insert_db(ContentAI, content_ai_data)
-            if content_ai is None: 
-                raise Exception("Failed to insert embedding data") 
-            
-            # If all steps succeed, then commit transaction to db
-            self.db.commit()
-
-            print(
-                f"Created Content ID: {content.content_id},\n"
-                f"Content AI ID: {content_ai.content_id},\n"
-                f"Embedding (first 10): {content_ai.embedding[:10]},\n"
-                f"Summary that was embedded {summary}\n\n"
-            )
-
-            return content, content_ai
-        
-        except (SQLAlchemyError, Exception) as e:
-            self.db.rollback()
-            print(f"Error occured in the insert_embedded_content function. Nothing commited to database: {e}")
-            return None, None
-
-
-    def generate_embedding(self, text):
-        ''' Generates an embedding for a piece of text using a Sentence Transformer embedding model '''
-
-        try:
-            return self.embedding_model.encode(text)
-        except Exception as e: 
-            print(f"An unexpected error occurred during embedding: {e}")
-            return None
-
-
     ###############################################################################
     # HELPER METHODS
     ###############################################################################
 
-    def _fetch_html(self, url: str) -> str:
-        resp = requests.get(url, timeout=5)
-        return resp.text if resp.status_code == 200 else ""
-    
 
-    def _clean_body(self, text:str, max_chars=1000):    
+    def _enrich_content(self, url: str, content_id: UUID, db: Session):
+        try:
+            response = requests.get(url, timeout=5)
+            if response.status_code != 200:
+                print(f"Error: {response.status_code}: failed get request for {url}, defaulting to title for summarization input")
+                return None
+            
+            raw_html = response.text
+            metadata = self._extract_metadata_and_body(raw_html)
+            metadata["body_text"] = self._clean_text(metadata["body_text"])
+
+            summary_input = self._build_summary_input(metadata)
+            return summary_input    
+
+        except Exception as e:
+            print(f"Error enriching content from {url}: {e}")
+            return None
+
+
+    def _generate_embedding(self, text):
+        try:
+            response = self.openai_client.embeddings.create(
+                model=self.embedding_model,
+                input=text
+            )
+            return response.data[0].embedding
+        except Exception as e:
+            print(f"OpenAI embedding failed: {e}")
+            return None
+        
+
+    def _content_ai_exists(self, content_id: UUID) -> bool:
+        return self.db.query(ContentAI).filter_by(content_id=content_id).first() is not None
+
+
+    def _clean_text(self, text:str, max_chars=1000) -> str:    
         lines = text.split("\n")
         cleaned = []
 
         for line in lines:
             line = line.strip()
-            if not line: 
-                continue
-            if re.search(r"(©|\ball rights\b|cookie|advertisement)", line, re.I):
+            if not line or re.search(r"(©|\ball rights\b|cookie|advertisement)", line, re.I):
                 continue
             cleaned.append(line)
+
         joined = " ".join(cleaned)
         return joined[:max_chars]
-    
-
-    def _enrich_content(self, url: str, content_id: UUID, db: Session):
-        response = requests.get(url, timeout=5)
-        if response.status_code != 200:
-            print(f"Error: {response.status_code}: failed get request for {url}, defaulting to title for summarization input")
-            return None
-        
-        raw_html = self._fetch_html(url)
-        metadata = self._extract_metadata_and_body(raw_html)
-        metadata["body_text"] = self._clean_body(metadata["body_text"])
-
-        summary_input = self._build_summary_input(metadata)
-
-        print(f"THE SUMMARY INPUT AFTER ENRICHING IS = {summary_input}")
-
-        return summary_input
-
+            
 
     def _extract_metadata_and_body(self, html: str) -> dict:
         soup = BeautifulSoup(html, "html.parser")
@@ -197,7 +179,6 @@ class ContentEmbeddingManager:
         # html snippet of main content body with boilerplate (nav bars, ads, footers) removed
         body = BeautifulSoup(doc.summary(), "html.parser").get_text()
 
-        # We m
         print(f"The title from soup is: {title}")
 
         return {
@@ -209,11 +190,7 @@ class ContentEmbeddingManager:
 
 
     def _build_summary_input(self, metadata: dict) -> str:
-        input_parts = [
-            "You are a technical editor. In **two sentences**, summarize **only** the key idea of this article. "
-            "Drop any boilerplate, ads, copyright notices, or tangential details.\n\n"
-        ]
-        # input_parts = []
+        input_parts = []
 
         if metadata["title"]:
             input_parts.append(f"Title: {metadata['title']}")
@@ -224,15 +201,6 @@ class ContentEmbeddingManager:
         if metadata["body_text"]:
             input_parts.append(f"Content:\n\n{metadata['body_text']}")
         
-        '''
-        Content snippet seems to be messing up the summarizer
-        The content may not be relavant 
-        Example:
-            for https://www.lancasterpuppies.com/puppy-search/state/NY?sortBy=prod_all_listings
-            Content snippet is copyright info
-            and the summary that gets embeeded is: site logo, Web Layout, and all pictures and text are copyright 2014-2024 by PMG US, LLC.
-        Commenting put the content snippet seems to help
-        '''
         # snippet = metadata["body_text"][:500]
         # input_parts.append(f"Content Snippet: {snippet}")
         print("\n".join(input_parts))
@@ -265,34 +233,58 @@ class ContentEmbeddingManager:
         return False
     
     
+    # def _summarize_content(self, summary_input):
+    #     ''' Uses a summary model to get a more detailed summary for the content embeddings '''
+        
+    #     # Debug (TO REMOVE)
+    #     print(f"The summary input being passed to summary model is: {summary_input}")
+
+    #     # Check if there is input first
+    #     if summary_input is None:
+    #         return None
+
+    #     try:
+    #         input_length = len(self.embedding_model.tokenizer.encode(summary_input)) # Get actual token length
+    #         max_length = int(input_length * 0.6)  # Set the max length to about 60 % of input (we can change)
+    #         max_length = max(30, min(max_length, 150)) # Ensure the max length is within a reasonable range
+    #         summary = self.summary_model(
+    #             summary_input, 
+    #             max_length=max_length, 
+    #             num_beams=4,
+    #             no_repeat_ngram_size=3,
+    #             repetition_penalty=2.0,
+    #             early_stopping=True,
+    #             min_length=15, 
+    #             top_k=50,
+    #             top_p=0.9,
+    #             temperature=0.8
+    #         )[0]['generated_text']
+    #         return summary
+        
+    #     except Exception as e:
+    #         print(f"An error occurred during summarization: {e}")
+    #         return 
+    
+    
     def _summarize_content(self, summary_input):
-        ''' Uses a summary model to get a more detailed summary for the content embeddings '''
-        
-        # Debug (TO REMOVE)
-        print(f"The summary input being passed to summary model is: {summary_input}")
-
-        # Check if there is input first
-        if summary_input is None:
-            return None
-
         try:
-            input_length = len(self.embedding_model.tokenizer.encode(summary_input)) # Get actual token length
-            max_length = int(input_length * 0.6)  # Set the max length to about 60 % of input (we can change)
-            max_length = max(30, min(max_length, 150)) # Ensure the max length is within a reasonable range
-            summary = self.summary_model(
-                summary_input, 
-                max_length=max_length, 
-                num_beams=4,
-                no_repeat_ngram_size=3,
-                repetition_penalty=2.0,
-                early_stopping=True,
-                min_length=15, 
-                top_k=50,
-                top_p=0.9,
-                temperature=0.8
-            )[0]['generated_text']
-            return summary
-        
+            response = self.openai_client.chat.completions.create(
+                model=self.summary_model,
+                messages=[
+                    {
+                        "role": "system", 
+                        "content": (
+                            "You are a concise technical summarizer. "
+                            "Summarize the article in exactly **2 short sentences**. "
+                            "Focus only on the main point. Ignore ads, disclaimers, and unrelated text."
+                        )
+                    },
+                    {"role": "user", "content": summary_input},
+                ],
+                temperature=0.7,
+                max_tokens=150,
+            )
+            return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"An error occurred during summarization: {e}")
+            print(f"OpenAI summarization failed: {e}")
             return None
