@@ -107,27 +107,6 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
     return {"username": db_user.username, "token": token}
    
 
-@app.post("/content/saveUrl")
-def save_url(ContentFromUrl, request: Request):
-    token = request.cookies.get("token")
-
-    print("Token from cookie:", token)
-    #decode the token to get the user id
-    user_id = None
-    if token:
-        token_data = decode_token(token)
-
-        print("Decoded token data: ", token_data)
-        user_id = token_data.username if token_data else None
-        print("User ID from token: ", user_id)
-
-    url = ContentFromUrl.url
-    title = ContentFromUrl.title
-    
-    print("URL being saved: ", url ,"\n Title: ", title)
-    return {"url": "saved", "title": title}
-
-
 @app.get("/search")
 def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db)):
     preprocessor = QueryPreprocessor()
@@ -156,6 +135,7 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
     print("Token from header:", token)
     if not token:
         raise HTTPException(status_code=401, detail="Token not provided")
+    
     #decode the token to get the user id
     data = decode_token(token) 
     print("Decoded token data: ", data)
@@ -165,24 +145,26 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
 
     print("User ID from token: ", user_id)
     print("Content being saved: ", content)
-    new_content = Content(**content.model_dump())
-    db.add(new_content)
-    print("Session state before commit:", db.is_active)  # Check if session is active
-
-    db.commit()
-    db.refresh(new_content)
-    
-    user_id = token_data.username # this is the user_id (UUID as string)
-    print("User ID from token: ", user_id)
 
     # Check if content already exists globally
     existing_content = db.query(Content).filter(Content.url == content.url).first()
 
     if not existing_content:
+        print("New Content link")
         new_content = Content(**content.model_dump())
         db.add(new_content)
-        db.flush()
+        db.commit()
+        db.flush() # generate content_id
+
+        # only embed if new content
+        embedding_manager = ContentEmbeddingManager(db)
+        content_ai = embedding_manager.process_content(new_content)
+        if not content_ai:
+            print("Embedding generation failed or skipped.")
+        else:
+            print("Summary Generated:", content_ai.ai_summary)
     else:
+        print("Existing content link")
         new_content = existing_content
 
     # Check if this user already saved it
@@ -191,19 +173,9 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
         ContentItem.content_id == new_content.content_id
     ).first()
 
-    if existing_item:
-        print("User already saved this content.")
-        return new_content
-
-    # Create ContentItem link
-    content_item = ContentItem(
-        user_id=user_id,
-        content_id=new_content.content_id
-    )
-
-    db.add(content_item)
-    db.commit()
-    db.refresh(new_content)
+    if not existing_item:
+        db.add(ContentItem(user_id=user_id, content_id=new_content.content_id))
+        db.commit()
 
     print("Successfully saved content for user.")
     return new_content
