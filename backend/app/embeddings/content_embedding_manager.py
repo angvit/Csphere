@@ -216,11 +216,11 @@ class ContentEmbeddingManager:
         # input_parts = []
 
         if metadata["title"]:
-            input_parts.append(f"Title: {metadata["title"]}")
+            input_parts.append(f"Title: {metadata['title']}")
         if metadata["description"]:
-            input_parts.append(f"Description: {metadata["description"]}")
+            input_parts.append(f"Description: {metadata['description']}")
         if metadata["tags"]:
-            input_parts.append(f"Tags: {", ".join(metadata["tags"])}")
+            input_parts.append(f"Tags: {', '.join(metadata['tags'])}")
         if metadata["body_text"]:
             input_parts.append(f"Content:\n\n{metadata['body_text']}")
         

@@ -151,13 +151,26 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
 
 
 @app.post("/content/save", response_model=ContentRead)
-def save_content(content: ContentCreate, db: Session = Depends(get_db), token: str = Header(...)):
-    print("Content being saved: ", content)
-
-    # Decode token to get user_id (from `sub`)
-    token_data = decode_token(token)
-    if not token_data or not token_data.username:
+def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
+    token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
+    print("Token from header:", token)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token not provided")
+    #decode the token to get the user id
+    data = decode_token(token) 
+    print("Decoded token data: ", data)
+    if not data:
         raise HTTPException(status_code=401, detail="Invalid token")
+    user_id = data.username 
+
+    print("User ID from token: ", user_id)
+    print("Content being saved: ", content)
+    new_content = Content(**content.model_dump())
+    db.add(new_content)
+    print("Session state before commit:", db.is_active)  # Check if session is active
+
+    db.commit()
+    db.refresh(new_content)
     
     user_id = token_data.username # this is the user_id (UUID as string)
     print("User ID from token: ", user_id)
