@@ -9,4 +9,4 @@ class ContentAI(Base):
 
     content_id = Column(UUID(as_uuid=True), ForeignKey("content.content_id"), primary_key=True)
     ai_summary = Column(String, nullable=True)
-    embedding = Column(Vector(dim=384), nullable=True)
+    embedding = Column(Vector(1536), nullable=True)
