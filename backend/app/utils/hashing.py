@@ -77,21 +77,12 @@ def create_access_token(data: dict, expires_delta=None):
 
 def decode_token(token: str):
     try:
-<<<<<<< HEAD
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id_str = payload.get("sub")
-        if user_id_str is None:
-            return None
-        return TokenData(user_id=UUID(user_id_str))
-    except (JWTError, ValueError):
-=======
         payload = jwt.decode(token, "512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf", algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise KeyError("sub")
         token_data = TokenData(username=username)
     except KeyError:
->>>>>>> ae1b2a97a1f3651e54168694a12dd992ef3b6960
         return None
 
 
