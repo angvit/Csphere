@@ -127,28 +127,7 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
         }
         for content_ai, content in results
     ]
-# @app.post("/content/save", response_model=ContentRead)
-# def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
-#     token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
-#     print("Token from header on line 133:", token)
-#     if not token:
-#         raise HTTPException(status_code=401, detail="Token not provided")
-#     #decode the token to get the user id
-#     data = decode_token(token) 
-#     print("Decoded token data: ", data)
-#     if not data:
-#         raise HTTPException(status_code=401, detail="Invalid token")
-#     user_id = data.username 
-#     #2c28953c-7679-4c83-8d28-5acfca1791d2
-#     print("User ID from token: ", user_id)
-#     print("Content being saved: ", content)
-#     new_content = Content(**content.model_dump())
-#     db.add(new_content)
-#     print("Session state before commit:", db.is_active)  # Check if session is active
 
-#     db.commit()
-#     db.refresh(new_content)
-    
 #     # create ai summarization immeadietly
 #     # enrich_content(content.url, new_content.content_id, db)
 #     print("cool4")
