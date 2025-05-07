@@ -127,83 +127,83 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
         }
         for content_ai, content in results
     ]
-@app.post("/content/save", response_model=ContentRead)
-def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
-    token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
-    print("Token from header on line 133:", token)
-    if not token:
-        raise HTTPException(status_code=401, detail="Token not provided")
-    #decode the token to get the user id
-    data = decode_token(token) 
-    print("Decoded token data: ", data)
-    if not data:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    user_id = data.username 
-    #2c28953c-7679-4c83-8d28-5acfca1791d2
-    print("User ID from token: ", user_id)
-    print("Content being saved: ", content)
-    new_content = Content(**content.model_dump())
-    db.add(new_content)
-    print("Session state before commit:", db.is_active)  # Check if session is active
-
-    db.commit()
-    db.refresh(new_content)
-    
-    # create ai summarization immeadietly
-    # enrich_content(content.url, new_content.content_id, db)
-    print("cool4")
-    return new_content
-
 # @app.post("/content/save", response_model=ContentRead)
 # def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
 #     token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
-#     print("Token from header:", token)
+#     print("Token from header on line 133:", token)
 #     if not token:
 #         raise HTTPException(status_code=401, detail="Token not provided")
-    
 #     #decode the token to get the user id
 #     data = decode_token(token) 
 #     print("Decoded token data: ", data)
 #     if not data:
 #         raise HTTPException(status_code=401, detail="Invalid token")
 #     user_id = data.username 
-
+#     #2c28953c-7679-4c83-8d28-5acfca1791d2
 #     print("User ID from token: ", user_id)
 #     print("Content being saved: ", content)
+#     new_content = Content(**content.model_dump())
+#     db.add(new_content)
+#     print("Session state before commit:", db.is_active)  # Check if session is active
 
-#     # Check if content already exists globally
-#     existing_content = db.query(Content).filter(Content.url == content.url).first()
-
-#     if not existing_content:
-#         print("New Content link")
-#         new_content = Content(**content.model_dump())
-#         db.add(new_content)
-#         db.commit()
-#         db.flush() # generate content_id
-
-#         # only embed if new content
-#         embedding_manager = ContentEmbeddingManager(db)
-#         content_ai = embedding_manager.process_content(new_content)
-#         if not content_ai:
-#             print("Embedding generation failed or skipped.")
-#         else:
-#             print("Summary Generated:", content_ai.ai_summary)
-#     else:
-#         print("Existing content link")
-#         new_content = existing_content
-
-#     # Check if this user already saved it
-#     existing_item = db.query(ContentItem).filter(
-#         ContentItem.user_id == user_id,
-#         ContentItem.content_id == new_content.content_id
-#     ).first()
-
-#     if not existing_item:
-#         db.add(ContentItem(user_id=user_id, content_id=new_content.content_id))
-#         db.commit()
-
-#     print("Successfully saved content for user.")
+#     db.commit()
+#     db.refresh(new_content)
+    
+#     # create ai summarization immeadietly
+#     # enrich_content(content.url, new_content.content_id, db)
+#     print("cool4")
 #     return new_content
+
+@app.post("/content/save", response_model=ContentRead)
+def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
+    token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
+    print("Token from header:", token)
+    if not token:
+        raise HTTPException(status_code=401, detail="Token not provided")
+    
+    #decode the token to get the user id
+    data = decode_token(token) 
+    print("Decoded token data: ", data)
+    if not data:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user_id = data.username 
+
+    print("User ID from token: ", user_id)
+    print("Content being saved: ", content)
+
+    # Check if content already exists globally
+    existing_content = db.query(Content).filter(Content.url == content.url).first()
+
+    if not existing_content:
+        print("New Content link")
+        new_content = Content(**content.model_dump())
+        db.add(new_content)
+        db.commit()
+        db.flush() # generate content_id
+
+        # only embed if new content
+        embedding_manager = ContentEmbeddingManager(db)
+        content_ai = embedding_manager.process_content(new_content)
+        if not content_ai:
+            print("Embedding generation failed or skipped.")
+        else:
+            print("Summary Generated:", content_ai.ai_summary)
+    else:
+        print("Existing content link")
+        new_content = existing_content
+
+    # Check if this user already saved it
+    existing_item = db.query(ContentItem).filter(
+        ContentItem.user_id == user_id,
+        ContentItem.content_id == new_content.content_id
+    ).first()
+
+    if not existing_item:
+        db.add(ContentItem(user_id=user_id, content_id=new_content.content_id))
+        db.commit()
+
+    print("Successfully saved content for user.")
+    return new_content
 
 
 # gets all content for a specific user 

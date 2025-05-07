@@ -1,9 +1,8 @@
 from passlib.context import CryptContext
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
-from fastapi import Request, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status
 from typing import Annotated
-from uuid import UUID
 
 from jose import JWTError
 
@@ -34,7 +33,7 @@ class Token(BaseModel):
 
 
 class TokenData(BaseModel):
-    user_id: UUID | None = None
+    username: str | None = None
 
 
 class User(BaseModel):
@@ -79,16 +78,15 @@ def decode_token(token: str):
     try:
         payload = jwt.decode(token, "512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf", algorithms=[ALGORITHM])
         username: str = payload.get("sub")
-        print("Decoded token payload: ", payload)
         if username is None:
             raise KeyError("sub")
         token_data = TokenData(username=username)
-        return token_data
     except KeyError:
         return None
+    return token_data
 
 
-def get_current_user_id(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:
+def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -96,10 +94,10 @@ def get_current_user_id(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        user_id: str = payload.get("sub")
-        if user_id is None:
+        username: str = payload.get("sub")
+        if username is None:
             raise credentials_exception
-        return UUID(user_id)
+        token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
 
