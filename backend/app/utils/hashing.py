@@ -79,9 +79,11 @@ def decode_token(token: str):
     try:
         payload = jwt.decode(token, "512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf", algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        print("Decoded token payload: ", payload)
         if username is None:
             raise KeyError("sub")
         token_data = TokenData(username=username)
+        return token_data
     except KeyError:
         return None
 
