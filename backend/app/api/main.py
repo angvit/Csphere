@@ -108,8 +108,8 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
     return {"username": db_user.username, "token": token}
    
 
-@app.get("/search")
-def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db)):
+@app.get("/search", response_model=list[ContentWithSummary])
+def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session = Depends(get_db)):
     preprocessor = QueryPreprocessor()
     parsed_query = preprocessor.preprocess_query(query)
 
@@ -120,13 +120,15 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
     )
 
     return [
-        {
-            "content_id": content_ai.content_id,
-            "title": content.title,
-            "ai_summary": content_ai.ai_summary,
-            "url": content.url
-        }
-        for content_ai, content in results
+    {
+        "content_id": content_ai.content_id,
+        "title": content.title,
+        "url": content.url,
+        "source": content.source,
+        "first_saved_at": content.first_saved_at,
+        "ai_summary": content_ai.ai_summary,
+    }
+    for content_ai, content in results
     ]
 
 
