@@ -1,5 +1,5 @@
 import { Search } from "lucide-react";
-import BookmarkSearch from "@/components/bookmark-search";
+import BookmarksPage from "@/components/BookmarksPage";
 import CategoryFilter from "@/components/category-filter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,7 +34,7 @@ function page() {
                 </Button>
               </div>
             </div>
-            <BookmarkSearch />
+            <BookmarksPage />
           </div>
         </div>
       </main>
