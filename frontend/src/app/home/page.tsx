@@ -1,9 +1,7 @@
 import { Search } from "lucide-react";
-import BookmarksPage from "@/components/BookmarksPage";
-import CategoryFilter from "@/components/category-filter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import UserProfileSection from "@/components/user-profile-section";
+import BookmarksPage from "@/components/BookmarksPage";
 
 function page() {
   return (
