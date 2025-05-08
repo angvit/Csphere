@@ -160,12 +160,12 @@ export default async function RootLayout({ children }) {
         </header>
         {children}
 
-        <footer className=" text-white  mt-8 absolute bottom-0 w-full ">
+        {/* <footer className=" text-white  mt-8 absolute bottom-0 w-full ">
           <div className="  text-center">
             <p>&copy; 2025 Cphere. All rights reserved.</p>
           </div>
-        </footer>
-        <Toaster className="bg-white text-red-200" />
+        </footer> */}
+        {/* <Toaster className="bg-white text-red-200" /> */}
       </body>
     </html>
   );

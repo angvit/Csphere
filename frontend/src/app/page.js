@@ -8,7 +8,9 @@ export default function Home() {
           <section className="max-w-3xl">
             <h1 className="text-5xl md:text-6xl pt-serif-regular  text-center  text-white  mb-8">
               Save and revisit your favorite bookmarks with{" "}
-              <span className="block mt-2 font-bold italic text-6xl">CSphere</span>
+              <span className="block mt-2 font-bold italic text-6xl">
+                CSphere
+              </span>
             </h1>
 
             <p className="text-2xl text-center pt-serif-semibold text-gray-300 mb-4 max-w-2xl mx-auto">
@@ -26,6 +28,7 @@ export default function Home() {
           </section>
         </div>
       </main>
+      <section className="w-full bg-black h-[800px]"></section>
     </div>
   );
 }
