@@ -83,10 +83,13 @@ class ContentEmbeddingManager:
             return None
         
 
-    def query_similar_content(self, query, user_id:UUID, start_date=None,end_date=None, limit=3):
+    def query_similar_content(self, query, user_id:UUID, start_date=None,end_date=None, limit=5):
         ''' Generates a query embedding and vector search the db for related content '''
         
-        query_embedding = self.embedding_model.encode(query["semantic_query"]) 
+        query_embedding = self.openai_client.embeddings.create(
+            model=self.embedding_model,
+            input=query["semantic_query"]
+        ).data[0].embedding
 
         results = (
             self.db.query(ContentAI, Content)

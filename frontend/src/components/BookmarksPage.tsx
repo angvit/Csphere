@@ -1,4 +1,3 @@
-// components/BookmarksPage.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -18,7 +17,11 @@ export default function BookmarksPage() {
     if (!token) return;
 
     try {
-      const res = await fetch(`http://127.0.0.1:8000/content?query=${query}`, {
+      const url = query.trim()
+        ? `http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}`
+        : `http://127.0.0.1:8000/content`;
+
+      const res = await fetch(url, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -34,7 +37,7 @@ export default function BookmarksPage() {
   };
 
   useEffect(() => {
-    fetchBookmarks();
+    fetchBookmarks(); // calls /content on initial load
   }, []);
 
   return (
