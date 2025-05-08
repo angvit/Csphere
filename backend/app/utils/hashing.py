@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from typing import Annotated
+from uuid import UUID
 
 from jose import JWTError
 
@@ -86,7 +87,7 @@ def decode_token(token: str):
     return token_data
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+def get_current_user_id(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -94,10 +95,13 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        user_id: str = payload.get("sub")
+        print("Decoded token payload:", payload)
+        print("User ID extracted from token:", user_id)
+        if user_id is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
+        # token_data = TokenData(username=username)
+        return UUID(user_id)
     except JWTError:
         raise credentials_exception
 

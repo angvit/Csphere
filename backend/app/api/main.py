@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from uuid import uuid4
 from uuid import UUID
@@ -16,6 +16,7 @@ import os
 from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
+from app.data_models.content_ai import ContentAI
 from app.schemas.content import ContentCreate, ContentRead
 from app.schemas.user import UserCreate, UserSignIn
 from app.utils.preprocessor import QueryPreprocessor
@@ -23,7 +24,7 @@ from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
 
-from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token
+from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
 
 load_dotenv()
 
@@ -128,10 +129,6 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
         for content_ai, content in results
     ]
 
-#     # create ai summarization immeadietly
-#     # enrich_content(content.url, new_content.content_id, db)
-#     print("cool4")
-#     return new_content
 
 @app.post("/content/save", response_model=ContentRead)
 def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
@@ -187,8 +184,21 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
 
 # gets all content for a specific user 
 @app.get("/content", response_model=list[ContentRead])
-def get_user_content(user_id: UUID = Query(...), db: Session = Depends(get_db)):
-    return db.query(Content).filter(Content.user_id == user_id).all()
+def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    print(f"Fetching content for user_id: {user_id}")
+    
+    # Join ContentItem with Content and ContentAI
+    results = (
+        db.query(Content)
+        .join(ContentItem, Content.content_id == ContentItem.content_id)
+        .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .filter(ContentItem.user_id == user_id)
+        .options(joinedload(Content.content_ai))  
+        .all()
+    )
+    
+    print(f"Number of content items found: {len(results)}")
+    return results
 
 
 # gets a single piece of content for a specific user
