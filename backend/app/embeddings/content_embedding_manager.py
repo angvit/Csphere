@@ -184,7 +184,7 @@ class ContentEmbeddingManager:
         return {
             "title": title,
             "description": description,
-            "tags": tags,
+            "tags": tags,   
             "body_text": body.strip()
         }
 

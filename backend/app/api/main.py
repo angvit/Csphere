@@ -17,7 +17,7 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
-from app.schemas.content import ContentCreate, ContentRead
+from app.schemas.content import ContentCreate, ContentWithSummary
 from app.schemas.user import UserCreate, UserSignIn
 from app.utils.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
@@ -130,7 +130,7 @@ def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db))
     ]
 
 
-@app.post("/content/save", response_model=ContentRead)
+@app.post("/content/save", response_model=ContentWithSummary)
 def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
     token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
     print("Token from header:", token)
@@ -152,14 +152,15 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
 
     if not existing_content:
         print("New Content link")
-        new_content = Content(**content.model_dump())
+        new_content = Content(**content.model_dump(), user_id=user_id)
         db.add(new_content)
-        db.commit()
         db.flush() # generate content_id
 
         # only embed if new content
         embedding_manager = ContentEmbeddingManager(db)
         content_ai = embedding_manager.process_content(new_content)
+        db.commit()
+
         if not content_ai:
             print("Embedding generation failed or skipped.")
         else:
@@ -167,6 +168,7 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
     else:
         print("Existing content link")
         new_content = existing_content
+        content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
 
     # Check if this user already saved it
     existing_item = db.query(ContentItem).filter(
@@ -179,30 +181,47 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
         db.commit()
 
     print("Successfully saved content for user.")
-    return new_content
+    return ContentWithSummary(
+        content_id=new_content.content_id,
+        url=new_content.url,
+        title=new_content.title,
+        source=new_content.source,
+        first_saved_at=new_content.first_saved_at,
+        ai_summary=content_ai.ai_summary if content_ai else None
+    )
 
 
 # gets all content for a specific user 
-@app.get("/content", response_model=list[ContentRead])
+@app.get("/content", response_model=list[ContentWithSummary])
 def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     print(f"Fetching content for user_id: {user_id}")
     
-    # Join ContentItem with Content and ContentAI
     results = (
-        db.query(Content)
-        .join(ContentItem, Content.content_id == ContentItem.content_id)
-        .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
-        .filter(ContentItem.user_id == user_id)
-        .options(joinedload(Content.content_ai))  
+        db.query(Content, ContentAI.ai_summary)
+        .join(ContentAI, Content.content_id == ContentAI.content_id)
+        .filter(Content.user_id == user_id)
         .all()
     )
-    
-    print(f"Number of content items found: {len(results)}")
-    return results
+
+    print(f"Total results found: {len(results)}")
+
+    response = [
+        ContentWithSummary(
+            content_id=content.content_id,
+            url=content.url,
+            title=content.title,
+            source=content.source,
+            first_saved_at=content.first_saved_at,
+            ai_summary=ai_summary
+        )
+        for content, ai_summary in results
+    ]
+
+    return response
 
 
 # gets a single piece of content for a specific user
-@app.get("/content/{content_id}", response_model=ContentRead)
+@app.get("/content/{content_id}", response_model=ContentWithSummary)
 def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session = Depends(get_db)):
     content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
 

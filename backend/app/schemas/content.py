@@ -1,15 +1,20 @@
 from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
+from datetime import datetime
 
 class ContentCreate(BaseModel):
     url: str
-    title: Optional[str] = None
-    source: Optional[str] = None
+    title: Optional[str]
+    source: Optional[str]
 
-
-class ContentRead(ContentCreate):
+class ContentWithSummary(BaseModel):
     content_id: UUID
+    title: Optional[str]
+    url: str
+    source: Optional[str]
+    first_saved_at: datetime
+    ai_summary: Optional[str]
 
     class Config:
-        from_attributes=True
+        orm_mode = True

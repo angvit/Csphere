@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, ARRAY, Text, ForeignKey
+from sqlalchemy import Column, String, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from pgvector.sqlalchemy import Vector
 from app.db.database import Base
