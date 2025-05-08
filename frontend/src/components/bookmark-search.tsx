@@ -42,15 +42,15 @@ export default function BookmarkSearch() {
   }, []);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 min-h-screen flex flex-col">
       <h1 className="text-4xl md:text-5xl font-bold text-center mb-8">
         Rediscover
       </h1>
 
-      <div className="relative max-w-xl mx-auto mb-8">
+      <div className="relative w-full sm:max-w-2xl mx-auto mb-8">
         <input
           type="text"
-          placeholder=""
+          placeholder="Search..."
           className="w-full px-4 py-2 rounded-full border border-black-700 text-black placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-600"
         />
         <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
