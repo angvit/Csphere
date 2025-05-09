@@ -105,18 +105,17 @@ export default async function RootLayout({ children }) {
           </div>
 
           <div className="flex items-center space-x-3">
-            <button className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large">
+            <div className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large">
               {isTokenPresent ? (
-                <button>Log out</button>
+                <button className="text-[#202A29]">
+                  Log out
+                </button>
               ) : (
-                <>
-                  {/* <button className="hidden sm:inline-block bg-[#202A29] text-white px-4 py-2 rounded-lg hover:bg-[#2D3B3A] text-sm font-medium">
-                    Contact
-                  </button> */}
-                  <Link href="/login">Log in</Link>
-                </>
+                <Link href="/login" className="text-[#202A29]">
+                  Log in
+                </Link>
               )}
-            </button>
+            </div>
             <div className="md:hidden">
               <button
                 type="button"
