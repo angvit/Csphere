@@ -17,7 +17,7 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
-from app.schemas.content import ContentCreate, ContentWithSummary
+from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent
 from app.schemas.user import UserCreate, UserSignIn
 from app.utils.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
@@ -194,29 +194,30 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
 
 
 # gets all content for a specific user 
-@app.get("/content", response_model=list[ContentWithSummary])
+@app.get("/content", response_model=list[UserSavedContent])
 def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     print(f"Fetching content for user_id: {user_id}")
     
     results = (
-        db.query(Content, ContentAI.ai_summary)
-        .join(ContentAI, Content.content_id == ContentAI.content_id)
-        .filter(Content.user_id == user_id)
+        db.query(ContentItem, Content, ContentAI.ai_summary)
+        .join(Content, ContentItem.content_id == Content.content_id)
+        .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .filter(ContentItem.user_id == user_id)
         .all()
     )
 
     print(f"Total results found: {len(results)}")
 
     response = [
-        ContentWithSummary(
+        UserSavedContent(
             content_id=content.content_id,
             url=content.url,
             title=content.title,
             source=content.source,
-            first_saved_at=content.first_saved_at,
-            ai_summary=ai_summary
+            ai_summary=ai_summary,
+            first_saved_at=item.saved_at,
         )
-        for content, ai_summary in results
+        for item, content, ai_summary in results
     ]
 
     return response
