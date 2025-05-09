@@ -28,14 +28,14 @@ export default function FeatureSection() {
 
   return (
     <div className="w-full bg-black text-white">
-      {/* Pronunciation Header */}
       <div className="text-center py-16">
-        <p className="text-3xl md:text-4xl font-normal tracking-tight !text-white">
+        <p className="text-4xl md:text-5xl font-normal tracking-tight !text-white">
           Pronounced{" "}
           <span className="italic font-bold !text-white">see sphere</span>
         </p>
       </div>
 
+      {/* Feature Sections */}
       {features.map((feature, index) => (
         <section
           key={index}
@@ -59,14 +59,17 @@ export default function FeatureSection() {
         </section>
       ))}
 
-      <div className="w-full py-16 text-center border-t border-gray-800">
+      <div className="w-full py-16 text-center border-t border-gray-800 bg-black">
+        <h3 className="text-2xl md:text-3xl font-semibold mb-6 !text-white">
+          Start saving with the Chrome extension
+        </h3>
         <a
-          href="https://chrome.google.com/webstore/detail/EXTENSION_ID"
+          href="https://chrome.google.com/webstore/detail/YOUR_EXTENSION_ID"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-block bg-white text-black font-semibold text-lg px-6 py-3 rounded-lg hover:bg-gray-200 transition"
         >
-          Download Chrome Extension
+          Download
         </a>
       </div>
     </div>
