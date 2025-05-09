@@ -16,12 +16,19 @@ import os
 from dotenv import load_dotenv
 
 
+from pathlib import Path
+dotenv_path = Path(__file__).resolve().parent.parent / "api" / ".env"
+print("Loading .env file from:", dotenv_path)
+load_dotenv(dotenv_path)
 
-load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
+print("Secret key from .env:", SECRET_KEY)
 
 if isinstance(SECRET_KEY, str):
     print("Secret key loaded successfully")
+
+else:
+    print("Secret key not loaded. Please check your .env file.")
 
 
 ALGORITHM = "HS256"
