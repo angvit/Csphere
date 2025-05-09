@@ -1,10 +1,9 @@
 export interface Bookmark {
-  id: string;
-  title: string;
-  description: string;
+  content_id: string;
+  title?: string;
   url: string;
-  imageUrl: string;
-  category: string;
-  savedAt: string;
-  readTime: string;
+  source?: string;
+  ai_summary?: string;
+  first_saved_at?: string; // ISO timestamp, might also be Date if parsed
+  tags?: string[];
 }
