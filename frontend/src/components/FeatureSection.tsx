@@ -8,26 +8,26 @@ export default function FeatureSection() {
       title: "Save and organize your research",
       desc: "Collect articles, papers, and resources from across the web in one centralized location. Never lose track of important information again.",
       imageAlt: "Bookmark collection interface",
-      imageSrc: "/placeholder.svg",
+      imageSrc: "/csphere-chrome.mp4",
     },
     {
       icon: <Globe className="h-5 w-5 text-black" />,
       title: "Access your content anywhere",
       desc: "Seamlessly sync your saved content across all your devices. Your bookmarks are always available whether you're at home, work, or on the go.",
       imageAlt: "Cross-device synchronization",
-      imageSrc: "/placeholder.svg",
+      imageSrc: "/csphere-home.png",
     },
     {
       icon: <FolderTree className="h-5 w-5 text-black" />,
       title: "Organize with smart collections",
       desc: "Create custom collections and let our AI help categorize your content automatically. Find what you need when you need it with powerful search and filtering.",
       imageAlt: "Smart collections and organization",
-      imageSrc: "/placeholder.svg",
+      imageSrc: "/csphere-search.mp4",
     },
   ];
 
   return (
-    <div className="w-full bg-black text-white">
+    <div className="w-full bg-[#202A29] text-white">
       <div className="text-center py-16">
         <p className="text-4xl md:text-5xl font-normal tracking-tight !text-white">
           Pronounced{" "}
@@ -95,18 +95,39 @@ function TextBlock({ feature }) {
 }
 
 function ImageBlock({ feature }) {
+  const isVideo = feature.imageSrc.endsWith(".mp4");
+  const isImage =
+    feature.imageSrc.endsWith(".png") || feature.imageSrc.endsWith(".jpg");
+
   return (
     <div className="flex justify-center">
-      <div className="relative w-full max-w-[500px]">
+      <div className="relative w-full max-w-[500px] h-auto">
         <div className="relative z-10 overflow-hidden rounded-lg bg-gray-900 p-6 shadow-sm">
           <div className="aspect-square w-full overflow-hidden rounded-md bg-gray-700">
-            <Image
-              src={`${feature.imageSrc}?height=400&width=400`}
-              width={400}
-              height={400}
-              alt={feature.imageAlt}
-              className="w-full object-cover"
-            />
+            {isVideo ? (
+              <video
+                className="w-fit h-fit object-cover"
+                autoPlay
+                loop
+                muted
+                playsInline
+              >
+                <source src={feature.imageSrc} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+            ) : isImage ? (
+              <Image
+                src={`${feature.imageSrc}?height=800&width=800`}
+                width={800}
+                height={800}
+                alt={feature.imageAlt}
+                className="object-contain scroll-auto"
+              />
+            ) : (
+              <div className="h-full w-full bg-gray-800 flex items-center justify-center text-white">
+                Unsupported media type
+              </div>
+            )}
           </div>
         </div>
       </div>

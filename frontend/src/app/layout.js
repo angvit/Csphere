@@ -1,5 +1,4 @@
 import { Geist, Geist_Mono, PT_Serif } from "next/font/google";
-import Link from "next/link";
 
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -8,6 +7,7 @@ import { redirect } from "next/navigation";
 
 import LogoutButton from "@/app/components/LogoutButton";
 import LoginButton from "@/app/components/LoginButton";
+import LogoComponent from "@/app/components/LogoComponent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -51,50 +51,7 @@ export default async function RootLayout({ children }) {
         >
           {/* Left side: Logo and Desktop Navigation */}
           <div className="flex items-center space-x-4 md:space-x-8">
-            <Link href="/" className="flex-shrink-0">
-              <svg
-                viewBox="0 0 410 170" // Updated: Increased height (170) to fit content reaching y=155 (147 + stroke/2). Increased width slightly for padding.
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-20 w-auto text-[#202A29] hover:cursor-pointer"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="16" // Consider if this width looks good at h-10 size
-                strokeLinecap="round"
-              >
-                <path d="M110,70 C95,70 80,85 80,105 C80,125 95,140 110,140 L140,140" />
-                <path d="M160,87 C170,75 190,75 200,85 C210,95 210,105 200,115 L190,120 C180,130 180,140 190,150 C200,160 220,160 230,147" />
-                <path d="M250,70 L250,140 M250,85 C270,85 280,95 280,105 C280,115 270,125 250,125" />
-                <path d="M300,70 L300,140 M300,100 C300,100 310,90 320,90 C330,90 340,100 340,110 L340,140" />
-                <path d="M390,105 C390,125 375,140 360,140 C345,140 330,125 330,105 C330,85 345,70 360,70 C375,70 390,85 390,105 z M330,105 L390,105" />
-                <circle cx="220" cy="50" r="12" fill="currentColor" />
-              </svg>
-            </Link>
-            <nav className="hidden md:flex md:items-center md:space-x-6">
-              {!isTokenPresent ? (
-                <>
-                  <a
-                    href="#"
-                    className="text-base font-medium text-[#202A29] hover:text-gray-700"
-                  >
-                    Solutions
-                  </a>
-                  <a
-                    href="#"
-                    className="text-base font-medium text-[#202A29] hover:text-gray-700"
-                  >
-                    Industries
-                  </a>
-                  <a
-                    href="#"
-                    className="text-base font-medium text-[#202A29] hover:text-gray-700"
-                  >
-                    About us
-                  </a>
-                </>
-              ) : (
-                <></>
-              )}
-            </nav>
+            <LogoComponent />
           </div>
 
           <div className="flex items-center space-x-3">
