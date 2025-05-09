@@ -1,9 +1,10 @@
 import Image from "next/image";
+import FeatureSection from "@/components/FeatureSection";
 
 export default function Home() {
   return (
     <div className="pt-serif-bold">
-      <main className="h-screen w-screen  flex items-center justify-center  text-white ">
+      <main className="min-h-screen w-full flex items-center justify-center text-white bg-[#202A29]">
         <div className="flex flex-col items-center justify-center w-10/12 md:w-8/12 h-full gap-10">
           <section className="max-w-3xl">
             <h1 className="text-5xl md:text-6xl pt-serif-regular  text-center  text-white  mb-8">
@@ -28,7 +29,9 @@ export default function Home() {
           </section>
         </div>
       </main>
-      <section className="w-full bg-black h-[800px]"></section>
+      <section className="w-full bg-black h-[800px]">
+        <FeatureSection />
+      </section>
     </div>
   );
 }
