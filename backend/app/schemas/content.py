@@ -13,8 +13,16 @@ class ContentWithSummary(BaseModel):
     title: Optional[str]
     url: str
     source: Optional[str]
-    first_saved_at: datetime
+    first_saved_at: datetime 
     ai_summary: Optional[str]
 
     class Config:
         orm_mode = True
+
+class UserSavedContent(BaseModel):
+    content_id: UUID
+    url: str
+    title: Optional[str]
+    source: Optional[str]
+    ai_summary: Optional[str]
+    first_saved_at: datetime
