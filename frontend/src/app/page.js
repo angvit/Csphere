@@ -29,7 +29,7 @@ export default function Home() {
           </section>
         </div>
       </main>
-      <section className="w-full bg-black h-[800px]">
+      <section className="w-full  h-[800px]">
         <FeatureSection />
       </section>
     </div>
