@@ -17,8 +17,8 @@ function page() {
           </aside> */}
 
           {/* Main content */}
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-6">
+          <div className="flex-1 overflow-visible relative z-0">
+            <div className="flex items-center justify-between mb-6 z-10 relative">
               <h1 className="text-2xl font-bold">Your Bookmarks</h1>
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="text-gray-600">
@@ -32,6 +32,8 @@ function page() {
                 </Button>
               </div>
             </div>
+
+            {/* BookmarksPage contains the DotPattern */}
             <BookmarksPage />
           </div>
         </div>

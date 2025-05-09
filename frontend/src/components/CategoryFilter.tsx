@@ -24,7 +24,7 @@ export default function CategoryFilter() {
       {categories.map((category) => (
         <button
           key={category}
-          className="px-3 py-1 rounded-full border-[0.5px] border-black text-sm text-black hover:bg-gray-100 transition-colors"
+          className="px-3 py-1 rounded-full border-[0.5px] border-black text-sm text-black hover:bg-gray-100 transition-colors bg-gray-300"
         >
           {category}
         </button>
