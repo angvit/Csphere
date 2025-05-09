@@ -119,6 +119,8 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
         user_id=user_id,
     )
 
+    print(f"Search results for query '{query}': {len(results)} results found.\n results: {results}")
+
     return [
     {
         "content_id": content_ai.content_id,

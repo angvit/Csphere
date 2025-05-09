@@ -1,57 +1,4 @@
-// document.addEventListener("DOMContentLoaded", () => {
-//   const btn = document.getElementById("bookMarkBtn");
-//   console.log("Popup script loaded and running...");
-//   console.log("Button element: ", btn);
-
-//   if (btn) {
-//     btn.addEventListener("click", async () => {
-//       let [tab] = await chrome.tabs.query({
-//         active: true,
-//         currentWindow: true,
-//       });
-
-//       console.log("popup.js running...");
-//       if (tab && tab.url) {
-//         console.log("Bookmarking URL: ", tab.url);
-
-//         // Get the cookie named "token" for the backend's domain
-//         chrome.cookies.get(
-//           { url: "http://127.0.0.1:3000", name: "token" },
-//           async function (cookie) {
-//             if (cookie && cookie.value) {
-//               console.log("Retrieved token from cookie:", cookie.value);
-
-//               try {
-//                 const res = await fetch("http://127.0.0.1:8000/content/save", {
-//                   method: "POST",
-//                   headers: {
-//                     "Content-Type": "application/json",
-//                     Accept: "application/json",
-//                     Authorization: `Bearer ${cookie.value}`,
-//                   },
-//                   body: JSON.stringify({
-//                     url: tab.url || "No URL",
-//                     title: tab.title || "Untitled Page",
-//                     source: "chrome_extension",
-//                   }),
-//                 });
-
-//                 const data = await res.json();
-//                 console.log("Response from server:", data);
-//               } catch (error) {
-//                 console.error("Error sending request:", error);
-//               }
-//             } else {
-//               console.warn("Token cookie not found.");
-//             }
-//           }
-//         );
-//       }
-//     });
-//   } else {
-//     console.error("Button with ID 'bookMarkBtn' not found.");
-//   }
-// });
+import { BACKEND_URL, FRONTEND_URL } from "./config.dev.js";
 
 // Helper function to wrap chrome.cookies.get in a Promise
 function getCookieAsync(details) {
@@ -88,12 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
           return;
         }
 
-        console.log(
-          "Attempting to get cookie for URL:",
-          "http://127.0.0.1:3000"
-        );
+        console.log("Attempting to get cookie for URL:", FRONTEND_URL);
         const cookie = await getCookieAsync({
-          url: "http://localhost:3000",
+          url: FRONTEND_URL,
           name: "token",
         });
         console.log("Cookie lookup finished. Cookie object:", cookie);
@@ -103,10 +47,10 @@ document.addEventListener("DOMContentLoaded", () => {
           const cookieVal = cookie.value;
           console.log("Retrieved token from cookie:", cookieVal);
           console.log("Proceeding with fetch using token:", cookieVal);
-
-          const response = await fetch("http://127.0.0.1:8000/content/save", {
+          const endpoint = `${BACKEND_URL}/content/save`;
+          const response = await fetch(endpoint, {
             method: "POST",
-            credentials: "include", // store cookies in browser if server sends them
+            credentials: "include",
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
@@ -121,11 +65,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
           console.log("Raw response from server: ", response);
           if (!response.ok) {
-            // Handle HTTP errors (like 401, 403, 500)
             throw new Error(`HTTP error! status: ${response.status}`);
           }
-          const data = await response.json(); // Or response.text() if not JSON
+          const data = await response.json();
           console.log("Response data from server: ", data);
+          alert("Bookmark saved successfully!");
         } else {
           console.warn("Token cookie not found or has no value.");
           alert("Could not find authentication token. Please log in.");
