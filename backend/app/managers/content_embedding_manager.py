@@ -1,8 +1,8 @@
 import os
 import re
+import json
 import requests
 
-from openai import OpenAI
 from uuid import UUID
 from bs4 import BeautifulSoup
 from readability import Document
@@ -13,8 +13,8 @@ from sqlalchemy import select
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
 
-from local_embedding_manager import LocalEmbeddingManager
-from local_summarizer import LocalSummarizer
+from backend.app.embeddings import LocalEmbeddingManager
+from backend.app.summarizer import LocalSummarizer
 
 
 class ContentEmbeddingManager:
@@ -55,10 +55,20 @@ class ContentEmbeddingManager:
 
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
-            print(f"Generated summary: {summary}")
             
+            
+            self._store_article_summary_pair(
+                article_text = summary_input,
+                summary = summary,
+                url = content.url,
+                title = content.title
+            )
+
+            print(f"Generated summary: {summary}")
+
             if not summary: 
                 raise Exception("Failed to summarize content and/or there is no title")
+
 
             # Embed the summary associated with the content ORM
             embedding = self._generate_embedding(summary)
@@ -113,6 +123,23 @@ class ContentEmbeddingManager:
     ###############################################################################
     # HELPER METHODS
     ###############################################################################
+
+    def _store_article_summary_pair(self, article_text, summary, url, title):
+        record = {
+            "url": url,
+            "title": title,
+            "article": article_text,
+            "summary": summary
+        }
+
+        try:
+            with open("../data/summaries.json", "r") as f:
+                data = json.load(f)
+                data.append(record)
+                f.seek(0)
+                json.dump(data, f)
+        except Exception as e:
+            print(f"Failed to write with error: {e}")
 
 
     def _summarize_content(self, summary_input):
