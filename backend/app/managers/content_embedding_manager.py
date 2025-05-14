@@ -13,6 +13,9 @@ from sqlalchemy import select
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
 
+from local_embedding_manager import LocalEmbeddingManager
+from local_summarizer import LocalSummarizer
+
 
 class ContentEmbeddingManager:
     '''
@@ -24,12 +27,10 @@ class ContentEmbeddingManager:
         - Handling database interactions for both `Content` and `ContentAI` models
     '''
 
-    def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo'):
+    def __init__(self, db):
         self.db = db
-        self.embedding_model = embedding_model_name
-        self.embedding_model_name = embedding_model_name
-        self.summary_model = summary_model_name
-        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.summarizer = LocalSummarizer(model_name="t5-small")
+        self.embedding_manager = LocalEmbeddingManager(model_name="all-MiniLM-L6-v2") 
 
 
     ###############################################################################
@@ -113,6 +114,14 @@ class ContentEmbeddingManager:
     # HELPER METHODS
     ###############################################################################
 
+
+    def _summarize_content(self, summary_input):
+        return self.summarizer.summarize(summary_input)
+
+
+    def _generate_embedding(self, text):
+        return self.embedding_manager.generate_embedding(text)
+    
 
     def _enrich_content(self, url: str, content_id: UUID, db: Session):
         try:
@@ -235,59 +244,3 @@ class ContentEmbeddingManager:
                 return existing_content  
         return False
     
-    
-    # def _summarize_content(self, summary_input):
-    #     ''' Uses a summary model to get a more detailed summary for the content embeddings '''
-        
-    #     # Debug (TO REMOVE)
-    #     print(f"The summary input being passed to summary model is: {summary_input}")
-
-    #     # Check if there is input first
-    #     if summary_input is None:
-    #         return None
-
-    #     try:
-    #         input_length = len(self.embedding_model.tokenizer.encode(summary_input)) # Get actual token length
-    #         max_length = int(input_length * 0.6)  # Set the max length to about 60 % of input (we can change)
-    #         max_length = max(30, min(max_length, 150)) # Ensure the max length is within a reasonable range
-    #         summary = self.summary_model(
-    #             summary_input, 
-    #             max_length=max_length, 
-    #             num_beams=4,
-    #             no_repeat_ngram_size=3,
-    #             repetition_penalty=2.0,
-    #             early_stopping=True,
-    #             min_length=15, 
-    #             top_k=50,
-    #             top_p=0.9,
-    #             temperature=0.8
-    #         )[0]['generated_text']
-    #         return summary
-        
-    #     except Exception as e:
-    #         print(f"An error occurred during summarization: {e}")
-    #         return 
-    
-    
-    def _summarize_content(self, summary_input):
-        try:
-            response = self.openai_client.chat.completions.create(
-                model=self.summary_model,
-                messages=[
-                    {
-                        "role": "system", 
-                        "content": (
-                            "You are a concise technical summarizer. "
-                            "Summarize the article in exactly **2 short sentences**. "
-                            "Focus only on the main point. Ignore ads, disclaimers, and unrelated text."
-                        )
-                    },
-                    {"role": "user", "content": summary_input},
-                ],
-                temperature=0.7,
-                max_tokens=150,
-            )
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"OpenAI summarization failed: {e}")
-            return None
