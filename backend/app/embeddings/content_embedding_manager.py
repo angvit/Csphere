@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import requests
 
 from openai import OpenAI
@@ -54,6 +55,14 @@ class ContentEmbeddingManager:
 
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
+
+            self._store_article_summary_pair(
+                article_text= summary_input,
+                summary= summary,
+                url= content.url,
+                title= content.title
+            )
+
             print(f"Generated summary: {summary}")
             
             if not summary: 
@@ -113,6 +122,23 @@ class ContentEmbeddingManager:
     # HELPER METHODS
     ###############################################################################
 
+    def _store_article_summary_pair(self, article_text, summary, url, title):
+        record = {
+            "url": url,
+            "title": title,
+            "article": article_text,
+            "summary": summary
+        }
+
+        try:
+            with open("../data/summaries.json", "r") as f:
+                data = json.load(f)
+                data.append(record)
+                f.seek(0)
+                json.dump(data, f)
+        except Exception as e:
+            print(f"Failed to write with error: {e}")
+    
 
     def _enrich_content(self, url: str, content_id: UUID, db: Session):
         try:
