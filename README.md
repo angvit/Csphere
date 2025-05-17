@@ -1,5 +1,5 @@
 # Csphere: Content Rediscovery Platform
-![alt text](https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo.png?raw=true)
+![alt text](https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo2.png?raw=true)
 
 
 
