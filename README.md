@@ -1,22 +1,24 @@
-<h1> <img src="https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo2.png?raw=true" alt="logo" width="100" height="100"/> :Content Rediscovery</h1>
+<img src="https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo2.png?raw=true" alt="logo" width="350" height="200"/>
+
+<h1>Rediscover what matters — faster.</h1>
 
 
 
 
-A full-stack web app and browser extension that helps users **save**, **summarize**, and **search** web content using **embeddings** and **ai-generated summaries**. Rediscover what matters — faster.
+A full-stack web app and browser extension that helps users **save**, **summarize**, and **search** web content using **embeddings** and **ai-generated summaries**. 
 
 **Live App**: [https://csphere-beta.vercel.app/](https://csphere-beta.vercel.app/)
 
 ---
 
-## Quick Setup
+## Local Setup
 
 ### 1. Backend (Python + FastAPI)
 
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate (for windows: source venv/scripts/Activate )
 pip install -r requirements.txt
 uvicorn app.api.main:app --reload
 ```
