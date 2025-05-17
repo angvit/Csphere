@@ -1,4 +1,4 @@
-<h1>Content Rediscovery: <img src="https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo2.png?raw=true" alt="logo" width="40"/></h1>
+<h1> <img src="https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo2.png?raw=true" alt="logo" width="100" height="100"/> :Content Rediscovery</h1>
 
 
 
