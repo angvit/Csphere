@@ -1,6 +1,6 @@
 # Csphere: Content Rediscovery Platform
-![alt text]([https://github.com/angvit/[reponame]/blob/[branch]/image.jpg?raw=true](https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo.png?raw=true
-)
+![alt text](https://github.com/angvit/Content-Rediscovery-Platform/blob/main/frontend/public/cspherelogo.png?raw=true)
+
 
 
 A full-stack web app and browser extension that helps users **save**, **summarize**, and **search** web content using **embeddings** and **ai-generated summaries**. Rediscover what matters — faster.
