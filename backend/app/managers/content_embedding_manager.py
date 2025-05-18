@@ -13,8 +13,8 @@ from sqlalchemy import select
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
 
-from backend.app.embeddings import LocalEmbeddingManager
-from backend.app.summarizer import LocalSummarizer
+from app.embeddings.local_embedding_manager import LocalEmbeddingManager
+from app.summarizer.local_summarizer import LocalSummarizer
 
 
 class ContentEmbeddingManager:
@@ -29,7 +29,7 @@ class ContentEmbeddingManager:
 
     def __init__(self, db):
         self.db = db
-        self.summarizer = LocalSummarizer(model_name="t5-small")
+        self.summarizer = LocalSummarizer(model_name="trained_models/t5_finetuned")
         self.embedding_manager = LocalEmbeddingManager(model_name="all-MiniLM-L6-v2") 
 
 
@@ -55,8 +55,8 @@ class ContentEmbeddingManager:
 
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
-            
-            
+             
+            # building dataset for 
             self._store_article_summary_pair(
                 article_text = summary_input,
                 summary = summary,

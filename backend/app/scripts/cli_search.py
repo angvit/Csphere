@@ -37,6 +37,6 @@ def semantic_search(query):
         print(f"AI Summary: {result['ai_summary']}")
 
 if __name__ == "__main__":
-    print("🔍 Semantic Search CLI Tool")
+    print("CSphere Content Search CLI Tool")
     query = input("Enter your query: ")
     semantic_search(query)
