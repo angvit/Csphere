@@ -14,6 +14,9 @@ rouge = load("rouge")
 def compute_metrics(eval_pred):
     predictions, labels = eval_pred
 
+    if isinstance(predictions, tuple):
+        predictions = predictions[0]
+
     decoded_preds = tokenizer.batch_decode(predictions, skip_special_tokens=True)
     decoded_labels = tokenizer.batch_decode(labels, skip_special_tokens=True)
 
