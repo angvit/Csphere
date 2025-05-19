@@ -2,8 +2,8 @@
   "manifest_version": 3,
   "name": "My Chrome Extension",
   "version": "1.0",
-  "description": "A simple Chrome extension.",
-  "permissions": ["storage", "tabs", "activeTab", "scripting", "cookies"],
+  "description": "Google chrome extension that works alongside our app to bookmark their tabs.",
+  "permissions": ["tabs", "cookies"],
   "env": {
     "BACKEND_URL": "http://127.0.0.1:8000",
     "FRONTEND_URL": "http://localhost:3000"
