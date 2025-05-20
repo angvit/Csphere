@@ -22,21 +22,21 @@ function LogoComponent() {
 
   return (
     <>
-      <Link
-        href={token ? "/home" : "/"}
-        className="flex-shrink-0 md:h-auto md:w-auto h-80 w-80"
-      >
-        <div className="bg-gray-300 hover:cursor-pointer p-2 inline-block">
-          <Image
-            src="/cspherelogo2.png"
-            alt="Logo"
-            width={200}
-            height={200}
-            className="h-16 w-auto"
-          />
+      <Link href={token ? "/home" : "/"} className="flex items-center">
+        <div className="bg-gray-300 rounded p-2 flex items-center justify-center">
+          <div className="w-16 h-16 md:w-20 md:h-20 lg:w-32 lg:h-32 relative">
+            <Image
+              src="/cspherelogo2.png"
+              alt="Logo"
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 64px, (max-width: 1024px) 80px, 128px"
+              priority
+              quality={100}
+            />
+          </div>
         </div>
       </Link>
-
       <nav className="hidden md:flex md:items-center md:space-x-6">
         {!token ? (
           <>
