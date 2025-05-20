@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 FASTAPI_URL = os.getenv("FASTAPI_URL", "http://localhost:3000")
-TOKEN = os.getenv("USER_TOKEN")  # User token (login token), set this in .env or export directly.
+TOKEN = os.getenv("USER_TOKEN")  # User token (login token), set this in .env or export directly
 
 def semantic_search(query):
     headers = {

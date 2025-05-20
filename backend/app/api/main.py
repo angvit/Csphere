@@ -19,8 +19,8 @@ from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent
 from app.schemas.user import UserCreate, UserSignIn
-from app.utils.preprocessor import QueryPreprocessor
-from app.embeddings.content_embedding_manager import ContentEmbeddingManager
+from app.preprocessing.preprocessor import QueryPreprocessor
+from app.managers.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
 

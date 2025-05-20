@@ -2,12 +2,12 @@ from transformers import pipeline
 import os
 
 class LocalSummarizer:
-    def __init__(self, model_name="trained_models/t5_finetuned"):
+    def __init__(self, model_name="trained_models/t5_finetuned_base"):
         base_dir = os.path.dirname(os.path.abspath(__file__))  # backend/app/summarizer
         print(base_dir)
         backend_root = os.path.abspath(os.path.join(base_dir, "..", ".."))  # points to backend/
         print(backend_root)
-        model_path = os.path.join(backend_root, model_name)
+        model_path = os.path.join(backend_root, "app", model_name)
 
         print("Resolved model path:", model_path)  # Debug print
 
@@ -20,7 +20,7 @@ class LocalSummarizer:
             "summarization",
             model=model_path,
             tokenizer=model_path,
-            device=-1  
+            device=0 # device is set to gpu, -1 for cpu
         )
 
     def summarize(self, text, min_length=20, max_length=120):

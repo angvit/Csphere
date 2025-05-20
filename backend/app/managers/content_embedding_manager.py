@@ -29,7 +29,7 @@ class ContentEmbeddingManager:
 
     def __init__(self, db):
         self.db = db
-        self.summarizer = LocalSummarizer(model_name="trained_models/t5_finetuned")
+        self.summarizer = LocalSummarizer(model_name="trained_models/t5_finetuned_base")
         self.embedding_manager = LocalEmbeddingManager(model_name="all-MiniLM-L6-v2") 
 
 

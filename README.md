@@ -1,33 +1,17 @@
-# Csphere: Content Rediscovery Platform
+# CSphere Summarization & Embedding Module
 
-A full-stack web app and browser extension that helps users **save**, **summarize**, and **search** web content using **embeddings** and **ai-generated summaries**. Rediscover what matters — faster.
-
-**Live App**: [https://csphere-beta.vercel.app/](https://csphere-beta.vercel.app/)
+This repo contains the summarization and embedding backend powering [CSphere](https://csphere.ai) — a semantic personal assistant that helps users rediscover forgotten saved content. It summarizes article text using a fine-tuned [Flan-T5](https://huggingface.co/google/flan-t5-base) model and embeds the result using [Sentence-BERT](https://www.sbert.net/), enabling efficient natural-language search over curated content.
 
 ---
 
-## Quick Setup
+## Getting Started
 
-### 1. Backend (Python + FastAPI)
+### 1. Clone & Set Up Environment
 
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate
+git clone https://github.com/yourusername/csphere-summarizer.git
+cd csphere-summarizer
+python -m venv .venv
+source .venv/bin/activate  # or .venv\Scripts\activate on Windows
 pip install -r requirements.txt
-uvicorn app.api.main:app --reload
 ```
-
-### 2. Frontend (Next.js)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-### 3. Chrome Extension
-
-1. Load the `chrome_extension/` folder into Chrome via `chrome://extensions`
-
-2. Enable Developer Mode -> "Load Unpacked" -> Select `chrome_extension/`
