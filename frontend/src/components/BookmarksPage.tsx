@@ -19,8 +19,10 @@ export default function BookmarksPage() {
 
     try {
       const url = query.trim()
-        ? `http://127.0.0.1:8000/search?query=${encodeURIComponent(query)}`
-        : `http://127.0.0.1:8000/content`;
+        ? `${
+            process.env.NEXT_PUBLIC_API_BASE_URL
+          }/search?query=${encodeURIComponent(query)}`
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
 
       const res = await fetch(url, {
         headers: {

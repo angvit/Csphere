@@ -48,7 +48,7 @@ export default function LoginForm() {
       console.log(values);
 
       const client = new HttpClient({
-        baseUrl: "http://127.0.0.1:8000",
+        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
         defaultOpts: {
           headers: {
             "Content-Type": "application/json",
@@ -56,7 +56,7 @@ export default function LoginForm() {
         },
       });
 
-      // const response = await fetch("http://localhost:5000/api/data", {
+      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data`, {
       //   method: "POST",
       //   credentials: "include",
       //   body: JSON.stringify({

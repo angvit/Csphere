@@ -3,7 +3,7 @@ class HttpClient {
   defaultOpts: RequestInit;
 
   constructor(opts: { baseUrl?: string; defaultOpts?: RequestInit }) {
-    let optsBaseUrl = opts.baseUrl ?? "http://127.0.0.1:8000";
+    let optsBaseUrl = opts.baseUrl ?? process.env.NEXT_PUBLIC_API_BASE_URL;
     if (optsBaseUrl) {
       // Strip trailing '/' from base URL
       this.baseUrl =
