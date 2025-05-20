@@ -7,6 +7,7 @@ import { redirect } from "next/navigation";
 
 import LogoutButton from "@/app/components/LogoutButton";
 import LoginButton from "@/app/components/LoginButton";
+import DropdownMenu from "@/app/components/DropdownMenu";
 import LogoComponent from "@/app/components/LogoComponent";
 import Link from "next/link";
 
@@ -37,7 +38,7 @@ export const metadata = {
 export default async function RootLayout({ children }) {
   const cookieStore = cookies();
   const token = cookieStore.get("cshere_token");
-  console.log("TOKEN:", token)
+  console.log("TOKEN:", token);
   return (
     <html
       lang="en"
@@ -57,43 +58,16 @@ export default async function RootLayout({ children }) {
           <div className="flex items-center space-x-3">
             <LoginButton />
             {!token && (
-            <Link href="/signup">
-              <button
-                type="button"
-                className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large"
-              >
-                Sign Up
-              </button>
+              <Link href="/signup">
+                <button
+                  type="button"
+                  className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large hidden md:block"
+                >
+                  Sign Up
+                </button>
               </Link>
             )}
-            <div className="md:hidden">
-              <button
-                type="button"
-                // onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} // Add state toggle later
-                className="inline-flex items-center justify-center p-2 rounded-md text-[#202A29] hover:text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500" // Example styling
-                aria-controls="mobile-menu"
-                aria-expanded="false" // This should be dynamic based on state {isMobileMenuOpen}
-              >
-                <span className="sr-only">Open main menu</span>
-                {/* Heroicon Menu (or your preferred icon) */}
-                {/* {isMobileMenuOpen ? <XIcon/> : <MenuIcon/>} */}
-                <svg
-                  className="h-6 w-6"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6h16M4 12h16m-7 6h7"
-                  />
-                </svg>
-              </button>
-            </div>
+            <DropdownMenu />
           </div>
 
           {/* --- Mobile Menu (Needs State Management) --- */}
