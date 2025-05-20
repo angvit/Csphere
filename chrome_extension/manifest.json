@@ -4,10 +4,7 @@
   "version": "1.0",
   "description": "Google chrome extension that works alongside our app to bookmark their tabs.",
   "permissions": ["tabs", "cookies"],
-  "env": {
-    "BACKEND_URL": "http://127.0.0.1:8000",
-    "FRONTEND_URL": "http://localhost:3000"
-  },
+
   "background": {
     "service_worker": "background.js"
   },
@@ -20,6 +17,8 @@
     "http://localhost:3000/",
     "http://127.0.0.1:3000/",
     "http://localhost:8000/",
-    "http://127.0.0.1:8000/"
+    "http://127.0.0.1:8000/",
+    "https://csphere-backend-5f17c775954b.herokuapp.com/",
+    "https://content-rediscovery-platform.vercel.app/"
   ]
 }

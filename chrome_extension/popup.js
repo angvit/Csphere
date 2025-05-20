@@ -1,4 +1,9 @@
-import { BACKEND_URL, FRONTEND_URL } from "./config.dev.js";
+import { BACKEND_URL, FRONTEND_URL, DEPLOYED } from "./config.dev.js";
+const backend_url = DEPLOYED ? BACKEND_URL : "http://127.0.0.1:8000";
+const frontend_url = DEPLOYED ? FRONTEND_URL : "http://localhost:3000";
+
+// Check if the script is running in the correct context
+alert("Backend and frontend URLs: " + backend_url + " " + frontend_url);
 
 // Helper function to wrap chrome.cookies.get in a Promise
 function getCookieAsync(details) {
@@ -28,16 +33,15 @@ document.addEventListener("DOMContentLoaded", () => {
           active: true,
           currentWindow: true,
         });
-        console.log("popup.js running...");
 
         if (!tab || !tab.url) {
           console.warn("No active tab found or tab has no URL.");
           return;
         }
 
-        console.log("Attempting to get cookie for URL:", FRONTEND_URL);
+        console.log("Attempting to get cookie for URL:", frontend_url);
         const cookie = await getCookieAsync({
-          url: FRONTEND_URL,
+          url: frontend_url,
           name: "token",
         });
         console.log("Cookie lookup finished. Cookie object:", cookie);
@@ -47,7 +51,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const cookieVal = cookie.value;
           console.log("Retrieved token from cookie:", cookieVal);
           console.log("Proceeding with fetch using token:", cookieVal);
-          const endpoint = `${BACKEND_URL}/content/save`;
+          const endpoint = `${backend_url}/content/save`;
           const response = await fetch(endpoint, {
             method: "POST",
             credentials: "include",
