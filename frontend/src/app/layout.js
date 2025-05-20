@@ -35,6 +35,9 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
+  const cookieStore = cookies();
+  const token = cookieStore.get("cshere_token");
+  console.log("TOKEN:", token)
   return (
     <html
       lang="en"
@@ -53,6 +56,7 @@ export default async function RootLayout({ children }) {
 
           <div className="flex items-center space-x-3">
             <LoginButton />
+            {!token && (
             <Link href="/signup">
               <button
                 type="button"
@@ -60,7 +64,8 @@ export default async function RootLayout({ children }) {
               >
                 Sign Up
               </button>
-            </Link>
+              </Link>
+            )}
             <div className="md:hidden">
               <button
                 type="button"
