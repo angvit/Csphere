@@ -26,15 +26,20 @@ from app.db import init_db
 
 from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
 
+# Load environment variables from a .env file
 load_dotenv()
+
+# Access the environment variable for frontend origin
+# FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN")
+# if not FRONTEND_ORIGIN:
+#     raise ValueError("Environment variable FRONTEND_ORIGIN is not set.")
+
+# print("Frontend Origin:", FRONTEND_ORIGIN)
 
 app = FastAPI()
 
-# change link later once deployed
-origins = [
-    "*",
-    "http://localhost:3000"
-]
+# Update CORS origins
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
