@@ -27,9 +27,9 @@ class ContentEmbeddingManager:
         - Handling database interactions for both `Content` and `ContentAI` models
     '''
 
-    def __init__(self, db):
+    def __init__(self, db=None):
         self.db = db
-        self.summarizer = LocalSummarizer(model_name="trained_models/t5_finetuned_base")
+        self.summarizer = LocalSummarizer(model_name="angvit/flan-t5-csphere")
         self.embedding_manager = LocalEmbeddingManager(model_name="all-MiniLM-L6-v2") 
 
 
@@ -150,7 +150,7 @@ class ContentEmbeddingManager:
         return self.embedding_manager.generate_embedding(text)
     
 
-    def _enrich_content(self, url: str, content_id: UUID, db: Session):
+    def _enrich_content(self, url: str, content_id=None, db=None):
         try:
             response = requests.get(url, timeout=5)
             if response.status_code != 200:
@@ -169,16 +169,16 @@ class ContentEmbeddingManager:
             return None
 
 
-    def _generate_embedding(self, text):
-        try:
-            response = self.openai_client.embeddings.create(
-                model=self.embedding_model,
-                input=text
-            )
-            return response.data[0].embedding
-        except Exception as e:
-            print(f"OpenAI embedding failed: {e}")
-            return None
+    # def _generate_embedding(self, text):
+    #     try:
+    #         response = self.openai_client.embeddings.create(
+    #             model=self.embedding_model,
+    #             input=text
+    #         )
+    #         return response.data[0].embedding
+    #     except Exception as e:
+    #         print(f"OpenAI embedding failed: {e}")
+    #         return None
         
 
     def _content_ai_exists(self, content_id: UUID) -> bool:

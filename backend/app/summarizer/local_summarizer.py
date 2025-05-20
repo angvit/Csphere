@@ -1,35 +1,25 @@
-from transformers import pipeline
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, pipeline
+import torch
 import os
 
+
 class LocalSummarizer:
-    def __init__(self, model_name="trained_models/t5_finetuned_base"):
-        base_dir = os.path.dirname(os.path.abspath(__file__))  # backend/app/summarizer
-        print(base_dir)
-        backend_root = os.path.abspath(os.path.join(base_dir, "..", ".."))  # points to backend/
-        print(backend_root)
-        model_path = os.path.join(backend_root, "app", model_name)
-
-        print("Resolved model path:", model_path)  # Debug print
-
-        if not os.path.isdir(model_path):
-            raise FileNotFoundError(f"Model directory not found: {model_path}")
-
-        if not os.path.isdir(model_path):
-            raise FileNotFoundError(f"Model directory not found: {model_path}")
+    def __init__(self, model_name):
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self.model = AutoModelForSeq2SeqLM.from_pretrained(model_name).to(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
         self.summarizer = pipeline(
             "summarization",
-            model=model_path,
-            tokenizer=model_path,
-            device=0 # device is set to gpu, -1 for cpu
+            model=model_name,
+            tokenizer=model_name,
+            device=0 if torch.cuda.is_available() else -1
         )
 
-    def summarize(self, text, min_length=20, max_length=120):
+    def summarize(self, text):
+        summary = None
         try:
-            prompt = f"summarize this article in a concise and informative way in 2-3 sentences: {text}"
-            summary = self.summarizer(
-                prompt, max_length=max_length, min_length=min_length, do_sample=False
-            )
-            return summary[0]["summary_text"]
+            summary = self.summarizer(text, max_length=128, truncation=True)[0]["summary_text"]
         except Exception as e:
             print(f"Summarization failed: {e}")
-            return None
+        return summary

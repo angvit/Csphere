@@ -1,42 +1,76 @@
-import requests
 import os
-from dotenv import load_dotenv
+import numpy as np
+from app.summarizer.local_summarizer import LocalSummarizer
+from app.embeddings.local_embedding_manager import LocalEmbeddingManager
+from app.managers.content_embedding_manager import ContentEmbeddingManager
 
-load_dotenv()
 
-FASTAPI_URL = os.getenv("FASTAPI_URL", "http://localhost:3000")
-TOKEN = os.getenv("USER_TOKEN")  # User token (login token), set this in .env or export directly
+URLS = [
+    "https://domenic.me/chatgpt-simulacrum/",
+    "https://www.goto10retro.com/p/about-asteroids-ataris-biggest-arcade",
+    "https://blog.briankitano.com/llama-from-scratch/",
+    "https://www.statepress.com/article/2025/05/opinion-misinformation-rabbit-hole-saving#",
+    "https://amberwilliams.io/blogs/building-my-own-pkms",
+    "https://www.theverge.com/news/669157/china-begins-assembling-its-supercomputer-in-space",
+    "https://www.construction-physics.com/p/why-its-so-hard-to-build-a-jet-engine",
+    "https://www.construction-physics.com/p/how-to-build-a-20-billion-semiconductor",
+    "https://cs.stanford.edu/people/eroberts/courses/ww2/projects/jet-airplanes/how.html",
+    "https://vitonsky.net/blog/2022/06/08/complicated-software/"
+]
 
-def semantic_search(query):
-    headers = {
-        "Authorization": f"Bearer {TOKEN}"
-    }
+# In-memory store
 
-    params = {
-        "query": query
-    }
+embeddings = []
 
-    response = requests.get(f"{FASTAPI_URL}/search", headers=headers, params=params)
+def prepare_documents():
+    print("Preparing and embedding documents...\n")
+    summarizer = LocalSummarizer("angvit/flan-t5-csphere")
+    embedder = LocalEmbeddingManager("all-MiniLM-L6-v2")
+    manager = ContentEmbeddingManager(db=None)
 
-    if response.status_code != 200:
-        print(f"Search failed ({response.status_code}): {response.text}")
-        return
+    summaries = []
 
-    results = response.json()
+    for url in URLS:
+        print(f"Fetching: {url}")
+        html_text = manager._enrich_content(url)
+        if not html_text:
+            continue
 
-    if not results:
-        print("No results found.")
-        return
+        summary = summarizer.summarize(html_text)
+        if not summary:
+            continue
 
-    for idx, result in enumerate(results, start=1):
-        print(f"\nResult {idx}:")
-        print(f"Title: {result['title']}")
-        print(f"URL: {result['url']}")
-        print(f"Source: {result.get('source', 'N/A')}")
-        print(f"First Saved At: {result['first_saved_at']}")
-        print(f"AI Summary: {result['ai_summary']}")
+        print(f"Summary: {summary}")
+
+        vector = manager._generate_embedding(summary)
+
+        summaries.append({
+            "url": url,
+            "summary": summary,
+            "vector": vector
+        })
+    return summaries
+
 
 if __name__ == "__main__":
-    print("CSphere Content Search CLI Tool")
-    query = input("Enter your query: ")
-    semantic_search(query)
+    print("CSphere CLI Semantic Search on Sample URLs")
+    docs = prepare_documents()
+
+    while True:
+        query = input("Enter query (or 'exit'): ").strip()
+        if query == "exit":
+            break
+
+        embedder = LocalEmbeddingManager("all-MiniLM-L6-v2")
+        query_vector = embedder.generate_embedding(query)
+
+        # Compute cosine similarities
+        def cosine_sim(a, b):
+            import numpy as np
+            a, b = np.array(a), np.array(b)
+            return np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b))
+
+        ranked = sorted(docs, key=lambda doc: cosine_sim(query_vector, doc["vector"]), reverse=True)
+        print("\nTop Results:")
+        for doc in ranked[:3]:
+            print(f"- {doc['url']}\n  Summary: {doc['summary']}\n")
