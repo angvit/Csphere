@@ -8,6 +8,7 @@ import { redirect } from "next/navigation";
 import LogoutButton from "@/app/components/LogoutButton";
 import LoginButton from "@/app/components/LoginButton";
 import LogoComponent from "@/app/components/LogoComponent";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,6 +53,14 @@ export default async function RootLayout({ children }) {
 
           <div className="flex items-center space-x-3">
             <LoginButton />
+            <Link href="/signup">
+              <button
+                type="button"
+                className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large"
+              >
+                Sign Up
+              </button>
+            </Link>
             <div className="md:hidden">
               <button
                 type="button"
