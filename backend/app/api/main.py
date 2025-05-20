@@ -244,3 +244,7 @@ def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db))
     db.delete(content)
     db.commit()
     return
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app.api.main:app", host="0.0.0.0", port=port)
