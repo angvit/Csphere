@@ -3,7 +3,6 @@ const backend_url = DEPLOYED ? BACKEND_URL : "http://127.0.0.1:8000";
 const frontend_url = DEPLOYED ? FRONTEND_URL : "http://localhost:3000";
 
 // Check if the script is running in the correct context
-alert("Backend and frontend URLs: " + backend_url + " " + frontend_url);
 
 // Helper function to wrap chrome.cookies.get in a Promise
 function getCookieAsync(details) {
