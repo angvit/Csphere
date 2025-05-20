@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import Link from "next/link";
-import HttpClient from "@/app/classes/fetchclass";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
@@ -25,12 +24,6 @@ const formSchema = z.object({
   password: z.string(),
   confirmpassword: z.string(),
 });
-
-interface responseData {
-  status?: number;
-  data?: JSON;
-  error?: string;
-}
 
 export default function SignupForm() {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -50,9 +43,7 @@ export default function SignupForm() {
     console.log("Email changed:", watchedEmail);
   }, [watchedEmail]);
 
-  async function onSubmit(
-    values: z.infer<typeof formSchema>
-  ): Promise<responseData> {
+  async function onSubmit(values: z.infer<typeof formSchema>): Promise<void> {
     try {
       console.log(values);
       if (values.password !== values.confirmpassword) {
@@ -64,17 +55,12 @@ export default function SignupForm() {
         return;
       }
 
-      //MAKE THE API REQUEST
-      const client = new HttpClient({
-        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
-        defaultOpts: {
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/signup`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      });
-
-      const response = await client.post("/api/signup", {
         body: JSON.stringify({
           username: values.username,
           email: values.email,
@@ -82,16 +68,14 @@ export default function SignupForm() {
         }),
       });
 
-      console.log("Response:", response);
-      const responseBody = await response.json();
-
-      console.log("Response JSON:", responseBody);
-
-      if (response.status === 200) {
-        toast.success("Signup successful!");
-      } else {
+      if (!response.ok) {
+        const responseBody = await response.json();
+        console.error("HTTP Error:", responseBody);
         toast.error(responseBody.detail || "Signup failed. Please try again.");
+        return;
       }
+
+      toast.success("Signup successful!");
     } catch (error) {
       console.error("Form submission error", error);
       toast.error("Failed to submit the form. Please try again.");

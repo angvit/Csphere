@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { PasswordInput } from "@/components/ui/password-input";
-import HttpClient from "@/app/classes/fetchclass";
 import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
@@ -45,54 +44,47 @@ export default function LoginForm() {
     values: z.infer<typeof formSchema>
   ): Promise<responseData> {
     try {
-      console.log(values);
+      console.log("Form values:", values);
+      console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
 
-      const client = new HttpClient({
-        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
-        defaultOpts: {
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/login`;
+      console.log("API URL:", apiUrl);
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      });
-
-      // const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/data`, {
-      //   method: "POST",
-      //   credentials: "include",
-      //   body: JSON.stringify({
-      //     username: values.username,
-      //     password: values.password,
-      //   }),
-      //   headers: {
-      //     "Content-Type": "application/json",
-      //   },
-      // });
-
-      const response = await client.post("/api/login", {
         body: JSON.stringify({
           username: values.username,
           password: values.password,
         }),
       });
 
+      console.log("Response status:", response.status);
+      console.log("Response headers:", response.headers);
+
       if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Error response body:", errorBody);
         toast.error("Login failed. Please check your credentials.");
         return;
       }
+
       const data = await response.json();
-      console.log("Login successful", data);
+      console.log("Login successful, response data:", data);
 
       if (data.token) {
+        console.log("Token received:", data.token);
         localStorage.setItem("cshere_token", data.token);
       }
 
       document.cookie = `token=${data.token}; path=/; max-age=3600`;
+      console.log("Cookie set for token.");
 
       router.push("/home");
-
-      // toast.success("Login successful!");
     } catch (error) {
-      console.error("Form submission error", error);
+      console.error("Form submission error:", error);
       toast.error("Failed to submit the form. Please try again.");
     }
   }
