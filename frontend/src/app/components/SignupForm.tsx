@@ -66,7 +66,7 @@ export default function SignupForm() {
 
       //MAKE THE API REQUEST
       const client = new HttpClient({
-        baseUrl: "http://127.0.0.1:8000",
+        baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
         defaultOpts: {
           headers: {
             "Content-Type": "application/json",
@@ -83,11 +83,14 @@ export default function SignupForm() {
       });
 
       console.log("Response:", response);
+      const responseBody = await response.json();
+
+      console.log("Response JSON:", responseBody);
 
       if (response.status === 200) {
         toast.success("Signup successful!");
       } else {
-        toast.error("Signup failed. Please try again.");
+        toast.error(responseBody.detail || "Signup failed. Please try again.");
       }
     } catch (error) {
       console.error("Form submission error", error);
