@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 
 function LoginButton() {
   const pathname = usePathname();
@@ -29,12 +30,31 @@ function LoginButton() {
   };
 
   return (
-    <button
-      className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large hidden md:block"
-      onClick={token ? onLogout : onLogin}
-    >
-      {token ? "Logout" : "Login"}
-    </button>
+    <>
+      {!token ? (
+        <div className="hidden md:flex">
+          <Link
+            href="/login"
+            className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large"
+          >
+            Login
+          </Link>
+          <Link
+            href="/signup"
+            className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large ml-4"
+          >
+            Signup
+          </Link>
+        </div>
+      ) : (
+        <button
+          className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large hidden md:block"
+          onClick={token ? onLogout : onLogin}
+        >
+          {token ? "Logout" : "Login"}
+        </button>
+      )}
+    </>
   );
 }
 
