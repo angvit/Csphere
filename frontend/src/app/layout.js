@@ -57,38 +57,11 @@ export default async function RootLayout({ children }) {
 
           <div className="flex items-center space-x-3">
             <LoginButton />
-            {!token && (
-              <Link href="/signup">
-                <button
-                  type="button"
-                  className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large hidden md:block"
-                >
-                  Sign Up
-                </button>
-              </Link>
-            )}
+
             <DropdownMenu />
           </div>
-
-          {/* --- Mobile Menu (Needs State Management) --- */}
-          {/* This section would be conditionally rendered based on isMobileMenuOpen state */}
-          {/* <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} md:hidden`} id="mobile-menu">
-        <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-300 absolute left-0 right-0 shadow-lg">
-          <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-[#202A29] hover:text-gray-700 hover:bg-gray-100">Solutions</a>
-          <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-[#202A29] hover:text-gray-700 hover:bg-gray-100">Industries</a>
-          <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-[#202A29] hover:text-gray-700 hover:bg-gray-100">About us</a>
-          <a href="#" className="block px-3 py-2 rounded-md text-base font-medium text-[#202A29] hover:text-gray-700 hover:bg-gray-100">Contact</a>
-        </div>
-      </div> */}
         </header>
         {children}
-
-        {/* <footer className=" text-white  mt-8 absolute bottom-0 w-full ">
-          <div className="  text-center">
-            <p>&copy; 2025 Cphere. All rights reserved.</p>
-          </div>
-        </footer> */}
-        {/* <Toaster className="bg-white text-red-200" /> */}
       </body>
     </html>
   );
