@@ -262,39 +262,6 @@ class ContentEmbeddingManager:
         return False
     
     
-    # def _summarize_content(self, summary_input):
-    #     ''' Uses a summary model to get a more detailed summary for the content embeddings '''
-        
-    #     # Debug (TO REMOVE)
-    #     print(f"The summary input being passed to summary model is: {summary_input}")
-
-    #     # Check if there is input first
-    #     if summary_input is None:
-    #         return None
-
-    #     try:
-    #         input_length = len(self.embedding_model.tokenizer.encode(summary_input)) # Get actual token length
-    #         max_length = int(input_length * 0.6)  # Set the max length to about 60 % of input (we can change)
-    #         max_length = max(30, min(max_length, 150)) # Ensure the max length is within a reasonable range
-    #         summary = self.summary_model(
-    #             summary_input, 
-    #             max_length=max_length, 
-    #             num_beams=4,
-    #             no_repeat_ngram_size=3,
-    #             repetition_penalty=2.0,
-    #             early_stopping=True,
-    #             min_length=15, 
-    #             top_k=50,
-    #             top_p=0.9,
-    #             temperature=0.8
-    #         )[0]['generated_text']
-    #         return summary
-        
-    #     except Exception as e:
-    #         print(f"An error occurred during summarization: {e}")
-    #         return 
-    
-    
     def _summarize_content(self, summary_input):
         try:
             response = self.openai_client.chat.completions.create(
