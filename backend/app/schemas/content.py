@@ -7,6 +7,13 @@ class ContentCreate(BaseModel):
     url: str
     title: Optional[str]
     source: Optional[str]
+    email: str
+
+class DBContent(BaseModel):
+    url: str
+    title: Optional[str]
+    source: Optional[str]
+
 
 class ContentWithSummary(BaseModel):
     content_id: UUID

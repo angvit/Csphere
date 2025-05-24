@@ -2,21 +2,28 @@ import { BACKEND_URL, FRONTEND_URL, DEPLOYED } from "./config.dev.js";
 const backend_url = DEPLOYED ? BACKEND_URL : "http://127.0.0.1:8000";
 const frontend_url = DEPLOYED ? FRONTEND_URL : "http://localhost:3000";
 
+let userEmail = "";
+
+//Get user permission to get email
+chrome.identity.getProfileUserInfo({ accountStatus: "ANY" }, (userInfo) => {
+  userEmail = userInfo.email;
+});
+
 // Check if the script is running in the correct context
 
 // Helper function to wrap chrome.cookies.get in a Promise
-function getCookieAsync(details) {
-  return new Promise((resolve, reject) => {
-    chrome.cookies.get(details, (cookie) => {
-      // Check for chrome.runtime.lastError, which indicates problems
-      // like missing host permissions.
-      if (chrome.runtime.lastError) {
-        return reject(chrome.runtime.lastError);
-      }
-      resolve(cookie); // Resolve with the cookie object (which might be null)
-    });
-  });
-}
+// function getCookieAsync(details) {
+//   return new Promise((resolve, reject) => {
+//     chrome.cookies.get(details, (cookie) => {
+//       // Check for chrome.runtime.lastError, which indicates problems
+//       // like missing host permissions.
+//       if (chrome.runtime.lastError) {
+//         return reject(chrome.runtime.lastError);
+//       }
+//       resolve(cookie); // Resolve with the cookie object (which might be null)
+//     });
+//   });
+// }
 
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("bookMarkBtn");
@@ -39,17 +46,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         console.log("Attempting to get cookie for URL:", frontend_url);
-        const cookie = await getCookieAsync({
-          url: frontend_url,
-          name: "token",
-        });
-        console.log("Cookie lookup finished. Cookie object:", cookie);
-        alert("Cookie lookup finished. Cookie object: " + cookie);
 
-        if (cookie && cookie.value) {
-          const cookieVal = cookie.value;
-          console.log("Retrieved token from cookie:", cookieVal);
-          console.log("Proceeding with fetch using token:", cookieVal);
+        if (userEmail) {
+          console.log("Retrieved token from cookie:", userEmail);
+          console.log("Proceeding with fetch using token:", userEmail);
           const endpoint = `${backend_url}/content/save`;
           const response = await fetch(endpoint, {
             method: "POST",
@@ -57,12 +57,13 @@ document.addEventListener("DOMContentLoaded", () => {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              Authorization: `Bearer ${cookieVal}`,
+              // Authorization: `Bearer ${cookieVal}`,
             },
             body: JSON.stringify({
               url: tab.url,
               title: tab.title,
               source: "chrome_extension",
+              email: userEmail,
             }),
           });
 

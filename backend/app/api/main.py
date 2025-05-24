@@ -17,7 +17,7 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
-from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent
+from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent
 from app.schemas.user import UserCreate, UserSignIn
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
@@ -141,27 +141,29 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
 
 @app.post("/content/save", response_model=ContentWithSummary)
 def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
-    token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
-    print("Token from header:", token)
-    if not token:
-        raise HTTPException(status_code=401, detail="Token not provided")
-    
-    #decode the token to get the user id
-    data = decode_token(token) 
-    print("Decoded token data: ", data)
-    if not data:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    user_id = data.username 
 
-    print("User ID from token: ", user_id)
+
+    use_email = content.email
+    print("Email from content: ", use_email)
     print("Content being saved: ", content)
+
+    user_id = db.query(User).filter(User.email == use_email).first()
+    if not user_id:
+        raise HTTPException(status_code=400, detail="User not found")
+    user_id = user_id.id
+    print("User ID: ", user_id)
 
     # Check if content already exists globally
     existing_content = db.query(Content).filter(Content.url == content.url).first()
 
     if not existing_content:
         print("New Content link")
-        new_content = Content(**content.model_dump(), user_id=user_id)
+        DBcontent = DBContent(
+            url=content.url,
+            title=content.title,
+            source=content.source,
+        )
+        new_content = Content(**DBcontent.model_dump(), user_id=user_id)
         db.add(new_content)
         db.flush() # generate content_id
 
