@@ -3,7 +3,7 @@
   "name": "My Chrome Extension",
   "version": "1.0",
   "description": "Google chrome extension that works alongside our app to bookmark their tabs.",
-  "permissions": ["tabs", "cookies"],
+  "permissions": ["tabs", "cookies", "identity", "identity.email"],
 
   "background": {
     "service_worker": "background.js"
