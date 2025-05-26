@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +36,8 @@ export default function SignupForm() {
       confirmpassword: "",
     },
   });
+
+  const [message, setMessage] = useState("");
 
   const watchedEmail = form.watch("email");
 
