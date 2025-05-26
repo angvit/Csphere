@@ -5,11 +5,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
-import LogoutButton from "@/app/components/LogoutButton";
 import LoginButton from "@/app/components/LoginButton";
 import DropdownMenu from "@/app/components/DropdownMenu";
 import LogoComponent from "@/app/components/LogoComponent";
-import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,9 +34,6 @@ export const metadata = {
 };
 
 export default async function RootLayout({ children }) {
-  const cookieStore = cookies();
-  const token = cookieStore.get("cshere_token");
-  console.log("TOKEN:", token);
   return (
     <html
       lang="en"
