@@ -10,6 +10,9 @@ class ContentCreate(BaseModel):
     email: str
     notes: Optional[str]
 
+class TabRemover(BaseModel):
+    content_id: UUID 
+
 class DBContent(BaseModel):
     url: str
     title: Optional[str]

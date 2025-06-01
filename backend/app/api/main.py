@@ -18,7 +18,7 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
-from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent
+from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover
 from app.schemas.user import UserCreate, UserSignIn
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
@@ -212,6 +212,90 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
     print("Successfully saved content for user.")
 
     return {"status": "Success"}
+
+
+@app.post("/content/tab")
+def tab_user_content(content: TabRemover,user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    try:
+        content_id = content.content_id
+
+        query = db.query(Content).filter(
+            Content.content_id == content_id
+        )
+
+        DBcontent = query.one_or_none()
+
+        if not DBContent:
+            raise HTTPException(
+            status_code=400,
+            detail="Content not found in the Contents table"
+        )
+
+
+        existing_item = db.query(ContentItem).filter(
+            ContentItem.user_id == user_id,
+            ContentItem.content_id == DBcontent.content_id
+        ).first()
+
+        utc_time = datetime.now(timezone.utc)
+
+        if not existing_item:
+            new_item = ContentItem(
+                user_id=user_id,
+                content_id=DBcontent.content_id,
+                saved_at=utc_time,  
+                notes='' 
+            )
+            db.add(new_item)
+            db.commit()
+
+        return {'success' : True}
+    
+    except Exception as e:
+        print("error in the backend: ", e)
+        return {'success': False}
+
+
+    
+
+
+
+
+
+@app.post("/content/untab")
+def untab_user_content(content: TabRemover,user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    #remove based on user_id and content_id
+    content_id_to_delete = content.content_id
+
+    # Construct the query to find the specific ContentItem to delete
+    query = db.query(ContentItem).filter(
+        ContentItem.user_id == user_id,
+        ContentItem.content_id == content_id_to_delete
+    )
+
+
+    deleted_row_count = query.delete(synchronize_session='fetch')
+
+    if deleted_row_count == 0:
+     
+        raise HTTPException(
+            status_code=400,
+            detail="Content item not found for the specified user and content ID."
+        )
+
+    db.commit()
+
+    return {
+        "message": "Content item successfully untabbed (deleted).",
+        "user_id": user_id,
+        "content_id": content_id_to_delete,
+        "deleted_count": deleted_row_count
+    }
+
+
+
+
 
 # gets all content for a specific user 
 @app.get("/content", response_model=list[UserSavedContent])
