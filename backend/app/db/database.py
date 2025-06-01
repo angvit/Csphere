@@ -9,7 +9,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 print("DB URL: ", DATABASE_URL)
 
 try:
-    engine = create_engine(DATABASE_URL)
+    engine = create_engine(DATABASE_URL, connect_args={
+        "options": "-c timezone=UTC"
+    })
     print("Connected")
 except Exception as e:
     print("Connection falied: ", e)
