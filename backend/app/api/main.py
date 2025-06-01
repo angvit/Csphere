@@ -10,7 +10,7 @@ from pydantic import BaseModel
 from uuid import uuid4
 from uuid import UUID
 from dotenv import load_dotenv
-from datetime import datetime
+from datetime import datetime, timezone
 import os 
 
 
@@ -190,7 +190,7 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
         new_item = ContentItem(
             user_id=user_id,
             content_id=new_content.content_id,
-            saved_at=datetime.utcnow(),  
+            saved_at=datetime.now(timezone.utc),  
             notes=notes 
         )
         db.add(new_item)
