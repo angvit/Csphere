@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, ExternalLink, Tag, BookmarkIcon } from "lucide-react";
 import Image from "next/image";
 import { formatDate } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -15,8 +16,76 @@ interface BookmarkCardProps {
 export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
   const [saved, setSaved] = useState(true);
 
-  const toggleSaved = () => {
+  const token = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+
+  const tabBookmark = async () => {
+    try {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content/tab`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          content_id: bookmark.content_id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Error response body:", errorBody);
+        toast.error("Login failed. Please check your credentials.");
+        return;
+      }
+
+      const data = await response.json();
+      toast.message("Tab saved");
+    } catch (error) {
+      console.log("Error: ", error);
+      toast.error("Error tabing your content");
+    }
+  };
+
+  const toggleSaved = async () => {
     setSaved(!saved);
+    console.log(saved);
+
+    if (!saved) {
+      tabBookmark();
+      return;
+    }
+
+    try {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content/untab`;
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          content_id: bookmark.content_id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        console.error("Error response body:", errorBody);
+        toast.error("Login failed. Please check your credentials.");
+        return;
+      }
+
+      const data = await response.json();
+      toast.message("Tab unsaved");
+    } catch (error) {
+      console.log("Error: ", error);
+      toast.error("Error untabing your tab");
+    }
   };
 
   return (
