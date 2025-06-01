@@ -13,6 +13,7 @@ from dotenv import load_dotenv
 from datetime import datetime
 import os 
 
+
 from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
@@ -23,6 +24,7 @@ from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
+from sqlalchemy import desc
 
 from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
 
@@ -139,35 +141,32 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
     ]
 
 
-@app.post("/content/save", response_model=ContentWithSummary)
+# @app.post("/content/save", response_model=ContentWithSummary)
+@app.post("/content/save")
 def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
-
-
     use_email = content.email
-    print("Email from content: ", use_email)
-    print("Content being saved: ", content)
+    notes = content.notes
 
-    user_id = db.query(User).filter(User.email == use_email).first()
-    if not user_id:
+    user = db.query(User).filter(User.email == use_email).first()
+    if not user:
         raise HTTPException(status_code=400, detail="User not found")
-    user_id = user_id.id
+    user_id = user.id
     print("User ID: ", user_id)
 
     # Check if content already exists globally
     existing_content = db.query(Content).filter(Content.url == content.url).first()
 
     if not existing_content:
-        print("New Content link")
-        DBcontent = DBContent(
+        new_content = Content(
             url=content.url,
             title=content.title,
             source=content.source,
+            user_id=user_id,
         )
-        new_content = Content(**DBcontent.model_dump(), user_id=user_id)
         db.add(new_content)
-        db.flush() # generate content_id
+        db.flush()  # generate content_id without commit
 
-        # only embed if new content
+        # Generate embedding only for new content
         embedding_manager = ContentEmbeddingManager(db)
         content_ai = embedding_manager.process_content(new_content)
         db.commit()
@@ -181,41 +180,46 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
         new_content = existing_content
         content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
 
-    # Check if this user already saved it
+    # Check if this user already saved this content
     existing_item = db.query(ContentItem).filter(
         ContentItem.user_id == user_id,
         ContentItem.content_id == new_content.content_id
     ).first()
 
     if not existing_item:
-        db.add(ContentItem(user_id=user_id, content_id=new_content.content_id))
+        new_item = ContentItem(
+            user_id=user_id,
+            content_id=new_content.content_id,
+            saved_at=datetime.utcnow(),  
+            notes=notes 
+        )
+        db.add(new_item)
         db.commit()
 
     print("Successfully saved content for user.")
-    return ContentWithSummary(
-        content_id=new_content.content_id,
-        url=new_content.url,
-        title=new_content.title,
-        source=new_content.source,
-        first_saved_at=new_content.first_saved_at,
-        ai_summary=content_ai.ai_summary if content_ai else None
-    )
 
+    return {"status": "Success"}
 
 # gets all content for a specific user 
 @app.get("/content", response_model=list[UserSavedContent])
 def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     print(f"Fetching content for user_id: {user_id}")
+
+    print(Content.first_saved_at)
+
     
     results = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
         .filter(ContentItem.user_id == user_id)
+        .order_by(desc(ContentItem.saved_at)) 
         .all()
     )
 
     print(f"Total results found: {len(results)}")
+    for item, content, ai_summary in results[5:10]:
+        print("Ordering field (first_saved_at):", content.first_saved_at)
 
     response = [
         UserSavedContent(
