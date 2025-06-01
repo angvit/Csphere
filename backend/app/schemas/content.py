@@ -8,6 +8,7 @@ class ContentCreate(BaseModel):
     title: Optional[str]
     source: Optional[str]
     email: str
+    notes: Optional[str]
 
 class DBContent(BaseModel):
     url: str

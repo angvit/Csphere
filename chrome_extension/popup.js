@@ -9,26 +9,28 @@ chrome.identity.getProfileUserInfo({ accountStatus: "ANY" }, (userInfo) => {
   userEmail = userInfo.email;
 });
 
+function getNotes() {
+  const textarea = document.getElementById("notesTextarea");
+  const content = textarea.value;
+
+  return content;
+}
+
 function insertMessage(message, messageType) {
-  const parent = document.querySelector("app");
+  // const parent = document.querySelector("app");
   const message_p = document.querySelector(".message-p");
   const submit_button = document.querySelector(".action-bar");
-  const loading_div = document.createElement("div");
 
   submit_button.disabled = true;
-  loading_div.className = "loading-icon";
   if (!message_p) return;
 
   message_p.textContent = message;
   message_p.style.color = messageType === "error" ? "red" : "green";
 
-  parent.appendChild(loading_div);
-
   setTimeout(() => {
     message_p.textContent = "";
     message_p.style.color = "";
     submit_button.disabled = false;
-    loading_div.remove();
   }, 5000);
 }
 
@@ -55,39 +57,51 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Attempting to get cookie for URL:", frontend_url);
 
         if (userEmail) {
-          console.log("Retrieved token from cookie:", userEmail);
-          console.log("Proceeding with fetch using token:", userEmail);
-          const endpoint = `${backend_url}/content/save`;
-          const response = await fetch(endpoint, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              // Authorization: `Bearer ${cookieVal}`,
-            },
-            body: JSON.stringify({
-              url: tab.url,
-              title: tab.title,
-              source: "chrome_extension",
-              email: userEmail,
-            }),
-          });
+          try {
+            const notes = getNotes();
+            const endpoint = `${backend_url}/content/save`;
 
-          console.log("Raw response from server: ", response);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            alert("Endpoint: " + endpoint);
+
+            const response = await fetch(endpoint, {
+              method: "POST",
+              credentials: "include",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                // Authorization: `Bearer ${cookieVal}`,
+              },
+              body: JSON.stringify({
+                url: tab.url,
+                title: tab.title,
+                source: "chrome_extension",
+                email: userEmail,
+                notes: notes,
+              }),
+            });
+
+            // Wait for JSON parsing
+            const data = await response.json();
+
+            console.log("Raw response from server:", response);
+            console.log("Parsed response data:", data);
+
+            // Check if server returned a successful status
+            if (data.status !== "Sucess") {
+              throw new Error(`Server returned error status: ${data.status}`);
+            }
+
+            insertMessage("Bookmark successfully saved", "success");
+          } catch (err) {
+            alert("Error saving bookmark:" + err);
+            insertMessage("Failed to save bookmark", "error");
           }
-          const data = await response.json();
-          console.log("Response data from server: ", data);
-
-          insertMessage("Bookmark succesfullysaved");
         } else {
           console.warn("Token cookie not found or has no value.");
           alert("Could not find authentication token. Please log in.");
         }
       } catch (error) {
-        insertMessage("An error occured, please try again later");
+        insertMessage("An error occured, please try again later", "error");
         // Display a user-friendly error message if needed
         alert(`An error occurred: ${error.message}`);
       }

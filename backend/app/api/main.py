@@ -139,13 +139,17 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
     ]
 
 
-@app.post("/content/save", response_model=ContentWithSummary)
+# @app.post("/content/save", response_model=ContentWithSummary)
+@app.post("/content/save")
 def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
 
 
     use_email = content.email
+    notes = content.notes
     print("Email from content: ", use_email)
     print("Content being saved: ", content)
+    print("notes from user: ", notes)
+
 
     user_id = db.query(User).filter(User.email == use_email).first()
     if not user_id:
@@ -192,14 +196,9 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
         db.commit()
 
     print("Successfully saved content for user.")
-    return ContentWithSummary(
-        content_id=new_content.content_id,
-        url=new_content.url,
-        title=new_content.title,
-        source=new_content.source,
-        first_saved_at=new_content.first_saved_at,
-        ai_summary=content_ai.ai_summary if content_ai else None
-    )
+
+
+    return {"status" : "Sucess"}
 
 
 # gets all content for a specific user 
