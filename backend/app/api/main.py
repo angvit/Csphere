@@ -156,12 +156,17 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
     # Check if content already exists globally
     existing_content = db.query(Content).filter(Content.url == content.url).first()
 
+    utc_time = datetime.now(timezone.utc)
+
+    print("utc value: ", utc_time)
+
     if not existing_content:
         new_content = Content(
             url=content.url,
             title=content.title,
             source=content.source,
             user_id=user_id,
+            first_saved_at=utc_time
         )
         db.add(new_content)
         db.flush()  # generate content_id without commit
@@ -186,15 +191,23 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
         ContentItem.content_id == new_content.content_id
     ).first()
 
+    print("current utc timezone: ", datetime.now(timezone.utc))
+
+    utc_time = datetime.now(timezone.utc)
+
     if not existing_item:
         new_item = ContentItem(
             user_id=user_id,
             content_id=new_content.content_id,
-            saved_at=datetime.now(timezone.utc),  
+            saved_at=utc_time,  
             notes=notes 
         )
         db.add(new_item)
         db.commit()
+
+        saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
+        print(f"Retrieved from DB: {saved_item.saved_at}")
+        print(f"Retrieved type: {type(saved_item.saved_at)}")
 
     print("Successfully saved content for user.")
 
@@ -218,8 +231,8 @@ def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session =
     )
 
     print(f"Total results found: {len(results)}")
-    for item, content, ai_summary in results[5:10]:
-        print("Ordering field (first_saved_at):", content.first_saved_at)
+    for item, content, ai_summary in results[0:5]:
+        print("Ordering field (first_saved_at):", item.saved_at, 'With title: ', content.title)
 
     response = [
         UserSavedContent(
