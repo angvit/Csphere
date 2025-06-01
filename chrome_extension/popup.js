@@ -61,8 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const notes = getNotes();
             const endpoint = `${backend_url}/content/save`;
 
-            alert("Endpoint: " + endpoint);
-
             const response = await fetch(endpoint, {
               method: "POST",
               credentials: "include",
@@ -87,7 +85,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Parsed response data:", data);
 
             // Check if server returned a successful status
-            if (data.status !== "Sucess") {
+            if (data.status !== "Success") {
               throw new Error(`Server returned error status: ${data.status}`);
             }
 
