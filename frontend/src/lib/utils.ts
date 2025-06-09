@@ -5,7 +5,8 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 export function formatDate(dateString: string): string {
-  const date = new Date(dateString + "Z");
+  const date = new Date(dateString);
+
   console.log("here");
 
   console.log("curent date: " + date);

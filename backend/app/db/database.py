@@ -19,6 +19,7 @@ except Exception as e:
 # managing transactions and DB state
 SessionLocal = sessionmaker(bind=engine)
 
+#Initialize the base for all datamodels
 Base = declarative_base()
 
 # yield a fresh session per request (FASTAPI)
