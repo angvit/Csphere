@@ -112,6 +112,7 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
         </div>
         <div className="flex items-center text-xs text-gray-500">
           <Calendar className="h-3 w-3 mr-1" />
+          {/* {bookmark.first_saved_at} */}
           {formatDate(bookmark.first_saved_at)}
         </div>
       </div>
