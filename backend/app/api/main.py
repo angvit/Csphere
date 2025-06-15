@@ -19,6 +19,7 @@ from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover
+from app.schemas.settings import UpdateSettings
 from app.schemas.user import UserCreate, UserSignIn
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
@@ -294,7 +295,58 @@ def untab_user_content(content: TabRemover,user_id: UUID = Depends(get_current_u
     }
 
 
+# @app.get("/user/profile/info")
+# def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+#     user = db.query(User).filter(User.id == user_id).first()
 
+#     if not user:
+#         raise HTTPException(status_code=404, detail="User not found.")
+    
+#     print("user: ", user)
+
+#     return {
+#         "id": user.id,
+#         "username": user.username,
+#         "email": user.email,
+#         # add fields as needed
+#     }
+
+
+
+
+@app.post("/settings/update")
+def update(content : UpdateSettings,user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    settings_entry = db.query(User).filter(User.id == user_id).first()
+
+    if not settings_entry:
+        raise HTTPException(
+            status_code=404,
+            detail="Settings for this user were not found."
+        )
+
+    updates = {
+        key: value
+        for key, value in content.dict(exclude_unset=True).items()
+        if value not in (None, "")
+    }
+
+
+    for key, value in updates.items():
+        setattr(settings_entry, key, value)
+
+    db.commit()
+    db.refresh(settings_entry)
+
+    return {
+        "message": "Settings successfully updated.",
+        "user_id": user_id,
+        "updated_fields": content.dict(exclude_unset=True)
+    }
+
+
+
+  
 
 
 # gets all content for a specific user 
