@@ -43,10 +43,12 @@ function ProfileDropdown() {
         <DropdownMenuSeparator className="bg-gray-100" />
 
         <DropdownMenuGroup>
-          <DropdownMenuItem className="cursor-pointer ">
-            Profile
-            <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
-          </DropdownMenuItem>
+          <Link href="/profile">
+            <DropdownMenuItem className="cursor-pointer ">
+              Profile
+              <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          </Link>
           {/* <DropdownMenuItem>
             Billing
             <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>

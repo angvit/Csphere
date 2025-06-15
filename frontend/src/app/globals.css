@@ -4,7 +4,6 @@
 
 html {
   scroll-behavior: smooth;
-
 }
 
 @theme {
@@ -55,4 +54,15 @@ button {
   font-family: "PT Serif", serif;
   font-weight: 700;
   font-style: italic;
+}
+
+form {
+  all: unset;
+
+  /* Restore layout behavior */
+  display: block; /* Makes form behave like a block element */
+  width: 100%; /* Makes it fill the parent’s width */
+  box-sizing: border-box; /* Ensures padding/border don't exceed 100% width */
+  outline: black;
+  color: black;
 }
