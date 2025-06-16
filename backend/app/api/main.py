@@ -295,21 +295,21 @@ def untab_user_content(content: TabRemover,user_id: UUID = Depends(get_current_u
     }
 
 
-# @app.get("/user/profile/info")
-# def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-#     user = db.query(User).filter(User.id == user_id).first()
+@app.get("/user/profile/info")
+def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
 
-#     if not user:
-#         raise HTTPException(status_code=404, detail="User not found.")
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
     
-#     print("user: ", user)
+    print("user: ", user)
 
-#     return {
-#         "id": user.id,
-#         "username": user.username,
-#         "email": user.email,
-#         # add fields as needed
-#     }
+    return {
+        
+        "username": user.username,
+        "email": user.email,
+  
+    }
 
 
 
@@ -324,9 +324,10 @@ def update(content : UpdateSettings,user_id: UUID = Depends(get_current_user_id)
             status_code=404,
             detail="Settings for this user were not found."
         )
+    print("Content dictionary : ", content.dict())
 
     updates = {
-        key: value
+        key: get_password_hash(value) if key == 'password' else value
         for key, value in content.dict(exclude_unset=True).items()
         if value not in (None, "")
     }
