@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 
 const formSchema = z.object({
-  username: z.string().min(1).min(5).max(50),
+  username: z.string(),
   email: z.string(),
   password: z.string(),
   confirmpassword: z.string(),
