@@ -25,6 +25,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const getUserInfo = async () => {
+      debugger;
       try {
         const token = document.cookie
           .split("; ")
@@ -37,15 +38,18 @@ export default function ProfilePage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify({
-            username: username,
-            email: email,
-            password: password,
-          }),
         });
+
+        console.log("response: ", response);
+
+        const data = await response.json();
+
+        setUsername(data.username);
+        setEmail(data.email);
+
+        console.log("data: ", data);
       } catch (error) {}
     };
-
     getUserInfo();
   }, []);
 
@@ -137,7 +141,7 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label htmlFor="password" className="flex items-center gap-2">
                   <Lock className="w-4 h-4" />
                   Current Password
@@ -149,7 +153,7 @@ export default function ProfilePage() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter your current password"
                 />
-              </div>
+              </div> */}
             </div>
 
             {/* Action Buttons */}
