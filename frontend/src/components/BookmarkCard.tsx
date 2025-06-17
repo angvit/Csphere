@@ -4,7 +4,13 @@ import { useState } from "react";
 import type { Bookmark } from "@/types/bookmark";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, ExternalLink, Tag, BookmarkIcon } from "lucide-react";
+import {
+  Calendar,
+  ExternalLink,
+  Tag,
+  BookmarkIcon,
+  NotebookPen,
+} from "lucide-react";
 import Image from "next/image";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -109,14 +115,13 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
           <span className="text-sm text-gray-600 truncate max-w-[180px]">
             {new URL(bookmark.url).hostname}
           </span>
+          {/* Add NotebookPen icon here */}
         </div>
-        <div className="flex items-center text-xs text-gray-500">
+        <div className="flex items-center text-xs text-gray-800">
           <Calendar className="h-3 w-3 mr-1" />
-          {/* {bookmark.first_saved_at} */}
           {formatDate(bookmark.first_saved_at)}
         </div>
       </div>
-
       {/* Title */}
       <h3 className="font-bold text-lg mb-2">{bookmark.title || "Untitled"}</h3>
 
@@ -136,28 +141,31 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
         </div>
       )}
 
-      {/* Footer */}
-      <div className="flex justify-between items-center mt-auto pt-3 border-t border-gray-100">
-        <a
-          href={bookmark.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-500 text-sm underline flex items-center"
-        >
-          Visit <ExternalLink className="h-4 w-4 ml-1" />
-        </a>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hover:bg-gray-100"
-          onClick={toggleSaved}
-        >
-          <BookmarkIcon
-            className={`h-4 w-4 ${
-              saved ? "fill-current text-blue-500" : "text-gray-400"
-            }`}
-          />
-        </Button>
+      <div className="relative mt-4">
+        <NotebookPen className=" text-gray-700 absolute top-[-25px] left-0  px-1" />
+        {/* Footer */}
+        <div className="flex justify-between items-center mt-auto pt-1 border-t border-gray-100">
+          <a
+            href={bookmark.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-500 text-sm underline flex items-center"
+          >
+            Visit <ExternalLink className="h-4 w-4 ml-1" />
+          </a>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="hover:bg-gray-100"
+            onClick={toggleSaved}
+          >
+            <BookmarkIcon
+              className={`h-4 w-4 ${
+                saved ? "fill-current text-blue-500" : "text-gray-400"
+              }`}
+            />
+          </Button>
+        </div>
       </div>
     </div>
   );
