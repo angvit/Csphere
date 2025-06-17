@@ -175,7 +175,6 @@ export default function SignupForm() {
           </Button>
         </Link>
       </div>
-      toast.success("Signup successful!");
     </Form>
   );
 }

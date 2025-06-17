@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, User, Mail, Lock } from "lucide-react";
-import { PasswordInput } from "@/components/ui/password-input";
+// import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string>(

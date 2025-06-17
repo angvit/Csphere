@@ -37,3 +37,4 @@ class UserSavedContent(BaseModel):
     source: Optional[str]
     ai_summary: Optional[str]
     first_saved_at: datetime
+    notes: Optional[str]

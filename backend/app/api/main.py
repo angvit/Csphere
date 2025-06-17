@@ -353,9 +353,7 @@ def update(content : UpdateSettings,user_id: UUID = Depends(get_current_user_id)
 # gets all content for a specific user 
 @app.get("/content", response_model=list[UserSavedContent])
 def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    print(f"Fetching content for user_id: {user_id}")
 
-    print(Content.first_saved_at)
 
     
     results = (
@@ -379,6 +377,7 @@ def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session =
             source=content.source,
             ai_summary=ai_summary,
             first_saved_at=item.saved_at,
+            notes=item.notes
         )
         for item, content, ai_summary in results
     ]
