@@ -33,6 +33,7 @@ export default function BookmarksPage() {
       if (!res.ok) throw new Error("Failed to fetch content");
 
       const data = await res.json();
+      console.log("bookmark data being returned: ", data);
       setBookmarks(data);
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
