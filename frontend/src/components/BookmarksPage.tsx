@@ -54,7 +54,9 @@ export default function BookmarksPage() {
           <h1 className="text-4xl md:text-5xl font-bold text-center">
             Rediscover
           </h1>
-          <SearchInput onSearch={fetchBookmarks} />
+          <div className="w-full max-w-7xl px-4 mx-auto">
+            <SearchInput onSearch={fetchBookmarks} />
+          </div>
           <CategoryFilter />
         </div>
       </div>
