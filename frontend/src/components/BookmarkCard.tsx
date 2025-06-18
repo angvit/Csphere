@@ -14,6 +14,12 @@ import {
 import Image from "next/image";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import NotePopup from "@/app/components/home/NotePopup";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -21,11 +27,17 @@ interface BookmarkCardProps {
 
 export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
   const [saved, setSaved] = useState(true);
+  const [showNotes, setShowNotes] = useState(false);
 
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
     ?.split("=")[1];
+
+  const showNotesFunc = () => {
+    console.log(!showNotes);
+    setShowNotes(!showNotes);
+  };
 
   const tabBookmark = async () => {
     try {
@@ -142,7 +154,21 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
       )}
 
       <div className="relative mt-4">
-        <NotebookPen className=" text-gray-700 absolute top-[-25px] left-0  px-1" />
+        <Popover>
+          <PopoverTrigger asChild>
+            <NotebookPen className="text-gray-700 px-1 hover:cursor-pointer" />
+          </PopoverTrigger>
+          <PopoverContent
+            side="top" // can be 'top', 'bottom', 'left', 'right'
+            align="start" // 'start', 'center', or 'end'
+            sideOffset={10} // space between trigger and popover
+            className="w-64 z-10 bg-gray-900 text-white h-40 "
+          >
+            {bookmark.notes.length > 0 ? bookmark.notes : "no notes"}
+          </PopoverContent>
+        </Popover>
+
+        {showNotes && <NotePopup note={bookmark.notes} />}
         {/* Footer */}
         <div className="flex justify-between items-center mt-auto pt-1 border-t border-gray-100">
           <a
