@@ -15,7 +15,7 @@ main {
 }
 
 form {
-  @apply space-y-6 p-6 rounded-2xl w-full max-w-lg;
+  @apply rounded-2xl w-full;
 }
 
 p,
@@ -57,12 +57,9 @@ button {
 }
 
 form {
-  all: unset;
-
-  /* Restore layout behavior */
-  display: block; /* Makes form behave like a block element */
-  width: 100%; /* Makes it fill the parent’s width */
-  box-sizing: border-box; /* Ensures padding/border don't exceed 100% width */
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
   outline: black;
   color: black;
 }
