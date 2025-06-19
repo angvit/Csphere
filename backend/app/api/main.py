@@ -18,7 +18,7 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
-from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover
+from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
 from app.schemas.settings import UpdateSettings
 from app.schemas.user import UserCreate, UserSignIn
 from app.preprocessing.preprocessor import QueryPreprocessor
@@ -384,6 +384,22 @@ def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session =
 
     return response
 
+
+
+@app.post("/content/update/notes")
+def updatenote(data: NoteContentUpdate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    previous_note = db.query(ContentItem).filter(ContentItem.content_id == data.bookmarkID).first()
+
+    if not previous_note:
+        raise HTTPException(status_code=404, detail="Content item not found")
+
+    
+    previous_note.notes = data.notes
+
+    # Commit the change
+    db.commit()
+
+    return {"message": "Note updated successfully", "bookmarkID": str(data.bookmarkID)}
 
 # gets a single piece of content for a specific user
 @app.get("/content/{content_id}", response_model=ContentWithSummary)
