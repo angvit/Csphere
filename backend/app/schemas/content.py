@@ -3,6 +3,10 @@ from typing import Optional
 from uuid import UUID
 from datetime import datetime
 
+class NoteContentUpdate(BaseModel):
+    notes: str
+    bookmarkID: UUID
+
 class ContentCreate(BaseModel):
     url: str
     title: Optional[str]
