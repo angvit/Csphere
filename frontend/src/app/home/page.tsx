@@ -5,8 +5,8 @@ import BookmarksPage from "@/components/BookmarksPage";
 
 function page() {
   return (
-    <div className="min-h-screen w-screen bg-gray-50">
-      <main className=" w-full  py-8 ">
+    <div className="min-h-screen w-full bg-gray-50">
+      <main className=" w-full  ">
         <div className="flex flex-col gap-8 md:flex-row">
           {/* Sidebar */}
           {/* <aside className="w-full md:w-60 shrink-0">

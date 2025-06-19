@@ -21,8 +21,9 @@ const CollapsibleTab = ({ title }: TabContent) => {
     switch (title.toLowerCase()) {
       case "account":
         return <Account />;
+
       default:
-        return <h1>Not found</h1>;
+        return <h1>Coming soon!</h1>;
     }
   };
 

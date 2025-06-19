@@ -33,6 +33,7 @@ export default function BookmarksPage() {
       if (!res.ok) throw new Error("Failed to fetch content");
 
       const data = await res.json();
+      console.log("bookmark data being returned: ", data);
       setBookmarks(data);
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
@@ -54,7 +55,9 @@ export default function BookmarksPage() {
           <h1 className="text-4xl md:text-5xl font-bold text-center">
             Rediscover
           </h1>
-          <SearchInput onSearch={fetchBookmarks} />
+          <div className="w-full max-w-7xl px-4 mx-auto">
+            <SearchInput onSearch={fetchBookmarks} />
+          </div>
           <CategoryFilter />
         </div>
       </div>
