@@ -2,8 +2,6 @@ import { Geist, Geist_Mono, PT_Serif } from "next/font/google";
 
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import LoginButton from "@/app/components/LoginButton";
 import DropdownMenu from "@/app/components/DropdownMenu";
