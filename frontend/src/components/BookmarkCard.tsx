@@ -141,6 +141,23 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
     }
   };
 
+  const setReadLink = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+    try {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/content/${bookmark.content_id}`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data = await response.json();
+      console.log(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
     <div className="border border-black rounded-lg p-6 hover:shadow-md transition-shadow flex flex-col justify-between h-full">
       {/* <Image
@@ -273,6 +290,7 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
         <div className="flex justify-between items-center mt-auto pt-1 border-t border-gray-100">
           <a
             href={bookmark.url}
+            onClick={(e) => setReadLink(e)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-500 text-sm underline flex items-center"

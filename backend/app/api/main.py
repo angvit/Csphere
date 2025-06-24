@@ -346,6 +346,51 @@ def update(content : UpdateSettings,user_id: UUID = Depends(get_current_user_id)
     }
 
 
+@app.get("/user/content/unread",response_model=list[UserSavedContent] )
+def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    results = (
+        db.query(ContentItem, Content, ContentAI.ai_summary)
+        .join(Content, ContentItem.content_id == Content.content_id)
+        .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .filter(ContentItem.user_id == user_id, Content.read == False)
+        .order_by(desc(ContentItem.saved_at)) 
+        .all()
+    )
+
+
+
+    response = [
+        UserSavedContent(
+            content_id=content.content_id,
+            url=content.url,
+            title=content.title,
+            source=content.source,
+            ai_summary=ai_summary,
+            first_saved_at=item.saved_at,
+            notes=item.notes
+        )
+        for item, content, ai_summary in results
+    ]
+
+    return response
+
+
+
+@app.post("/user/content/{content_id}")
+def update_read(content_id: UUID, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
+
+    if not content:
+        raise HTTPException(status_code=404, detail="Content not found or not owned by user")
+    
+    content.read = True
+    db.commit()
+    db.refresh(content)  # optional, but good practice if you'll return updated data
+
+    return {"success": True}
+
+
 
   
 
@@ -365,9 +410,7 @@ def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session =
         .all()
     )
 
-    print(f"Total results found: {len(results)}")
-    for item, content, ai_summary in results[0:5]:
-        print("Ordering field (first_saved_at):", item.saved_at, 'With title: ', content.title)
+
 
     response = [
         UserSavedContent(

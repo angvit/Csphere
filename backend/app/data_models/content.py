@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, TIMESTAMP, ForeignKey
+from sqlalchemy import Column, String, TIMESTAMP, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import UUID
@@ -16,4 +16,6 @@ class Content(Base):
     title = Column(String, nullable=True)
     source = Column(String, nullable=True)
     first_saved_at = Column(TIMESTAMP(timezone=True), default=func.now())
+    read = Column(Boolean, nullable=False, server_default=text('false'))
     content_ai = relationship("ContentAI", backref="content", uselist=False)
+    

@@ -22,6 +22,12 @@ function ProfileDropdown() {
   const switchDropDown = () => {
     setDropdownOpen(!dropdownOpen);
   };
+
+  const onLogout = () => {
+    document.cookie = `token=; path=/; max-age=0`;
+    localStorage.removeItem("csphere_token");
+    window.location.href = "/login";
+  };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -30,7 +36,7 @@ function ProfileDropdown() {
           width={50}
           height={50}
           alt="Picture of the author"
-          className="bg-gray-200 rounded-full p-1 cursor-pointer"
+          className="bg-gray-200 rounded-full p-1 cursor-pointer hidden md:block"
           onClick={switchDropDown}
         />
       </DropdownMenuTrigger>
@@ -59,6 +65,21 @@ function ProfileDropdown() {
               <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
             </DropdownMenuItem>
           </Link>
+          <DropdownMenuSeparator className="bg-gray-100" />
+
+          <DropdownMenuItem
+            onClick={() => onLogout()}
+            className="cursor-pointer "
+          >
+            Logout
+          </DropdownMenuItem>
+
+          {/* <button
+            className="bg-[#E0E5E4] text-[#202A29] px-6 py-3 rounded-lg hover:bg-[#CCD3D2] text-base font-large hidden md:block"
+            onClick={() => onLogout()}
+          >
+            Logout
+          </button> */}
           {/* <DropdownMenuItem>
             Keyboard shortcuts
             <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
