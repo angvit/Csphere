@@ -5,11 +5,8 @@ import SearchInput from "./SearchInput";
 import CategoryFilter from "./CategoryFilter";
 import BookmarkList from "./BookmarkList";
 import { DotPattern } from "@/components/ui/dot-pattern";
-import { useSearchParams } from "next/navigation";
 function UnreadBookmarksPage() {
   const [bookmarks, setBookmarks] = useState([]);
-
-  const searchParams = useSearchParams();
 
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
