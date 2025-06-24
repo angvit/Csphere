@@ -6,8 +6,7 @@ import CategoryFilter from "./CategoryFilter";
 import BookmarkList from "./BookmarkList";
 import { DotPattern } from "@/components/ui/dot-pattern";
 import { useSearchParams } from "next/navigation";
-
-export default function BookmarksPage() {
+function UnreadBookmarksPage() {
   const [bookmarks, setBookmarks] = useState([]);
 
   const searchParams = useSearchParams();
@@ -25,7 +24,7 @@ export default function BookmarksPage() {
         ? `${
             process.env.NEXT_PUBLIC_API_BASE_URL
           }/search?query=${encodeURIComponent(query)}`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/content/unread`;
 
       const res = await fetch(url, {
         headers: {
@@ -70,3 +69,5 @@ export default function BookmarksPage() {
     </div>
   );
 }
+
+export default UnreadBookmarksPage;

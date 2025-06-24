@@ -25,7 +25,6 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const getUserInfo = async () => {
-      debugger;
       try {
         const token = document.cookie
           .split("; ")
