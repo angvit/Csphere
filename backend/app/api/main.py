@@ -454,7 +454,7 @@ def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session 
     return content
 
 
-app.delete("/content/{content_id}", status_code=204)
+@app.delete("/content/{content_id}", status_code=204)
 def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db)):
     content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
     if not content:
@@ -464,6 +464,98 @@ def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db))
     db.commit()
     return
 
+
+import numpy as np
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pinecone import Pinecone
+from llama_index.llms.google_genai import GoogleGenAI
+
+
+def chunk_text(text, chunk_size):
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=chunk_size, chunk_overlap=50)
+    chunks = text_splitter.split_text(text)
+
+    return chunks
+
+
+
+
+
+
+
+
+
+GOOGLE_API_KEY= os.environ.get('GOOGLE_API_KEY')
+PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
+
+class QueryRequest(BaseModel):
+    query: str
+
+@app.post("/crosve/chat")
+def crosve_chat(request_body: QueryRequest):
+    query = request_body.query
+    if not query:
+        raise HTTPException(status_code=404, detail="No query found, returning") 
+    
+    pc = Pinecone(api_key=PINECONE_API_KEY)
+
+
+    llm = GoogleGenAI(
+        model="gemini-2.0-flash",
+        api_key=GOOGLE_API_KEY,  # uses GOOGLE_API_KEY env var by default
+    )
+
+    index_name = "crosve-portfolio"
+
+    pinecone_index = pc.Index(index_name)
+
+    reranked_results = pinecone_index.search(
+    namespace="portfolio",
+    query={
+        "top_k": 10,
+        "inputs": {
+            'text': query
+        }
+    },
+    rerank={
+        "model": "bge-reranker-v2-m3",
+        "top_n": 10,
+        "rank_fields": ["chunk_text"]
+    }   
+)
+    content = []
+
+    for hit in reranked_results['result']['hits'][:4]:
+    
+        content.append(hit['fields']['chunk_text'])
+
+        print(f"id: {hit['_id']}, score: {round(hit['_score'], 4)}, text: {hit['fields']['chunk_text']} \n")
+
+    prompt = f"You are a smart agent. A question would be asked to you and relevant information would be provided.\
+    Your task is to answer the question and use the information provided. Question - {query}. Relevant Information about crosve lucero - {[c for c in content]}. You may also use \
+    any addional information you may find on the web to help you answer the question as well. Also answer the questions(s) like it were any regular conversation and sounds enthustiastic as well \
+        Don't start off by saying 'based on the info provided' or anything like that."
+    
+
+    llm = GoogleGenAI(
+    model="gemini-2.0-flash",
+    api_key=GOOGLE_API_KEY, 
+)
+
+    response = llm.complete(prompt)
+    print(response.text)
+
+    return {'text': response.text}
+
+        
+ 
+        
+
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("app.api.main:app", host="0.0.0.0", port=port)
+
+
+
