@@ -454,7 +454,7 @@ def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session 
     return content
 
 
-app.delete("/content/{content_id}", status_code=204)
+@app.delete("/content/{content_id}", status_code=204)
 def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db)):
     content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
     if not content:
@@ -464,6 +464,13 @@ def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db))
     db.commit()
     return
 
+
+
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("app.api.main:app", host="0.0.0.0", port=port)
+
+
+
