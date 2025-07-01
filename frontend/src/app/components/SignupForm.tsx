@@ -16,6 +16,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import Link from "next/link";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
@@ -86,7 +88,10 @@ export default function SignupForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="text-black">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="text-black space-y-3"
+      >
         <FormField
           control={form.control}
           name="username"
@@ -166,7 +171,15 @@ export default function SignupForm() {
           Submit
         </Button>
       </form>
-      <hr />
+      <hr className="border-black mb-4" />
+      <GoogleLogin
+        onSuccess={(credentials) =>
+          console.log(jwtDecode(credentials.credential))
+        }
+        onError={() => console.log("error")}
+        text="signup_with"
+      />
+
       <div className="text-center text-gray-400 mt-4">
         <p className="text-sm">Have an account?</p>
         <Link href="/login">

@@ -131,7 +131,8 @@ export default function LoginForm() {
         </Button>
       </form>
 
-      <hr />
+      <hr className="border-black mb-4" />
+
       <div className="text-center text-gray-400 mt-4">
         <p className="text-sm">Don't have an account?</p>
         <Link href="/signup">
