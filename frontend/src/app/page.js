@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import FeatureSection from "@/components/FeatureSection";
@@ -43,16 +43,9 @@ export default function Home() {
           </motion.section>
         </motion.div>
       </main>
-      <motion.section
-        id="feature-section"
-        className="w-full h-[800px]"
-        initial={{ opacity: 0, y: 50 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, amount: 0.2 }}
-        transition={{ duration: 0.8 }}
-      >
+      <section id="feature-section" className="w-full h-[800px]">
         <FeatureSection />
-      </motion.section>
+      </section>
     </div>
   );
 }
