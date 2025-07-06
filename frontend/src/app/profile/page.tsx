@@ -19,9 +19,45 @@ export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string>(
     "/placeholder.svg?height=120&width=120"
   );
+  const [profileImagePath, setProfileImagePath] = useState<string>("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+
+  useEffect(() => {
+    const fetchPresignedUrl = async (profileImagePath: string) => {
+      const apiUrl = `${
+        process.env.NEXT_PUBLIC_API_BASE_URL
+      }/user/media/profile?profile_url=${encodeURIComponent(profileImagePath)}`;
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+
+      try {
+        const response = await fetch(apiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          method: "GET",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch pre-signed URL");
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.presigned_url) {
+          setProfileImage(data.presigned_url);
+        }
+      } catch (err) {
+        console.error("Error fetching pre-signed URL:", err);
+      }
+    };
+
+    fetchPresignedUrl(profileImagePath);
+  }, [profileImagePath]);
 
   useEffect(() => {
     const getUserInfo = async () => {
@@ -45,6 +81,7 @@ export default function ProfilePage() {
 
         setUsername(data.username);
         setEmail(data.email);
+        setProfileImagePath(data.profilePath);
 
         console.log("data: ", data);
       } catch (error) {}
@@ -52,14 +89,40 @@ export default function ProfilePage() {
     getUserInfo();
   }, []);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("pfp", file); // must match `pfp: UploadFile` in FastAPI
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (!token) return;
+
+    try {
+      const res = await fetch("http://localhost:8000/user/media", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      console.log("data from media; ", data);
+      console.log("Uploaded image URL:", data.profile_media);
+
+      // Update your UI with the returned image URL
+      setProfileImagePath(data.profile_media);
+    } catch (err) {
+      console.error("Upload error:", err);
     }
   };
 

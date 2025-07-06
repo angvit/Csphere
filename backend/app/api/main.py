@@ -1,5 +1,5 @@
 import uvicorn 
-from fastapi import FastAPI, Depends, Query, HTTPException, Request, Header
+from fastapi import FastAPI, Depends, Query, HTTPException, Request, Header, UploadFile, File
 from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +12,8 @@ from uuid import UUID
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 import os 
+import boto3
+
 
 
 from app.db.database import get_db
@@ -20,7 +22,7 @@ from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
 from app.schemas.settings import UpdateSettings
-from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn
+from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn, UserProfilePicture
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
@@ -51,6 +53,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+s3 = boto3.client(
+    "s3",
+    region_name="us-east-1",  # change this to your S3 region
+    aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+    aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
+)
+
+BUCKET_NAME = os.environ.get('BUCKET_NAME')
 
 class ContentFromUrl(BaseModel):
     url: str
@@ -90,6 +101,66 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     
 
     return {'success': True, 'message': 'Google signup was succesful', 'token': token}
+
+from urllib.parse import urlparse
+
+def extract_s3_key(s3_url: str) -> str:
+    parsed = urlparse(s3_url)
+    # parsed.path is like '/pfps/58b59edcb9034a9db9a488185f56d5af_pixil-frame-0.png'
+    return parsed.path.lstrip('/')  # Remove leading slash
+
+
+@app.get("/user/media/profile")
+def get_profile_picture(profile_url: str = Query(...), user_id: UUID = Depends(get_current_user_id)):
+    print("profile url: ", profile_url)
+    presigned_url = s3.generate_presigned_url(
+    ClientMethod="get_object",
+    Params={
+        "Bucket": BUCKET_NAME,
+        "Key": extract_s3_key(profile_url)
+    },
+    ExpiresIn=3600  # seconds = 1 hour
+
+   
+    )
+
+    print("pre signed url: ", presigned_url)
+    
+    return {'success' : True, "presigned_url": presigned_url}
+
+
+@app.post("/user/media")
+def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    filename = f"pfps/{uuid4().hex}_{pfp.filename}"
+    try:
+        s3.upload_fileobj(
+            pfp.file,
+            BUCKET_NAME,
+            filename,
+            ExtraArgs={
+            
+                "ContentType": pfp.content_type,
+            },
+        )
+
+        image_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{filename}"
+        #save to the users DB 
+
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return {'success': False, 'message': "no user found with the user_id"}
+        
+        user.profile_path = image_url
+        db.commit()
+    except Exception as e:
+        return {'success' : False, 'error': str(e)}
+
+
+    
+
+    return {"profile_media": image_url}
+
 
 
 @app.post("/api/google/signup")
@@ -356,6 +427,7 @@ def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = De
         
         "username": user.username,
         "email": user.email,
+        "profilePath" : user.profile_path
   
     }
 
