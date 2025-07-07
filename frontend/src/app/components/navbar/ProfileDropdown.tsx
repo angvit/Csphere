@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
 import LoginButton from "../LoginButton";
@@ -15,13 +15,81 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import Link from "next/link";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 function ProfileDropdown() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [profileImage, setProfileImage] = useState<string>(
+    "/placeholder.svg?height=120&width=120"
+  );
+  const [profileImagePath, setProfileImagePath] = useState<string>("");
 
   const switchDropDown = () => {
     setDropdownOpen(!dropdownOpen);
   };
+
+  useEffect(() => {
+    const getUserInfo = async () => {
+      try {
+        const token = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("token="))
+          ?.split("=")[1];
+        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/profile/info`;
+        const response = await fetch(apiUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        console.log("response: ", response);
+
+        const data = await response.json();
+
+        setProfileImagePath(data.profilePath);
+
+        console.log("data: ", data);
+      } catch (error) {}
+    };
+    getUserInfo();
+  }, []);
+
+  useEffect(() => {
+    const fetchPresignedUrl = async (profileImagePath: string) => {
+      const apiUrl = `${
+        process.env.NEXT_PUBLIC_API_BASE_URL
+      }/user/media/profile?profile_url=${encodeURIComponent(profileImagePath)}`;
+      const token = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("token="))
+        ?.split("=")[1];
+
+      try {
+        const response = await fetch(apiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          method: "GET",
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch pre-signed URL");
+        }
+
+        const data = await response.json();
+
+        if (data.success && data.presigned_url) {
+          setProfileImage(data.presigned_url);
+        }
+      } catch (err) {
+        console.error("Error fetching pre-signed URL:", err);
+      }
+    };
+
+    fetchPresignedUrl(profileImagePath);
+  }, [profileImagePath]);
 
   const onLogout = () => {
     document.cookie = `token=; path=/; max-age=0`;
@@ -31,14 +99,19 @@ function ProfileDropdown() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Image
-          src="/profile-placeholder.svg"
-          width={50}
-          height={50}
-          alt="Picture of the author"
-          className="bg-gray-200 rounded-full p-1 cursor-pointer hidden md:block"
+        <Avatar
+          className="w-16 h-16 cursor-pointer hidden md:block"
           onClick={switchDropDown}
-        />
+        >
+          <AvatarImage
+            src={profileImage || "/placeholder.svg"}
+            alt="Picture of the author"
+            className="rounded-full"
+          />
+          <AvatarFallback className="bg-gray-200 text-gray-600">
+            {/* <User className="w-6 h-6" /> */}
+          </AvatarFallback>
+        </Avatar>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
