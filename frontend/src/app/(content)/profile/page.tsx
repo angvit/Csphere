@@ -90,8 +90,10 @@ export default function ProfilePage() {
 
     if (!token) return;
 
+    const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/media`;
+
     try {
-      const res = await fetch("http://localhost:8000/user/media", {
+      const res = await fetch(apiUrl, {
         headers: {
           Authorization: `Bearer ${token}`,
         },

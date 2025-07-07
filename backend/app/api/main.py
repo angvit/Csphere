@@ -69,7 +69,7 @@ class ContentFromUrl(BaseModel):
     title: str
 
 
-@app.post("/api/signup", response_model=UserCreate)
+@app.post("/api/signup")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     print("User being created: ", user)
 
@@ -98,7 +98,9 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)  # Refresh to get the user with the generated ID
 
     print("User created: ", new_user)
-    presigned_url = get_presigned_url(new_user.profile_path)
+    presigned_url = ''
+    if (new_user.profile_path != ''):
+        presigned_url = get_presigned_url(new_user.profile_path)
     token =create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
     
 
@@ -183,8 +185,9 @@ def google_signup(user: UserGoogleCreate,  db: Session = Depends(get_db)):
     db.add(new_user)
     db.commit()
     db.refresh(new_user)  # Refresh to get the user with the generated ID
-
-    presigned_url = get_presigned_url(new_user.profile_path)
+    presigned_url = ''
+    if (new_user.profile_path != ''):
+        presigned_url = get_presigned_url(new_user.profile_path)
     print("presigned url: ", presigned_url)
 
     token = create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
@@ -231,7 +234,9 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
          # This will return a 400 status code with the detail "Incorrect password"
         raise HTTPException(status_code=400, detail="Incorrect password")
     
-    presigned_url = get_presigned_url(db_user.profile_path)
+    presigned_url = ''
+    if db_user.profile_path != '':
+        presigned_url = get_presigned_url(db_user.profile_path)
     print("presigned url; ", presigned_url)
     token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
     print("Token created: ", token)
@@ -284,13 +289,22 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
 
     print("utc value: ", utc_time)
 
+    #     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    # url = Column(String, unique=True, nullable=False)   
+    # title = Column(String, nullable=True)
+    # source = Column(String, nullable=True)
+    # first_saved_at = Column(TIMESTAMP(timezone=True), default=func.now())
+    # read = Column(Boolean, nullable=False, server_default=text('false'))
+    # content_ai = relationship("ContentAI", backref="content", uselist=False)
+
     if not existing_content:
         new_content = Content(
             url=content.url,
             title=content.title,
             source=content.source,
             user_id=user_id,
-            first_saved_at=utc_time
+            first_saved_at=utc_time,
+            read=False
         )
         db.add(new_content)
         db.flush()  # generate content_id without commit
@@ -431,7 +445,7 @@ def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = De
         
         "username": user.username,
         "email": user.email,
-        "profilePath" : get_presigned_url( user.profile_path)
+        "profilePath" : get_presigned_url( user.profile_path) if user.profile_path != '' else ''
   
     }
 
