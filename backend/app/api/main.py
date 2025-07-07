@@ -28,6 +28,7 @@ from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
 from sqlalchemy import desc
+from app.functions.AWS_s3 import extract_s3_key, get_presigned_url
 
 from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
 
@@ -97,17 +98,13 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)  # Refresh to get the user with the generated ID
 
     print("User created: ", new_user)
-    token = create_access_token(data={"sub": str(new_user.id)})
+    presigned_url = get_presigned_url(new_user.profile_path)
+    token =create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
     
 
     return {'success': True, 'message': 'Google signup was succesful', 'token': token}
 
-from urllib.parse import urlparse
 
-def extract_s3_key(s3_url: str) -> str:
-    parsed = urlparse(s3_url)
-    # parsed.path is like '/pfps/58b59edcb9034a9db9a488185f56d5af_pixil-frame-0.png'
-    return parsed.path.lstrip('/')  # Remove leading slash
 
 
 @app.get("/user/media/profile")
@@ -187,7 +184,10 @@ def google_signup(user: UserGoogleCreate,  db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)  # Refresh to get the user with the generated ID
 
-    token = create_access_token(data={"sub": str(new_user.id)})
+    presigned_url = get_presigned_url(new_user.profile_path)
+    print("presigned url: ", presigned_url)
+
+    token = create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
     
 
 
@@ -204,7 +204,9 @@ def google_login(user : UserGoogleSignIn, db : Session =  Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=400, detail="User not found")
     
-    token = create_access_token(data={"sub": str(db_user.id)})
+    
+    
+    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : str(get_presigned_url(db_user.profile_path))})
 
     return {'message' : 'user found', 'token' : token, 'success' : True}
 
@@ -229,7 +231,9 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
          # This will return a 400 status code with the detail "Incorrect password"
         raise HTTPException(status_code=400, detail="Incorrect password")
     
-    token = create_access_token(data={"sub": str(db_user.id)})
+    presigned_url = get_presigned_url(db_user.profile_path)
+    print("presigned url; ", presigned_url)
+    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
     print("Token created: ", token)
 
     return {"username": db_user.username, "token": token}
@@ -427,7 +431,7 @@ def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = De
         
         "username": user.username,
         "email": user.email,
-        "profilePath" : user.profile_path
+        "profilePath" : get_presigned_url( user.profile_path)
   
     }
 

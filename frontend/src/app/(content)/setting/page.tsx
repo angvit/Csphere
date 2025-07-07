@@ -6,7 +6,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import Account from "../components/settings/Account";
+import Account from "@/app/components/settings/Account";
 
 const tabs = ["Account", "Notification", "Privacy", "Appearance"];
 
