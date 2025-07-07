@@ -106,7 +106,7 @@ export default function SignupForm() {
       const responseData: ResponseData = await response.json();
       console.log("data:", responseData);
 
-      if (responseData.success) {
+      if (responseData.success === true) {
         document.cookie = `token=${responseData.token}; path=/; max-age=3600`;
         router.push("/home");
       }
