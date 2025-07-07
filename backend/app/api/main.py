@@ -1,5 +1,5 @@
 import uvicorn 
-from fastapi import FastAPI, Depends, Query, HTTPException, Request, Header
+from fastapi import FastAPI, Depends, Query, HTTPException, Request, Header, UploadFile, File
 from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi.middleware.cors import CORSMiddleware
@@ -12,6 +12,8 @@ from uuid import UUID
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 import os 
+import boto3
+
 
 
 from app.db.database import get_db
@@ -20,12 +22,13 @@ from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
 from app.schemas.settings import UpdateSettings
-from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn
+from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn, UserProfilePicture
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from app.db import init_db
 from sqlalchemy import desc
+from app.functions.AWS_s3 import extract_s3_key, get_presigned_url
 
 from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
 
@@ -51,6 +54,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+s3 = boto3.client(
+    "s3",
+    region_name="us-east-1",  # change this to your S3 region
+    aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+    aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
+)
+
+BUCKET_NAME = os.environ.get('BUCKET_NAME')
 
 class ContentFromUrl(BaseModel):
     url: str
@@ -86,10 +98,66 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.refresh(new_user)  # Refresh to get the user with the generated ID
 
     print("User created: ", new_user)
-    token = create_access_token(data={"sub": str(new_user.id)})
+    presigned_url = get_presigned_url(new_user.profile_path)
+    token =create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
     
 
     return {'success': True, 'message': 'Google signup was succesful', 'token': token}
+
+
+
+
+@app.get("/user/media/profile")
+def get_profile_picture(profile_url: str = Query(...), user_id: UUID = Depends(get_current_user_id)):
+    print("profile url: ", profile_url)
+    presigned_url = s3.generate_presigned_url(
+    ClientMethod="get_object",
+    Params={
+        "Bucket": BUCKET_NAME,
+        "Key": extract_s3_key(profile_url)
+    },
+    ExpiresIn=3600  # seconds = 1 hour
+
+   
+    )
+
+    print("pre signed url: ", presigned_url)
+    
+    return {'success' : True, "presigned_url": presigned_url}
+
+
+@app.post("/user/media")
+def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    filename = f"pfps/{uuid4().hex}_{pfp.filename}"
+    try:
+        s3.upload_fileobj(
+            pfp.file,
+            BUCKET_NAME,
+            filename,
+            ExtraArgs={
+            
+                "ContentType": pfp.content_type,
+            },
+        )
+
+        image_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{filename}"
+        #save to the users DB 
+
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return {'success': False, 'message': "no user found with the user_id"}
+        
+        user.profile_path = image_url
+        db.commit()
+    except Exception as e:
+        return {'success' : False, 'error': str(e)}
+
+
+    
+
+    return {"profile_media": image_url}
+
 
 
 @app.post("/api/google/signup")
@@ -116,7 +184,10 @@ def google_signup(user: UserGoogleCreate,  db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)  # Refresh to get the user with the generated ID
 
-    token = create_access_token(data={"sub": str(new_user.id)})
+    presigned_url = get_presigned_url(new_user.profile_path)
+    print("presigned url: ", presigned_url)
+
+    token = create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
     
 
 
@@ -133,7 +204,9 @@ def google_login(user : UserGoogleSignIn, db : Session =  Depends(get_db)):
     if not db_user:
         raise HTTPException(status_code=400, detail="User not found")
     
-    token = create_access_token(data={"sub": str(db_user.id)})
+    
+    
+    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : str(get_presigned_url(db_user.profile_path))})
 
     return {'message' : 'user found', 'token' : token, 'success' : True}
 
@@ -158,7 +231,9 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
          # This will return a 400 status code with the detail "Incorrect password"
         raise HTTPException(status_code=400, detail="Incorrect password")
     
-    token = create_access_token(data={"sub": str(db_user.id)})
+    presigned_url = get_presigned_url(db_user.profile_path)
+    print("presigned url; ", presigned_url)
+    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
     print("Token created: ", token)
 
     return {"username": db_user.username, "token": token}
@@ -356,6 +431,7 @@ def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = De
         
         "username": user.username,
         "email": user.email,
+        "profilePath" : get_presigned_url( user.profile_path)
   
     }
 

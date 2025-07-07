@@ -14,6 +14,16 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, User, Mail, Lock } from "lucide-react";
 // import { PasswordInput } from "@/components/ui/password-input";
+import { jwtDecode } from "jwt-decode";
+
+type DecodedToken = {
+  sub: string;
+  email: string;
+  username: string;
+  role: string;
+  exp: number;
+  profilePath: string;
+};
 
 export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string>(
@@ -21,7 +31,6 @@ export default function ProfilePage() {
   );
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
 
   useEffect(() => {
     const getUserInfo = async () => {
@@ -45,27 +54,67 @@ export default function ProfilePage() {
 
         setUsername(data.username);
         setEmail(data.email);
+        setProfileImage(data.profilePath);
 
         console.log("data: ", data);
       } catch (error) {}
     };
-    getUserInfo();
+
+    const token_data = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (token_data === null) {
+      getUserInfo();
+    } else {
+      const decoded: DecodedToken = jwtDecode(token_data as string);
+      setEmail(decoded.email);
+      setUsername(decoded.username);
+      setProfileImage(decoded.profilePath);
+    }
   }, []);
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setProfileImage(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("pfp", file); // must match `pfp: UploadFile` in FastAPI
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (!token) return;
+
+    try {
+      const res = await fetch("http://localhost:8000/user/media", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      console.log("data from media; ", data);
+      console.log("Uploaded image URL:", data.profile_media);
+
+      // Update your UI with the returned image URL
+      setProfileImage(data.profile_media);
+    } catch (err) {
+      console.error("Upload error:", err);
     }
   };
 
   const handleSave = () => {
     // Handle save logic here
-    console.log("Profile saved:", { username, email, password });
+    console.log("Profile saved:", { username, email });
   };
 
   return (
@@ -120,6 +169,7 @@ export default function ProfilePage() {
                 <Input
                   id="username"
                   type="text"
+                  disabled
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username"
@@ -134,6 +184,7 @@ export default function ProfilePage() {
                 <Input
                   id="email"
                   type="email"
+                  disabled
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
@@ -156,14 +207,14 @@ export default function ProfilePage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+            {/* <div className="flex gap-3 pt-4">
               <Button onClick={handleSave} className="flex-1">
                 Save Changes
               </Button>
               <Button variant="outline" className="flex-1">
                 Cancel
               </Button>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>
