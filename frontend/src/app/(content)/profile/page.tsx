@@ -14,50 +14,23 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Camera, User, Mail, Lock } from "lucide-react";
 // import { PasswordInput } from "@/components/ui/password-input";
+import { jwtDecode } from "jwt-decode";
+
+type DecodedToken = {
+  sub: string;
+  email: string;
+  username: string;
+  role: string;
+  exp: number;
+  profilePath: string;
+};
 
 export default function ProfilePage() {
   const [profileImage, setProfileImage] = useState<string>(
     "/placeholder.svg?height=120&width=120"
   );
-  const [profileImagePath, setProfileImagePath] = useState<string>("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-
-  useEffect(() => {
-    const fetchPresignedUrl = async (profileImagePath: string) => {
-      const apiUrl = `${
-        process.env.NEXT_PUBLIC_API_BASE_URL
-      }/user/media/profile?profile_url=${encodeURIComponent(profileImagePath)}`;
-      const token = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("token="))
-        ?.split("=")[1];
-
-      try {
-        const response = await fetch(apiUrl, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          method: "GET",
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch pre-signed URL");
-        }
-
-        const data = await response.json();
-
-        if (data.success && data.presigned_url) {
-          setProfileImage(data.presigned_url);
-        }
-      } catch (err) {
-        console.error("Error fetching pre-signed URL:", err);
-      }
-    };
-
-    fetchPresignedUrl(profileImagePath);
-  }, [profileImagePath]);
 
   useEffect(() => {
     const getUserInfo = async () => {
@@ -81,12 +54,25 @@ export default function ProfilePage() {
 
         setUsername(data.username);
         setEmail(data.email);
-        setProfileImagePath(data.profilePath);
+        setProfileImage(data.profilePath);
 
         console.log("data: ", data);
       } catch (error) {}
     };
-    getUserInfo();
+
+    const token_data = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (token_data === null) {
+      getUserInfo();
+    } else {
+      const decoded: DecodedToken = jwtDecode(token_data as string);
+      setEmail(decoded.email);
+      setUsername(decoded.username);
+      setProfileImage(decoded.profilePath);
+    }
   }, []);
 
   const handleImageUpload = async (
@@ -120,7 +106,7 @@ export default function ProfilePage() {
       console.log("Uploaded image URL:", data.profile_media);
 
       // Update your UI with the returned image URL
-      setProfileImagePath(data.profile_media);
+      setProfileImage(data.profile_media);
     } catch (err) {
       console.error("Upload error:", err);
     }
@@ -128,7 +114,7 @@ export default function ProfilePage() {
 
   const handleSave = () => {
     // Handle save logic here
-    console.log("Profile saved:", { username, email, password });
+    console.log("Profile saved:", { username, email });
   };
 
   return (
@@ -183,6 +169,7 @@ export default function ProfilePage() {
                 <Input
                   id="username"
                   type="text"
+                  disabled
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username"
@@ -197,6 +184,7 @@ export default function ProfilePage() {
                 <Input
                   id="email"
                   type="email"
+                  disabled
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
@@ -219,14 +207,14 @@ export default function ProfilePage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-4">
+            {/* <div className="flex gap-3 pt-4">
               <Button onClick={handleSave} className="flex-1">
                 Save Changes
               </Button>
               <Button variant="outline" className="flex-1">
                 Cancel
               </Button>
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>

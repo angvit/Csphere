@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 
@@ -16,12 +17,17 @@ import {
 
 import Link from "next/link";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { getUserInfo, DecodeToken } from "@/functions/user/UserProfile";
+
+type userInfo = {
+  username: string;
+  email: string;
+  profilePath: string;
+};
 
 function ProfileDropdown() {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [profileImage, setProfileImage] = useState<string>(
-    "/placeholder.svg?height=120&width=120"
-  );
+  const [profileImage, setProfileImage] = useState<string>("");
   const [profileImagePath, setProfileImagePath] = useState<string>("");
 
   const switchDropDown = () => {
@@ -29,31 +35,19 @@ function ProfileDropdown() {
   };
 
   useEffect(() => {
-    const getUserInfo = async () => {
-      try {
-        const token = document.cookie
-          .split("; ")
-          .find((row) => row.startsWith("token="))
-          ?.split("=")[1];
-        const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/profile/info`;
-        const response = await fetch(apiUrl, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        console.log("response: ", response);
-
-        const data = await response.json();
-
-        setProfileImagePath(data.profilePath);
-
-        console.log("data: ", data);
-      } catch (error) {}
+    const functionality = async () => {
+      const tokenData = DecodeToken();
+      console.log("token data: ", tokenData);
+      if (tokenData == null) {
+        const userInfo: userInfo | undefined = await getUserInfo();
+        console.log("user info: ", userInfo);
+        setProfileImage(userInfo.profilePath);
+      } else {
+        setProfileImage(tokenData.profilePath);
+      }
     };
-    getUserInfo();
+
+    functionality();
   }, []);
 
   useEffect(() => {
@@ -74,11 +68,8 @@ function ProfileDropdown() {
           method: "GET",
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to fetch pre-signed URL");
-        }
-
         const data = await response.json();
+        console.log("data fetched successfullyL ", data);
 
         if (data.success && data.presigned_url) {
           setProfileImage(data.presigned_url);
@@ -88,7 +79,11 @@ function ProfileDropdown() {
       }
     };
 
-    fetchPresignedUrl(profileImagePath);
+    console.log("current profile image: ", profileImage);
+    if (profileImagePath !== "") {
+      console.log("current profile image: ", profileImage);
+      fetchPresignedUrl(profileImagePath);
+    }
   }, [profileImagePath]);
 
   const onLogout = () => {
