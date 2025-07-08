@@ -14,7 +14,7 @@ type Props = {
 
 export default function BookmarkLayout({ onSearch, children }: Props) {
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen flex flex-col">
+    <div className="container  px-4 py-8 min-h-screen flex flex-col">
       <div className="flex items-center justify-between mb-6 z-10 relative">
         <h1 className="md:text-2xl text-lg font-bold">Your Bookmarkss</h1>
         <div className="flex items-center gap-2">
