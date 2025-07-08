@@ -56,9 +56,11 @@ const CollapsibleTab = ({ title }: TabContent) => {
 
 function page() {
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-gray-300">
-      <div className="flex flex-col items-start justify-start h-[800px] w-2/3 p-8">
-        <h1 className="text-4xl mb-8">Settings</h1>
+    <div className="w-full min-h-screen flex items-start justify-center bg-gray-300 py-8">
+      <div className="flex flex-col items-start justify-start w-full md:w-2/3 max-w-4xl p-8">
+        <h1 className="text-4xl mb-8 md:text-left text-center w-full font-bold text-gray-900">
+          Settings
+        </h1>
 
         <div className="w-full space-y-4">
           {tabs.map((tab) => (

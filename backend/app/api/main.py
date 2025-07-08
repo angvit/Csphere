@@ -352,6 +352,22 @@ def save_content(content: ContentCreate, db: Session = Depends(get_db), request:
     return {"status": "Success"}
 
 
+@app.post("/api/user/google")
+def connect_google_account(user: UserGoogleCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    try:
+        google_id = user.google_id
+        user = db.query(User).filter(User.id == user_id).first()
+
+        if not user:
+            return {"success" : False, "message" : "no user found for current user id"}
+        
+        user.google_id = google_id
+        db.commit()
+        return {"success" : True, "message" : "google ID connected for user"}
+    
+    except Exception as e:
+        return {"success" : False, "message" : f"Following error occured: {e}"}
+
 @app.post("/content/tab")
 def tab_user_content(content: TabRemover,user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
