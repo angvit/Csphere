@@ -2,10 +2,20 @@
 import React, { useState } from "react";
 import FolderLayout from "./FolderLayout";
 import { Plus, Filter, ChevronDown } from "lucide-react";
+import FolderCard from "./foldercomponents/FolderCard";
 
 function page() {
   const [sortBy, setSortBy] = useState("Latest");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+  const folders = [
+    { title: "Results 2023", fileCount: 23, size: "137 MB" },
+    { title: "Documents", fileCount: 45, size: "89 MB" },
+    { title: "Images", fileCount: 128, size: "2.3 GB" },
+    { title: "Projects", fileCount: 67, size: "456 MB" },
+    { title: "Archive", fileCount: 234, size: "1.2 GB" },
+    { title: "Reports", fileCount: 12, size: "45 MB" },
+  ];
 
   const sortOptions = [
     "Latest",
@@ -16,10 +26,10 @@ function page() {
   ];
   return (
     <FolderLayout>
-      <div className="w-full ">
+      <div className="w-full space-y-6 gap-4 mb-4">
         <div className="flex items-center gap-3 mb-8">
           {/* New Button */}
-          <button className="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
+          <button className="bg-[#202A29] hover:bg-[#435856] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
             <Plus size={16} />
             New
           </button>
@@ -83,7 +93,16 @@ function page() {
         </div>
         <h2>Folders</h2>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {folders.map((folder, index) => (
+          <FolderCard
+            key={index}
+            title={folder.title}
+            fileCount={folder.fileCount}
+            size={folder.size}
+          />
+        ))}
+      </div>
     </FolderLayout>
   );
 }
