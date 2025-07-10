@@ -208,8 +208,10 @@ def google_login(user : UserGoogleSignIn, db : Session =  Depends(get_db)):
         raise HTTPException(status_code=400, detail="User not found")
     
     
-    
-    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : str(get_presigned_url(db_user.profile_path))})
+    profile_path = ''
+    if db_user.profile_path != None:
+        profile_path = get_presigned_url(db_user.profile_path)
+    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : str(profile_path)})
 
     return {'message' : 'user found', 'token' : token, 'success' : True}
 
@@ -235,7 +237,7 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Incorrect password")
     
     presigned_url = ''
-    if db_user.profile_path != '':
+    if db_user.profile_path != '' and db_user.profile_path != None:
         presigned_url = get_presigned_url(db_user.profile_path)
     print("presigned url; ", presigned_url)
     token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})

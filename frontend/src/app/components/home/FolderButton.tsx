@@ -4,11 +4,11 @@ import Link from "next/link";
 
 function FolderButton() {
   return (
-    <Link href="/home">
+    <Link href="/home/folders">
       <Button
         variant="ghost"
         size="sm"
-        className="text-gray-600 hover:text-gray-500"
+        className="text-gray-600 hover:text-gray-400"
       >
         Folders
       </Button>
