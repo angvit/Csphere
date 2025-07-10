@@ -4,9 +4,17 @@ import FolderLayout from "./FolderLayout";
 import { Plus, Filter, ChevronDown } from "lucide-react";
 import FolderCard from "./foldercomponents/FolderCard";
 
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+
 function page() {
   const [sortBy, setSortBy] = useState("Latest");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [folderCreat, setFolderCreat] = useState(false);
+  const [folderName, setFolderName] = useState("");
 
   const folders = [
     { title: "Results 2023", fileCount: 23, size: "137 MB" },
@@ -29,10 +37,40 @@ function page() {
       <div className="w-full space-y-6 gap-4 mb-4">
         <div className="flex items-center gap-3 mb-8">
           {/* New Button */}
-          <button className="bg-[#202A29] hover:bg-[#435856] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
-            <Plus size={16} />
-            New
-          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button className="bg-[#202A29] hover:bg-[#435856] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
+                <Plus size={16} />
+                New
+              </button>
+            </PopoverTrigger>
+
+            <PopoverContent
+              align="start"
+              sideOffset={20}
+              // alignOffset={20}
+              className="w-96 bg-gray-100"
+            >
+              <div className="flex flex-1 flex-col text-white space-y-4 p-1">
+                <h1 className="text-white font-semibold text-lg">New Folder</h1>
+                <input
+                  id="folder-name-input"
+                  placeholder="Enter folder name"
+                  value={folderName}
+                  onChange={(e) => setFolderName(e.target.value)}
+                  className="border border-black focus:border-gray-300 focus:outline-none text-black px-3 py-2 rounded-md"
+                />
+                <div className="flex items-end w-full justify-end space-x-3 text-black">
+                  <button className="rounded-lg hover:bg-amber-50 px-3 py-1.5 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                    Cancel
+                  </button>
+                  <button className="rounded-lg px-3 py-1.5 bg-gray-800 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                    Create
+                  </button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
 
           {/* Filters Button */}
           <button className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
