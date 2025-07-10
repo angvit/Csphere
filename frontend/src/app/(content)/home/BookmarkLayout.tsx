@@ -1,5 +1,4 @@
 // components/BookmarkLayout.tsx
-"use client";
 
 import { ReactNode } from "react";
 import SearchInput from "@/components/SearchInput";
@@ -21,7 +20,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
         <div className="flex items-center gap-2">
           <LatestButton />
           <UnreadButton />
-          {/* <FolderButton /> */}
+          <FolderButton />
         </div>
       </div>
       <div className="relative mb-8 overflow-visible">
