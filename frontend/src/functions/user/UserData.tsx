@@ -22,3 +22,5 @@ const fetchToken = () => {
   }
   return decodedToken;
 };
+
+export { fetchToken };

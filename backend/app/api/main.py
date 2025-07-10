@@ -20,9 +20,11 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
+from app.data_models.folder import Folder
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
 from app.schemas.settings import UpdateSettings
 from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn, UserProfilePicture
+from app.schemas.folder import FolderCreate, FolderDetails
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
@@ -245,6 +247,42 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
 
     return {"username": db_user.username, "token": token}
    
+
+@app.post("/user/folder/create")
+def create_folder(folderDetails: FolderDetails, user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    #check for existing folders with the same name under the same user_id
+    temp_folder = db.query(Folder).filter(User.id == user_id and Folder.folder_name == folderDetails.foldername)
+
+    if temp_folder:
+        raise HTTPException(status_code=400, detail="Folder already exists") 
+    
+    try:
+        new_folder = Folder(
+            folder_id = uuid4(),
+            user_id= user_id, 
+            parent_id = folderDetails.folderId if folderDetails else None,
+            folder_name = folderDetails.foldername,
+            created_at=datetime.utcnow() 
+        )
+        db.add(new_folder)
+        db.commit()
+        db.refresh(new_folder)
+
+        folder_details = {
+            'folder_id' : new_folder.folder_id,
+            'created_at' : new_folder.created_at, 
+
+        }
+
+        return {'success' : True, 'message' : 'folder created successfully', 'folder_details': folder_details}
+
+
+    except Exception as e:
+        return {'success' : False, 'message' : str(e)}
+
+
+
 
 @app.get("/search", response_model=list[ContentWithSummary])
 def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session = Depends(get_db)):
