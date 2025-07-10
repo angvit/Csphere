@@ -19,11 +19,13 @@ s3 = boto3.client(
 
 def extract_s3_key(s3_url: str) -> str:
     parsed = urlparse(s3_url)
+    print("parsed values: ", parsed)
     # parsed.path is like '/pfps/58b59edcb9034a9db9a488185f56d5af_pixil-frame-0.png'
     return parsed.path.lstrip('/')  # Remove leading slash
 
 
 def get_presigned_url(profile_url: str) -> str:
+    
     presigned_url = s3.generate_presigned_url(
     ClientMethod="get_object",
     Params={
