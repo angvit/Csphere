@@ -9,7 +9,7 @@ type DecodedToken = {
   profilePath: string;
 };
 
-const fetchToken = () => {
+const fetchEncodedToken = () => {
   const token_data = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
@@ -23,4 +23,13 @@ const fetchToken = () => {
   return decodedToken;
 };
 
-export { fetchToken };
+const fetchToken = () => {
+  const token_data = document.cookie
+    .split("; ")
+    .find((row) => row.startsWith("token="))
+    ?.split("=")[1];
+
+  return token_data;
+};
+
+export { fetchToken, fetchEncodedToken };
