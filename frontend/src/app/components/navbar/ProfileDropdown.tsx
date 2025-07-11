@@ -1,8 +1,5 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import Image from "next/image";
-
-import LoginButton from "../LoginButton";
 
 import {
   DropdownMenu,
@@ -48,7 +45,7 @@ function ProfileDropdown() {
     };
 
     functionality();
-  }, []);
+  }, [profileImage]);
 
   useEffect(() => {
     const fetchPresignedUrl = async (profileImagePath: string) => {
