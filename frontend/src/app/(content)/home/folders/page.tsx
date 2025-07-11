@@ -1,8 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import FolderLayout from "./FolderLayout";
 import { Plus, Filter, ChevronDown } from "lucide-react";
 import FolderCard from "./foldercomponents/FolderCard";
+import { createFolder } from "./functions/foldercreate";
+import { Toaster } from "@/components/ui/sonner";
+import { fetchHomeFolders } from "./functions/folderfetch";
 
 import {
   Popover,
@@ -10,20 +13,25 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
+interface FolderDetail {
+  folderId: string;
+  createdAt: String;
+  folderName: string;
+  parentId: string;
+  fileCount: number;
+}
+
 function page() {
   const [sortBy, setSortBy] = useState("Latest");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [folderCreat, setFolderCreat] = useState(false);
   const [folderName, setFolderName] = useState("");
+  const [folders, setFolders] = useState<FolderDetail[]>([]);
 
-  const folders = [
-    { title: "Results 2023", fileCount: 23, size: "137 MB" },
-    { title: "Documents", fileCount: 45, size: "89 MB" },
-    { title: "Images", fileCount: 128, size: "2.3 GB" },
-    { title: "Projects", fileCount: 67, size: "456 MB" },
-    { title: "Archive", fileCount: 234, size: "1.2 GB" },
-    { title: "Reports", fileCount: 12, size: "45 MB" },
-  ];
+  interface FolderCreateProps {
+    foldername: string;
+    folderId: string | null;
+  }
 
   const sortOptions = [
     "Latest",
@@ -32,6 +40,48 @@ function page() {
     "Name Z-A",
     "Most Popular",
   ];
+
+  useEffect(() => {
+    const fetchFolders = async () => {
+      const folderData = await fetchHomeFolders();
+      console.log("folder details being returned: ", folderData);
+      setFolders(folderData);
+    };
+
+    fetchFolders();
+  }, []);
+
+  const createNewFolder = async () => {
+    console.log("folder name: ", folderName);
+    if (!folderName?.trim()) {
+      return;
+    }
+
+    const folderData: FolderCreateProps = {
+      foldername: folderName.trim(),
+      folderId: null, // Set this dynamically if you want nested folders
+    };
+
+    try {
+      const folder_details = await createFolder(folderData);
+      console.log("folder details being returned:", folder_details);
+
+      if (folder_details) {
+        const newFolder: FolderDetail = {
+          folderId: folder_details.folder_id,
+          createdAt: folder_details.created_at,
+          folderName: folder_details.folder_name,
+          parentId: folder_details.parent_id,
+          fileCount: folder_details.file_count,
+        };
+        setFolders((prev) => [newFolder, ...prev]);
+      }
+    } catch (error) {
+      console.error("Error creating folder:", error);
+      // Optionally show an error toast or message
+    }
+  };
+
   return (
     <FolderLayout>
       <div className="w-full space-y-6 gap-4 mb-4">
@@ -64,7 +114,10 @@ function page() {
                   <button className="rounded-lg hover:bg-amber-50 px-3 py-1.5 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
                     Cancel
                   </button>
-                  <button className="rounded-lg px-3 py-1.5 bg-gray-800 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
+                  <button
+                    onClick={createNewFolder}
+                    className="rounded-lg px-3 py-1.5 bg-gray-800 text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                  >
                     Create
                   </button>
                 </div>
@@ -132,12 +185,12 @@ function page() {
         <h2>Folders</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {folders.map((folder, index) => (
+        {folders?.map((folder, index) => (
           <FolderCard
             key={index}
-            title={folder.title}
+            title={folder.folderName}
             fileCount={folder.fileCount}
-            size={folder.size}
+            folderId={folder.folderId}
           />
         ))}
       </div>

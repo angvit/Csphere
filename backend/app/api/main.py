@@ -145,6 +145,8 @@ def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_c
         )
 
         image_url = f"https://{BUCKET_NAME}.s3.amazonaws.com/{filename}"
+
+        presigned_url = get_presigned_url(image_url)
         #save to the users DB 
 
         user = db.query(User).filter(User.id == user_id).first()
@@ -159,8 +161,9 @@ def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_c
 
 
     
+    print("returning presigned url: ", presigned_url)
 
-    return {"profile_media": image_url}
+    return {"success":True,"profile_media": presigned_url}
 
 
 
@@ -247,31 +250,108 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
 
     return {"username": db_user.username, "token": token}
    
+@app.get("/user/folder")
+def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depends(get_db)):
+
+   
+    try:
+        folders= db.query(Folder).filter(Folder.user_id == user_id and Folder.folder_name == Folder.parent_id ).order_by(desc(Folder.created_at)).all()
+
+
+        # interface FolderDetail {
+        # folderId: string;
+        # createdAt: String;
+        # folderName: string;
+        # parentId: string;
+        # fileCount: number;
+        # }
+
+        res = []
+
+        for folder in folders:
+            folder_data = {
+                "folderId" : folder.folder_id, 
+                "createdAt" : folder.created_at, 
+                "folderName": folder.folder_name,
+                "parentId": folder.folder_id, 
+                "fileCount": 0
+
+            }
+            res.append(folder_data)
+
+        return {'success' : True, 'data' : res}
+    except Exception as e:
+        return {'success' : False, 'error' : str(e)}
+
+
+@app.post("/users/folder/add")
+def add_to_folder():
+    pass
+
+
+@app.get("/users/folders")
+def get_users_folders( user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+    #this api only gets folders that have no parwsnts
+    usersFolders = db.query(Folder).filter(Folder.user_id == user_id, Folder.folder_id == Folder.folder_id).all()
+
+    if not usersFolders:
+        return {'success' : True, 'data' : []}
+    
+
+    #process the data
+    res = []
+    for folder in usersFolders:
+        data = {
+            "folder_id": folder.folder_id,
+            "folder_name": folder.folder_name
+
+        }
+        res.append(data)
+    
+
+    print("all folders for current user: ", usersFolders)
+
+    return {'success' : True, 'data' : res}
+
+    
+
 
 @app.post("/user/folder/create")
 def create_folder(folderDetails: FolderDetails, user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+    print("folder details: ", folderDetails)
 
     #check for existing folders with the same name under the same user_id
-    temp_folder = db.query(Folder).filter(User.id == user_id and Folder.folder_name == folderDetails.foldername)
+    duplicates = db.query(Folder).filter(
+    Folder.user_id == user_id,
+    Folder.folder_name == folderDetails.foldername
+        ).all()
+    print(f"Found {len(duplicates)} folders with same name and user.")
 
-    if temp_folder:
+    if duplicates:
+        print("folder already exists: ", duplicates)
         raise HTTPException(status_code=400, detail="Folder already exists") 
+    
+    folder_uuid = uuid4()
     
     try:
         new_folder = Folder(
-            folder_id = uuid4(),
+            folder_id = folder_uuid,
             user_id= user_id, 
-            parent_id = folderDetails.folderId if folderDetails else None,
+            parent_id = folderDetails.folderId if folderDetails.folderId else folder_uuid,
             folder_name = folderDetails.foldername,
             created_at=datetime.utcnow() 
         )
         db.add(new_folder)
         db.commit()
         db.refresh(new_folder)
+        
 
         folder_details = {
             'folder_id' : new_folder.folder_id,
             'created_at' : new_folder.created_at, 
+            'folder_name' : new_folder.folder_name,
+            'parent_id' : new_folder.parent_id,
+            'file_count' : 0
 
         }
 
