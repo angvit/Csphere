@@ -13,7 +13,6 @@ import {
   Pen,
   Check,
 } from "lucide-react";
-import Image from "next/image";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import NotePopup from "@/app/components/home/NotePopup";
@@ -22,8 +21,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import penicon from "../../public/logo.svg";
-import { boolean } from "zod";
+
+import BookMarkSettingIcon from "./BookMarkSettingIcon";
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -192,6 +191,7 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
         <div className="flex items-center text-xs text-gray-800">
           <Calendar className="h-3 w-3 mr-1" />
           {formatDate(bookmark.first_saved_at)}
+          <BookMarkSettingIcon content_id={bookmark.content_id} />
         </div>
       </div>
       {/* Title */}
