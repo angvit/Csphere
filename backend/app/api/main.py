@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from uuid import uuid4
@@ -21,10 +21,11 @@ from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.data_models.folder import Folder
+from app.data_models.folder_item import folder_item
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
 from app.schemas.settings import UpdateSettings
 from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn, UserProfilePicture
-from app.schemas.folder import FolderCreate, FolderDetails
+from app.schemas.folder import FolderCreate, FolderDetails, FolderItem
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
@@ -220,6 +221,16 @@ def google_login(user : UserGoogleSignIn, db : Session =  Depends(get_db)):
 
     return {'message' : 'user found', 'token' : token, 'success' : True}
 
+@app.get("/folder-path/{folder_id}")
+def get_folder_path(folder_id: UUID, user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+    path = []
+    current = db.query(Folder).filter(Folder.folder_id == folder_id, Folder.user_id == user_id).first()
+    while current:
+        path.insert(0, {"name": current.folder_name, "id": str(current.folder_id)})
+        if not current.parent_id or current.parent_id == current.folder_id:
+            break
+        current = db.query(Folder).filter(Folder.folder_id == current.parent_id, Folder.user_id == user_id).first()
+    return {"path": path}
 
 @app.post("/api/login")
 def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
@@ -253,9 +264,10 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
 @app.get("/user/folder")
 def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depends(get_db)):
 
-   
+   #come back
     try:
-        folders= db.query(Folder).filter(Folder.user_id == user_id and Folder.folder_name == Folder.parent_id ).order_by(desc(Folder.created_at)).all()
+        folders= db.query(Folder).filter(Folder.user_id == user_id and Folder.folder_id == Folder.parent_id ).order_by(desc(Folder.created_at)).all()
+
 
 
         # interface FolderDetail {
@@ -269,12 +281,13 @@ def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depend
         res = []
 
         for folder in folders:
+            file_count = db.query(func.count(folder_item.folder_id)).filter(folder_item.folder_id == folder.folder_id).scalar()
             folder_data = {
                 "folderId" : folder.folder_id, 
                 "createdAt" : folder.created_at, 
                 "folderName": folder.folder_name,
                 "parentId": folder.folder_id, 
-                "fileCount": 0
+                "fileCount": file_count
 
             }
             res.append(folder_data)
@@ -282,10 +295,107 @@ def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depend
         return {'success' : True, 'data' : res}
     except Exception as e:
         return {'success' : False, 'error' : str(e)}
+    
 
+    # try:
+    #     folders = (
+    #         db.query(Folder)
+    #         .filter(Folder.user_id == user_id, Folder.folder_name == Folder.parent_id)
+    #         .order_by(desc(Folder.created_at))
+    #         .all()
+    #     )
+
+    #     res = []
+
+    #     for folder in folders:
+    #         file_count = (
+    #             db.query(func.count(FolderItem.folder_item_id))
+    #             .filter(FolderItem.folder_id == folder.folder_id)
+    #             .scalar()
+    #         )
+
+    #         folder_data = {
+    #             "folderId": folder.folder_id,
+    #             "createdAt": folder.created_at,
+    #             "folderName": folder.folder_name,
+    #             "parentId": folder.parent_id,
+    #             "fileCount": file_count
+    #         }
+    #         res.append(folder_data)
+    #     print("data : ", res)
+
+    #     return {'success': True, 'data': res}
+
+    # except Exception as e:
+    #     print("something went wrong: ", str(e))
+    #     return {'success': False, 'error': str(e)}
+    
+@app.get("/user/folder/{folder_id}")
+def get_folder_items(
+    folder_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    print("current folder id: ", folder_id)
+    folder_bookmarks = (
+        db.query(Content, ContentItem.notes, ContentItem.saved_at, ContentAI.ai_summary)
+        .join(folder_item, folder_item.content_id == Content.content_id)
+        .join(ContentItem, (ContentItem.content_id == Content.content_id) & (ContentItem.user_id == user_id))
+        .outerjoin(ContentAI, ContentAI.content_id == Content.content_id)  # AI is optional
+        .filter(folder_item.folder_id == folder_id)
+        .filter(folder_item.user_id == user_id)
+        .all()
+    )
+
+    print("folder_id:", folder_id, "| results:", folder_bookmarks)
+
+    return [
+        {
+            "content_id": content.content_id,
+            "url": content.url,
+            "title": content.title,
+            "source": content.source,
+            "ai_summary": ai_summary,
+            "first_saved_at": saved_at,
+            "notes": notes,
+        }
+        for content, notes, saved_at, ai_summary in folder_bookmarks
+    ]
 
 @app.post("/users/folder/add")
-def add_to_folder():
+def add_to_folder(itemDetails: FolderItem, user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    #make sure item isn't already in the DB
+
+    present = db.query(folder_item).filter(itemDetails.contentId == folder_item.content_id, itemDetails.folderId == folder_item.folder_id, user_id == folder_item.user_id).first()
+
+    if present:
+        raise HTTPException(status_code=400, detail="Item already in the folder")
+    
+    try:
+        new_item = folder_item(
+            folder_item_id = uuid4(), 
+            folder_id = itemDetails.folderId,
+            user_id = user_id, 
+            content_id = itemDetails.contentId,
+            added_at = datetime.utcnow()
+
+        )
+
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+
+        return {'success' : True, 'message' : 'Bookmark added to folder'} 
+
+
+    except Exception as e:
+        return {'success': False, 'message' : str(e)} 
+    
+
+    #  folderId: folder.folder_id,
+    #       contentId: content_id,
+
     pass
 
 

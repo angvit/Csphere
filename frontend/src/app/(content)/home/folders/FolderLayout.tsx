@@ -4,6 +4,7 @@ import { ReactNode } from "react";
 import LatestButton from "@/app/components/home/LatestButton";
 import UnreadButton from "@/app/components/home/UnreadButton";
 import FolderButton from "@/app/components/home/FolderButton";
+import { Breadcrumb } from "./foldercomponents/Breadcrumb";
 
 type Props = {
   children: ReactNode;
