@@ -1,4 +1,5 @@
-import React from "react";
+"use client";
+import React, { useEffect, useState, use } from "react";
 import FolderIdLayout from "./FolderIdLayout";
 import {
   Popover,
@@ -6,23 +7,82 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Plus, Filter, ChevronDown } from "lucide-react";
-
-export default async function Page({
+import { fetchToken } from "@/functions/user/UserData";
+import BookmarkList from "@/components/BookmarkList";
+import { Breadcrumb } from "../foldercomponents/Breadcrumb";
+interface PathProps {
+  id: string;
+  name: string;
+}
+export default function Page({
   params,
 }: {
   params: Promise<{ folderId: string }>;
 }) {
-  const folderId = (await params).folderId;
-  console.log("folder id: ", folderId);
-  console.log("params received:", params);
+  // const [folderId, setFolderId] = useState<string | null>(null);
+  const { folderId } = use(params);
+  const [bookmarks, setBookmarks] = useState([]);
+  const [paths, setPaths] = useState<PathProps[]>([]);
 
-  const paramJson = await params;
-  console.log("params json: ", paramJson);
+  useEffect(() => {
+    const fetchBookmarks = async (id: string) => {
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/folder/${id}`;
+      const token = fetchToken();
+
+      try {
+        const response = await fetch(API_URL, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+        if (data) {
+          setBookmarks(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch bookmarks", err);
+      }
+    };
+
+    if (folderId) {
+      fetchBookmarks(folderId);
+    }
+  }, [folderId]);
+
+  useEffect(() => {
+    const fetchPathStructure = async (id: string) => {
+      try {
+        const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/folder-path/${id}`;
+        const token = fetchToken();
+        const response = await fetch(API_URL, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await response.json();
+        const path_data: PathProps[] = data.path;
+        console.log("path_data:", path_data);
+        setPaths(path_data); // ✅ this keeps it as an array
+        debugger;
+      } catch (error) {
+        console.log("error occured in fetchPathStructure", error);
+      }
+    };
+    if (folderId) {
+      fetchPathStructure(folderId);
+    }
+  }, []);
   return (
     <FolderIdLayout>
       <div className="w-full space-y-6 gap-4 mb-4">
         <div className="flex items-center gap-3 mb-8">
-          <Popover>
+          <Breadcrumb paths={paths} />
+          {/* <Popover>
             <PopoverTrigger asChild>
               <button className="bg-[#202A29] hover:bg-[#435856] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
                 <Plus size={16} />
@@ -58,9 +118,9 @@ export default async function Page({
                 </div>
               </div>
             </PopoverContent>
-          </Popover>
+          </Popover> */}
 
-          <Popover>
+          {/* <Popover>
             <PopoverTrigger asChild>
               <button className="bg-white hover:bg-gray-50 border border-gray-200 text-black px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
                 <Plus size={16} />
@@ -96,8 +156,9 @@ export default async function Page({
                 </div>
               </div>
             </PopoverContent>
-          </Popover>
+          </Popover> */}
         </div>
+        <BookmarkList items={bookmarks} />
       </div>
     </FolderIdLayout>
   );
