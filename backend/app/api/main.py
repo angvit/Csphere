@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func
 from sqlalchemy.orm import Session, joinedload
 from pydantic import BaseModel
 from uuid import uuid4
@@ -221,6 +221,16 @@ def google_login(user : UserGoogleSignIn, db : Session =  Depends(get_db)):
 
     return {'message' : 'user found', 'token' : token, 'success' : True}
 
+@app.get("/folder-path/{folder_id}")
+def get_folder_path(folder_id: UUID, user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+    path = []
+    current = db.query(Folder).filter(Folder.folder_id == folder_id, Folder.user_id == user_id).first()
+    while current:
+        path.insert(0, {"name": current.folder_name, "id": str(current.folder_id)})
+        if not current.parent_id or current.parent_id == current.folder_id:
+            break
+        current = db.query(Folder).filter(Folder.folder_id == current.parent_id, Folder.user_id == user_id).first()
+    return {"path": path}
 
 @app.post("/api/login")
 def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
@@ -254,9 +264,10 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
 @app.get("/user/folder")
 def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depends(get_db)):
 
-   
+   #come back
     try:
-        folders= db.query(Folder).filter(Folder.user_id == user_id and Folder.folder_name == Folder.parent_id ).order_by(desc(Folder.created_at)).all()
+        folders= db.query(Folder).filter(Folder.user_id == user_id and Folder.folder_id == Folder.parent_id ).order_by(desc(Folder.created_at)).all()
+
 
 
         # interface FolderDetail {
@@ -270,12 +281,13 @@ def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depend
         res = []
 
         for folder in folders:
+            file_count = db.query(func.count(folder_item.folder_id)).filter(folder_item.folder_id == folder.folder_id).scalar()
             folder_data = {
                 "folderId" : folder.folder_id, 
                 "createdAt" : folder.created_at, 
                 "folderName": folder.folder_name,
                 "parentId": folder.folder_id, 
-                "fileCount": 0
+                "fileCount": file_count
 
             }
             res.append(folder_data)
@@ -283,6 +295,40 @@ def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depend
         return {'success' : True, 'data' : res}
     except Exception as e:
         return {'success' : False, 'error' : str(e)}
+    
+
+    # try:
+    #     folders = (
+    #         db.query(Folder)
+    #         .filter(Folder.user_id == user_id, Folder.folder_name == Folder.parent_id)
+    #         .order_by(desc(Folder.created_at))
+    #         .all()
+    #     )
+
+    #     res = []
+
+    #     for folder in folders:
+    #         file_count = (
+    #             db.query(func.count(FolderItem.folder_item_id))
+    #             .filter(FolderItem.folder_id == folder.folder_id)
+    #             .scalar()
+    #         )
+
+    #         folder_data = {
+    #             "folderId": folder.folder_id,
+    #             "createdAt": folder.created_at,
+    #             "folderName": folder.folder_name,
+    #             "parentId": folder.parent_id,
+    #             "fileCount": file_count
+    #         }
+    #         res.append(folder_data)
+    #     print("data : ", res)
+
+    #     return {'success': True, 'data': res}
+
+    # except Exception as e:
+    #     print("something went wrong: ", str(e))
+    #     return {'success': False, 'error': str(e)}
     
 @app.get("/user/folder/{folder_id}")
 def get_folder_items(

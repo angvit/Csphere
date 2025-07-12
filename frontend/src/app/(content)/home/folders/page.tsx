@@ -6,7 +6,7 @@ import FolderCard from "./foldercomponents/FolderCard";
 import { createFolder } from "./functions/foldercreate";
 import { Toaster } from "@/components/ui/sonner";
 import { fetchHomeFolders } from "./functions/folderfetch";
-
+import { useRouter } from "next/navigation";
 import {
   Popover,
   PopoverContent,
@@ -27,6 +27,16 @@ function page() {
   const [folderCreat, setFolderCreat] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [folders, setFolders] = useState<FolderDetail[]>([]);
+
+  const [folderPath, setFolderPath] = useState<{ name: string; id: string }[]>(
+    []
+  );
+
+  // handle navigation via breadcrumb
+  const router = useRouter();
+  const handleNavigateToFolder = (folderId: string) => {
+    router.push(`/folders/${folderId}`); // or whatever your dynamic route is
+  };
 
   interface FolderCreateProps {
     foldername: string;
@@ -182,6 +192,7 @@ function page() {
             )}
           </div>
         </div>
+
         <h2>Folders</h2>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
