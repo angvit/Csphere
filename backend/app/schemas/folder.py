@@ -14,3 +14,8 @@ class FolderCreate(BaseModel):
     parent_id : str
     folder_name: str
     created_at: datetime = None 
+
+
+class FolderItem(BaseModel):
+    folderId: str
+    contentId: str
