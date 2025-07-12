@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from "react";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import React, { useEffect, useState, useRef } from "react";
 import { fetchToken } from "@/functions/user/UserData";
+import { toast } from "sonner";
 
 interface BookMarkSettingProps {
   content_id: string;
+}
+
+interface FolderProps {
+  folder_id: string;
+  folder_name: string;
 }
 
 // Nested Popover for folders
@@ -17,7 +18,22 @@ const FolderPopover = ({
   onAddToFolder: (folder: any) => void;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [folders, setFolders] = useState([]);
+  const [folders, setFolders] = useState<FolderProps[]>([]);
+
+  const timeoutRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    setIsOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    timeoutRef.current = setTimeout(() => {
+      setIsOpen(false);
+    }, 200); // 200ms delay
+  };
 
   useEffect(() => {
     const fetchUsersFolders = async () => {
@@ -49,8 +65,8 @@ const FolderPopover = ({
     <div className="relative">
       <div
         className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors"
-        onMouseEnter={() => setIsOpen(true)}
-        onMouseLeave={() => setIsOpen(false)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <p className="text-gray-700">Add to folder</p>
       </div>
@@ -58,8 +74,8 @@ const FolderPopover = ({
       {isOpen && (
         <div
           className="absolute left-full top-0 ml-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
-          onMouseEnter={() => setIsOpen(true)}
-          onMouseLeave={() => setIsOpen(false)}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
         >
           <div className="p-2">
             <div className="text-sm font-medium text-gray-900 mb-2 px-2">
@@ -101,18 +117,30 @@ const FolderPopover = ({
 
 function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
   const [mainPopoverOpen, setMainPopoverOpen] = useState(false);
-  const handleAddToFolder = (folder: any) => {
+  const handleAddToFolder = async (folder: FolderProps) => {
     try {
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/folder/add`;
+      const token = fetchToken();
+
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          folderId: folder.folder_id,
+          contentId: content_id,
+        }),
+      });
+
+      const data = await response.json();
+      if (data.success === true) {
+        toast.success("item added to the folder");
+      }
     } catch (error) {
       console.log("error in adding bookmark to folder", error);
     }
-
-    console.log(
-      "Adding bookmark to folder:",
-      folder.name,
-      "for content:",
-      content_id
-    );
   };
 
   return (

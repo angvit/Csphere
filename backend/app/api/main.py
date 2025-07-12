@@ -21,10 +21,11 @@ from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.data_models.folder import Folder
+from app.data_models.folder_item import folder_item
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
 from app.schemas.settings import UpdateSettings
 from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn, UserProfilePicture
-from app.schemas.folder import FolderCreate, FolderDetails
+from app.schemas.folder import FolderCreate, FolderDetails, FolderItem
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
@@ -282,10 +283,73 @@ def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depend
         return {'success' : True, 'data' : res}
     except Exception as e:
         return {'success' : False, 'error' : str(e)}
+    
+@app.get("/user/folder/{folder_id}")
+def get_folder_items(
+    folder_id: UUID,
+    user_id: UUID = Depends(get_current_user_id),
+    db: Session = Depends(get_db)
+):
+    print("current folder id: ", folder_id)
+    folder_bookmarks = (
+        db.query(Content, ContentItem.notes, ContentItem.saved_at, ContentAI.ai_summary)
+        .join(folder_item, folder_item.content_id == Content.content_id)
+        .join(ContentItem, (ContentItem.content_id == Content.content_id) & (ContentItem.user_id == user_id))
+        .outerjoin(ContentAI, ContentAI.content_id == Content.content_id)  # AI is optional
+        .filter(folder_item.folder_id == folder_id)
+        .filter(folder_item.user_id == user_id)
+        .all()
+    )
 
+    print("folder_id:", folder_id, "| results:", folder_bookmarks)
+
+    return [
+        {
+            "content_id": content.content_id,
+            "url": content.url,
+            "title": content.title,
+            "source": content.source,
+            "ai_summary": ai_summary,
+            "first_saved_at": saved_at,
+            "notes": notes,
+        }
+        for content, notes, saved_at, ai_summary in folder_bookmarks
+    ]
 
 @app.post("/users/folder/add")
-def add_to_folder():
+def add_to_folder(itemDetails: FolderItem, user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    #make sure item isn't already in the DB
+
+    present = db.query(folder_item).filter(itemDetails.contentId == folder_item.content_id, itemDetails.folderId == folder_item.folder_id, user_id == folder_item.user_id).first()
+
+    if present:
+        raise HTTPException(status_code=400, detail="Item already in the folder")
+    
+    try:
+        new_item = folder_item(
+            folder_item_id = uuid4(), 
+            folder_id = itemDetails.folderId,
+            user_id = user_id, 
+            content_id = itemDetails.contentId,
+            added_at = datetime.utcnow()
+
+        )
+
+        db.add(new_item)
+        db.commit()
+        db.refresh(new_item)
+
+        return {'success' : True, 'message' : 'Bookmark added to folder'} 
+
+
+    except Exception as e:
+        return {'success': False, 'message' : str(e)} 
+    
+
+    #  folderId: folder.folder_id,
+    #       contentId: content_id,
+
     pass
 
 
