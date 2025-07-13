@@ -67,7 +67,6 @@ document.addEventListener("DOMContentLoaded", () => {
               headers: {
                 "Content-Type": "application/json",
                 Accept: "application/json",
-                // Authorization: `Bearer ${cookieVal}`,
               },
               body: JSON.stringify({
                 url: tab.url,
