@@ -154,7 +154,8 @@ function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
         </button>
 
         {mainPopoverOpen && (
-          <div className="absolute top-full left-0 mt-5 w-40 bg-gray-100 border border-gray-200 rounded-lg shadow-lg z-40">
+          <div className="absolute top-full left-0 -translate-x-80 md:-translate-x-52 mt-5 w-40 bg-gray-100 border border-gray-200 rounded-lg shadow-lg z-40">
+            {" "}
             <div className="flex flex-1 flex-col space-y-1 p-1">
               <FolderPopover onAddToFolder={handleAddToFolder} />
 
