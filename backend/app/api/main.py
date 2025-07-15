@@ -260,6 +260,36 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
     print("Token created: ", token)
 
     return {"username": db_user.username, "token": token}
+
+
+@app.post("/api/chrome/login")
+def chrome_login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid user data")
+
+    # Check if the user exists
+    db_user = db.query(User).filter(User.username == user.username).first()
+    if not db_user:
+        print("User not found: ", user.username)
+        raise HTTPException(status_code=400, detail="User not found")
+    
+    print("User found: ", db_user, "id of user: ", db_user.id)
+
+    # Verify the password
+    if not verify_password(user.password, db_user.password):
+        print("Incorrect password for user: ", user.username)
+         # If the password is incorrect, raise an HTTPException
+         # This will return a 400 status code with the detail "Incorrect password"
+        raise HTTPException(status_code=400, detail="Incorrect password")
+    
+    presigned_url = ''
+    if db_user.profile_path != '' and db_user.profile_path != None:
+        presigned_url = get_presigned_url(db_user.profile_path)
+    print("presigned url; ", presigned_url)
+    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
+    print("Token created: ", token)
+
+    return {"username": db_user.username, "token": token}
    
 @app.get("/user/folder")
 def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depends(get_db)):
@@ -502,30 +532,21 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
 
 # @app.post("/content/save", response_model=ContentWithSummary)
 @app.post("/content/save")
-def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
-    use_email = content.email
+def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db), request: Request = None):
     notes = content.notes
 
-    user = db.query(User).filter(User.email == use_email).first()
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
     user_id = user.id
     print("User ID: ", user_id)
 
-    # Check if content already exists globally
     existing_content = db.query(Content).filter(Content.url == content.url).first()
 
     utc_time = datetime.now(timezone.utc)
 
     print("utc value: ", utc_time)
 
-    #     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    # url = Column(String, unique=True, nullable=False)   
-    # title = Column(String, nullable=True)
-    # source = Column(String, nullable=True)
-    # first_saved_at = Column(TIMESTAMP(timezone=True), default=func.now())
-    # read = Column(Boolean, nullable=False, server_default=text('false'))
-    # content_ai = relationship("ContentAI", backref="content", uselist=False)
 
     if not existing_content:
         new_content = Content(
