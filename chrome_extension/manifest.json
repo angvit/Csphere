@@ -3,14 +3,14 @@
   "name": "Csphere Tab Saver",
   "version": "1.0",
   "description": "Google chrome extension that works alongside our app to bookmark their tabs.",
-  "permissions": ["tabs", "cookies", "identity", "identity.email"],
+  "permissions": ["tabs", "cookies", "identity", "identity.email", "storage"],
 
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_icon": "images/popup.png"
+    "default_icon": "images/Logo.png"
   },
 
   "host_permissions": [

@@ -300,3 +300,58 @@ h1 {
     transform: rotate(360deg);
   }
 }
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.login-form input {
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.google-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.divider {
+  text-align: center;
+  margin: 12px 0;
+  color: #aaa;
+}
+
+#googleAuthBtn {
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.google-icon {
+  background: transparent;
+  mix-blend-mode: multiply;
+  align-items: center;
+  text-align: center;
+}
+
+.login-message {
+  display: flex;
+  justify-items: center;
+  flex-direction: column;
+}
