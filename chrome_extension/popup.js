@@ -2,6 +2,8 @@ import { BACKEND_URL, DEPLOYED } from "./config.dev.js";
 const backend_url = DEPLOYED ? BACKEND_URL : "http://127.0.0.1:8000";
 const app = document.getElementById("app");
 
+let selectedFolder = "default";
+
 chrome.storage.local.get(["csphere_user_token"], (result) => {
   console.log("Value is", result.csphere_user_token);
   const token = result.csphere_user_token;
@@ -11,6 +13,43 @@ chrome.storage.local.get(["csphere_user_token"], (result) => {
     renderInterface();
   }
 });
+
+function renderInterface() {
+  app.innerHTML = `
+    <header>
+        <a
+          target="_blank"
+          href="https://csphere-nly9.vercel.app/"
+          rel="noopener noreferrer"
+        >
+          <img class="logo" src="/images/Logo.png" />
+        </a>
+      </header>
+
+      <div class="notes-container">
+        <textarea
+          id="notesTextarea"
+          class="notes-textarea"
+          placeholder="Add any notes here..."
+        ></textarea>
+        <div class="character-counter"><span id="charCount">0</span>/280</div>
+      </div>
+
+      <h3>Folders</h3>
+      <div  class="user-folders"></div >
+
+      <div class="action-bar">
+        <button id="bookMarkBtn" class="primary-button">
+          <i class="fas fa-bookmark"></i>
+          Bookmark Page
+        </button>
+      </div>
+      <p class="message-p"></p>
+  `;
+  getRecentFolders();
+
+  setupBookmarkHandler();
+}
 
 function renderLoginInterface() {
   app.innerHTML = `
@@ -75,58 +114,50 @@ function renderLoginInterface() {
   document.getElementById("googleAuthBtn").addEventListener("click", () => {
     chrome.identity.launchWebAuthFlow(
       {
-        url: "https://your-auth-server.com/oauth/google",
+        url: `${backend_url}/auth/google`,
         interactive: true,
       },
       function (redirectUrl) {
+        console.log("redriect url: ", redirectUrl);
+
         if (chrome.runtime.lastError || !redirectUrl) {
           console.error("Google login failed", chrome.runtime.lastError);
           return;
         }
 
-        // Extract token from redirectUrl if needed and store
-        chrome.storage.local.set({ userToken: "google_token" }, () => {
-          renderBookmarkInterface();
-        });
+        const url = new URL(redirectUrl);
+        const code = url.searchParams.get("code");
+
+        if (!code) {
+          console.error("Token missing from redirect");
+          return;
+        }
+
+        fetch(`${backend_url}/auth/google/callback`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code }),
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            const token = data.token;
+
+            if (!token) {
+              console.error("Token missing from backend response");
+              return;
+            }
+
+            chrome.storage.local.set({ csphere_user_token: token }, () => {
+              console.log("Token stored successfully");
+              renderInterface();
+            });
+          })
+          .catch((err) => {
+            console.error("Error fetching token from backend", err);
+          });
       }
     );
   });
-}
-
-function renderInterface() {
-  app.innerHTML = `
-    <header>
-        <a
-          target="_blank"
-          href="https://csphere-nly9.vercel.app/"
-          rel="noopener noreferrer"
-        >
-          <img class="logo" src="/images/Logo.png" />
-        </a>
-      </header>
-      <textarea id="emailTextarea" class="EmailTextarea"></textarea>
-
-      <div class="notes-container">
-        <textarea
-          id="notesTextarea"
-          class="notes-textarea"
-          placeholder="Add any notes here..."
-        ></textarea>
-        <div class="character-counter"><span id="charCount">0</span>/280</div>
-      </div>
-
-      <div class="user-folders"></div>
-
-      <div class="action-bar">
-        <button id="bookMarkBtn" class="primary-button">
-          <i class="fas fa-bookmark"></i>
-          Bookmark Page
-        </button>
-      </div>
-      <p class="message-p"></p>
-  `;
-
-  setupBookmarkHandler();
 }
 
 function getUserEmail() {
@@ -169,6 +200,58 @@ function fetchToken() {
       resolve(result.csphere_user_token);
     });
   });
+}
+
+async function getRecentFolders() {
+  try {
+    const API_URL = `${backend_url}/user/folder`;
+    let token = await fetchToken();
+
+    const response = await fetch(API_URL, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+    console.log("data here for folders: ", data);
+    const folders = data.data;
+
+    const folderContainer = document.querySelector(".user-folders");
+    folderContainer.innerHTML = `<select class="folder-grid"></select>`;
+
+    const folderGrid = folderContainer.querySelector(".folder-grid");
+
+    //Create a default one
+    const folderOption = document.createElement("option");
+    folderOption.className = "folder-card";
+    folderOption.innerText = "none selected";
+    folderOption.value = "none";
+    folderOption.addEventListener("change", () => {
+      selectedFolder = "default";
+    });
+    folderGrid.appendChild(folderOption);
+
+    folders.forEach((folder) => {
+      const folderOption = document.createElement("option");
+      folderOption.className = "folder-card";
+      folderOption.textContent = folder.folderName;
+      folderOption.innerText = folder.folderName;
+      folderOption.value = folder.folderId;
+
+      folderGrid.appendChild(folderOption);
+    });
+
+    folderGrid.addEventListener("change", (event) => {
+      const selectedValue = event.target.value;
+      console.log("Selected folder:", selectedValue);
+      selectedFolder = selectedValue;
+    });
+  } catch (error) {
+    console.log(error);
+  }
 }
 
 function setupBookmarkHandler() {
@@ -239,87 +322,3 @@ function setupBookmarkHandler() {
     }
   });
 }
-
-// chrome.identity.getProfileUserInfo({ accountStatus: "ANY" }, (userInfo) => {
-//   userEmail = userInfo.email;
-// });
-
-// function getNotes() {
-//   const textarea = document.getElementById("notesTextarea");
-//   const content = textarea.value;
-
-//   return content;
-// }
-
-// document.addEventListener("DOMContentLoaded", () => {
-//   const btn = document.getElementById("bookMarkBtn");
-//   console.log("Popup script loaded and running...");
-//   console.log("Button element: ", btn);
-
-//   if (btn) {
-//     // Make the main event listener async
-//     btn.addEventListener("click", async () => {
-//       try {
-//         // Use try...catch for async operations
-//         let [tab] = await chrome.tabs.query({
-//           active: true,
-//           currentWindow: true,
-//         });
-
-//         if (!tab || !tab.url) {
-//           console.warn("No active tab found or tab has no URL.");
-//           return;
-//         }
-
-//         if (userEmail) {
-//           try {
-//             const notes = getNotes();
-//             const endpoint = `${backend_url}/content/save`;
-//             console.log("saving to encpoint: ", endpoint);
-
-//             const response = await fetch(endpoint, {
-//               method: "POST",
-//               credentials: "include",
-//               headers: {
-//                 "Content-Type": "application/json",
-//                 Accept: "application/json",
-//               },
-//               body: JSON.stringify({
-//                 url: tab.url,
-//                 title: tab.title,
-//                 source: "chrome_extension",
-//                 email: userEmail,
-//                 notes: notes,
-//               }),
-//             });
-
-//             // Wait for JSON parsing
-//             const data = await response.json();
-
-//             console.log("Raw response from server:", response);
-//             console.log("Parsed response data:", data);
-
-//             // Check if server returned a successful status
-//             if (data.status !== "Success") {
-//               throw new Error(`Server returned error status: ${data.status}`);
-//             }
-
-//             insertMessage("Bookmark successfully saved", "success");
-//           } catch (err) {
-//             alert("Error saving bookmark:" + err);
-//             insertMessage("Failed to save bookmark", "error");
-//           }
-//         } else {
-//           console.warn("Token cookie not found or has no value.");
-//           alert("Could not find authentication token. Please log in.");
-//         }
-//       } catch (error) {
-//         insertMessage("An error occured, please try again later", "error");
-//         // Display a user-friendly error message if needed
-//         alert(`An error occurred: ${error.message}`);
-//       }
-//     });
-//   } else {
-//     console.error("Button with ID 'bookMarkBtn' not found.");
-//   }
-// });
