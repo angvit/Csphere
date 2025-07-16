@@ -13,7 +13,11 @@ from dotenv import load_dotenv
 from datetime import datetime, timezone
 import os 
 import boto3
+from fastapi.responses import RedirectResponse, JSONResponse
+from urllib.parse import urlencode
+from fastapi.responses import RedirectResponse, JSONResponse
 
+import httpx
 
 
 from app.db.database import get_db
@@ -66,6 +70,9 @@ s3 = boto3.client(
 )
 
 BUCKET_NAME = os.environ.get('BUCKET_NAME')
+GOOGLE_REDIRECT_URI = os.environ.get('GOOGLE_REDIRECT_URI')
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 class ContentFromUrl(BaseModel):
     url: str
@@ -260,6 +267,36 @@ def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
     print("Token created: ", token)
 
     return {"username": db_user.username, "token": token}
+
+
+@app.post("/api/chrome/login")
+def chrome_login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid user data")
+
+    # Check if the user exists
+    db_user = db.query(User).filter(User.username == user.username).first()
+    if not db_user:
+        print("User not found: ", user.username)
+        raise HTTPException(status_code=400, detail="User not found")
+    
+    print("User found: ", db_user, "id of user: ", db_user.id)
+
+    # Verify the password
+    if not verify_password(user.password, db_user.password):
+        print("Incorrect password for user: ", user.username)
+         # If the password is incorrect, raise an HTTPException
+         # This will return a 400 status code with the detail "Incorrect password"
+        raise HTTPException(status_code=400, detail="Incorrect password")
+    
+    presigned_url = ''
+    if db_user.profile_path != '' and db_user.profile_path != None:
+        presigned_url = get_presigned_url(db_user.profile_path)
+    print("presigned url; ", presigned_url)
+    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
+    print("Token created: ", token)
+
+    return {"username": db_user.username, "token": token}
    
 @app.get("/user/folder")
 def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depends(get_db)):
@@ -396,7 +433,6 @@ def add_to_folder(itemDetails: FolderItem, user_id: UUID=Depends(get_current_use
     #  folderId: folder.folder_id,
     #       contentId: content_id,
 
-    pass
 
 
 @app.get("/users/folders")
@@ -499,87 +535,200 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
     for content_ai, content in results
     ]
 
+@app.get("/auth/google")
+def handle_google_session():
+
+    try:
+
+        print("google redirect uri ", GOOGLE_REDIRECT_URI )
+        print("google client id: ", GOOGLE_CLIENT_ID)
+        print("google client secret: ", GOOGLE_CLIENT_SECRET)
+        params = {
+            "client_id": GOOGLE_CLIENT_ID,
+            "redirect_uri": GOOGLE_REDIRECT_URI,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "access_type": "offline",
+            "prompt": "consent"
+        }
+        google_auth_url = f"https://accounts.google.com/o/oauth2/v2/auth?{urlencode(params)}"
+        return RedirectResponse(google_auth_url)
+    
+    except Exception as e:
+        print("error occured in the backend: ", e)
+        return 
+
+
+@app.post("/auth/google/callback")
+async def handle_google_callback(
+    payload: dict, 
+    request: Request,
+    db: Session = Depends(get_db)
+):
+    code = payload.get('code')
+
+    if not code:
+        return JSONResponse({"error": "No code provided"}, status_code=400)
+
+    # Exchange code for tokens
+    token_url = "https://oauth2.googleapis.com/token"
+    token_data = {
+        "code": code,
+        "client_id": GOOGLE_CLIENT_ID,
+        "client_secret": GOOGLE_CLIENT_SECRET,
+        "redirect_uri": GOOGLE_REDIRECT_URI,
+        "grant_type": "authorization_code",
+    }
+
+    async with httpx.AsyncClient() as client:
+        token_response = await client.post(token_url, data=token_data)
+        token_json = token_response.json()
+        access_token = token_json.get("access_token")
+
+    if not access_token:
+        return JSONResponse({"error": "No access token returned"}, status_code=400)
+
+    # Get user info from Google
+    async with httpx.AsyncClient() as client:
+        user_info_response = await client.get(
+            "https://www.googleapis.com/oauth2/v2/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        user_info = user_info_response.json()
+
+    print("User Info:", user_info)
+
+
+    google_user_id = user_info.get("id") 
+
+    if not google_user_id:
+        return JSONResponse({"error": "Invalid user info"}, status_code=400)
+
+    user = db.query(User).filter(User.google_id == google_user_id).first()
+
+    if not user:
+        return JSONResponse({"error": "User not found"}, status_code=404)
+
+    presigned_url = ""
+    if user.profile_path:
+        presigned_url = get_presigned_url(user.profile_path)
+
+    # Generate token
+    token = create_access_token(data={
+        "sub": str(user.id),
+        "email": user.email,
+        "username": user.username,
+        "profilePath": presigned_url
+    })
+
+    # Redirect to Chrome Extension with token
+    return  {"token": token}
+
+
+
+
+
+
 
 # @app.post("/content/save", response_model=ContentWithSummary)
 @app.post("/content/save")
-def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
-    use_email = content.email
+def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     notes = content.notes
 
-    user = db.query(User).filter(User.email == use_email).first()
+    print("content logs: ", content)
+
+    user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
-    user_id = user.id
-    print("User ID: ", user_id)
+    
+    try:
+        user_id = user.id
+        print("User ID: ", user_id)
 
-    # Check if content already exists globally
-    existing_content = db.query(Content).filter(Content.url == content.url).first()
+        existing_content = db.query(Content).filter(Content.url == content.url).first()
 
-    utc_time = datetime.now(timezone.utc)
+        utc_time = datetime.now(timezone.utc)
 
-    print("utc value: ", utc_time)
+        print("utc value: ", utc_time)
 
-    #     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
-    # url = Column(String, unique=True, nullable=False)   
-    # title = Column(String, nullable=True)
-    # source = Column(String, nullable=True)
-    # first_saved_at = Column(TIMESTAMP(timezone=True), default=func.now())
-    # read = Column(Boolean, nullable=False, server_default=text('false'))
-    # content_ai = relationship("ContentAI", backref="content", uselist=False)
 
-    if not existing_content:
-        new_content = Content(
-            url=content.url,
-            title=content.title,
-            source=content.source,
-            user_id=user_id,
-            first_saved_at=utc_time,
-            read=False
-        )
-        db.add(new_content)
-        db.flush()  # generate content_id without commit
+        if not existing_content:
+            new_content = Content(
+                url=content.url,
+                title=content.title,
+                source=content.source,
+                user_id=user_id,
+                first_saved_at=utc_time,
+                read=False
+            )
+            db.add(new_content)
+            db.flush()  # generate content_id without commit
 
-        # Generate embedding only for new content
-        embedding_manager = ContentEmbeddingManager(db)
-        content_ai = embedding_manager.process_content(new_content)
-        db.commit()
+            # Generate embedding only for new content
+            embedding_manager = ContentEmbeddingManager(db)
+            content_ai = embedding_manager.process_content(new_content)
+            db.commit()
 
-        if not content_ai:
-            print("Embedding generation failed or skipped.")
+            if not content_ai:
+                print("Embedding generation failed or skipped.")
+            else:
+                print("Summary Generated:", content_ai.ai_summary)
         else:
-            print("Summary Generated:", content_ai.ai_summary)
-    else:
-        print("Existing content link")
-        new_content = existing_content
-        content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
+            print("Existing content link")
+            new_content = existing_content
+            content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
 
-    # Check if this user already saved this content
-    existing_item = db.query(ContentItem).filter(
-        ContentItem.user_id == user_id,
-        ContentItem.content_id == new_content.content_id
-    ).first()
+        # Check if this user already saved this content
+        existing_item = db.query(ContentItem).filter(
+            ContentItem.user_id == user_id,
+            ContentItem.content_id == new_content.content_id
+        ).first()
 
-    print("current utc timezone: ", datetime.now(timezone.utc))
+        print("current utc timezone: ", datetime.now(timezone.utc))
 
-    utc_time = datetime.now(timezone.utc)
+        utc_time = datetime.now(timezone.utc)
 
-    if not existing_item:
-        new_item = ContentItem(
-            user_id=user_id,
-            content_id=new_content.content_id,
-            saved_at=utc_time,  
-            notes=notes 
-        )
-        db.add(new_item)
-        db.commit()
+        if not existing_item:
+            new_item = ContentItem(
+                user_id=user_id,
+                content_id=new_content.content_id,
+                saved_at=utc_time,  
+                notes=notes 
+            )
+            db.add(new_item)
+            db.commit()
 
-        saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
-        print(f"Retrieved from DB: {saved_item.saved_at}")
-        print(f"Retrieved type: {type(saved_item.saved_at)}")
+            saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
+            print(f"Retrieved from DB: {saved_item.saved_at}")
+            print(f"Retrieved type: {type(saved_item.saved_at)}")
 
-    print("Successfully saved content for user.")
+            #add to the corresponding folder if any 
 
-    return {"status": "Success"}
+            if content.folder_id != '' and content.folder_id != 'default':
+
+                new_item = folder_item(
+                    folder_item_id = uuid4(), 
+                    folder_id = content.folder_id,
+                    user_id = user_id, 
+                    content_id = new_content.content_id,
+                    added_at = datetime.utcnow()
+
+                )
+
+                db.add(new_item)
+                db.commit()
+                db.refresh(new_item)
+            else:
+                print("no valud fodler id found so skipping this part")
+            
+
+        print("Successfully saved content for user.")
+
+        return {"status": "Success"}
+
+    except Exception as e:
+        print("error occured in saving the bookmark: ", str(e))
+        return {'status': "unsucessful", 'error': str(e)}
 
 
 @app.post("/api/user/google")
