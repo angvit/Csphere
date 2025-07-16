@@ -26,14 +26,14 @@ body {
   color: var(--text-color);
   width: 360px;
   min-height: 320px;
-  padding-bottom: 16px;
+  padding-bottom: 0px;
 }
 
 #app {
   display: flex;
   flex-direction: column;
-  height: 250px;
-  padding: 16px;
+  height: 100%;
+  padding: 12px;
 }
 
 /* Header Styles */
@@ -277,7 +277,7 @@ h1 {
 }
 
 .message-p {
-  height: 50px;
+  height: 25px;
   width: 100%;
   display: flex;
   justify-content: center;
@@ -354,4 +354,26 @@ h1 {
   display: flex;
   justify-items: center;
   flex-direction: column;
+}
+
+.folder-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.folder-card {
+  background-color: #f4f4f4;
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: center;
+  font-weight: 500;
+}
+
+.folder-card:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.02);
 }
