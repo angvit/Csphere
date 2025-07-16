@@ -632,75 +632,103 @@ async def handle_google_callback(
 
 # @app.post("/content/save", response_model=ContentWithSummary)
 @app.post("/content/save")
-def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db), request: Request = None):
+def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     notes = content.notes
+
+    print("content logs: ", content)
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
-    user_id = user.id
-    print("User ID: ", user_id)
+    
+    try:
+        user_id = user.id
+        print("User ID: ", user_id)
 
-    existing_content = db.query(Content).filter(Content.url == content.url).first()
+        existing_content = db.query(Content).filter(Content.url == content.url).first()
 
-    utc_time = datetime.now(timezone.utc)
+        utc_time = datetime.now(timezone.utc)
 
-    print("utc value: ", utc_time)
+        print("utc value: ", utc_time)
 
 
-    if not existing_content:
-        new_content = Content(
-            url=content.url,
-            title=content.title,
-            source=content.source,
-            user_id=user_id,
-            first_saved_at=utc_time,
-            read=False
-        )
-        db.add(new_content)
-        db.flush()  # generate content_id without commit
+        if not existing_content:
+            new_content = Content(
+                url=content.url,
+                title=content.title,
+                source=content.source,
+                user_id=user_id,
+                first_saved_at=utc_time,
+                read=False
+            )
+            db.add(new_content)
+            db.flush()  # generate content_id without commit
 
-        # Generate embedding only for new content
-        embedding_manager = ContentEmbeddingManager(db)
-        content_ai = embedding_manager.process_content(new_content)
-        db.commit()
+            # Generate embedding only for new content
+            embedding_manager = ContentEmbeddingManager(db)
+            content_ai = embedding_manager.process_content(new_content)
+            db.commit()
 
-        if not content_ai:
-            print("Embedding generation failed or skipped.")
+            if not content_ai:
+                print("Embedding generation failed or skipped.")
+            else:
+                print("Summary Generated:", content_ai.ai_summary)
         else:
-            print("Summary Generated:", content_ai.ai_summary)
-    else:
-        print("Existing content link")
-        new_content = existing_content
-        content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
+            print("Existing content link")
+            new_content = existing_content
+            content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
 
-    # Check if this user already saved this content
-    existing_item = db.query(ContentItem).filter(
-        ContentItem.user_id == user_id,
-        ContentItem.content_id == new_content.content_id
-    ).first()
+        # Check if this user already saved this content
+        existing_item = db.query(ContentItem).filter(
+            ContentItem.user_id == user_id,
+            ContentItem.content_id == new_content.content_id
+        ).first()
 
-    print("current utc timezone: ", datetime.now(timezone.utc))
+        print("current utc timezone: ", datetime.now(timezone.utc))
 
-    utc_time = datetime.now(timezone.utc)
+        utc_time = datetime.now(timezone.utc)
 
-    if not existing_item:
-        new_item = ContentItem(
-            user_id=user_id,
-            content_id=new_content.content_id,
-            saved_at=utc_time,  
-            notes=notes 
-        )
-        db.add(new_item)
-        db.commit()
+        if not existing_item:
+            new_item = ContentItem(
+                user_id=user_id,
+                content_id=new_content.content_id,
+                saved_at=utc_time,  
+                notes=notes 
+            )
+            db.add(new_item)
+            db.commit()
 
-        saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
-        print(f"Retrieved from DB: {saved_item.saved_at}")
-        print(f"Retrieved type: {type(saved_item.saved_at)}")
+            saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
+            print(f"Retrieved from DB: {saved_item.saved_at}")
+            print(f"Retrieved type: {type(saved_item.saved_at)}")
 
-    print("Successfully saved content for user.")
+            #add to the corresponding folder if any 
 
-    return {"status": "Success"}
+            if content.folder_id != '' and content.folder_id != 'default':
+
+                new_item = folder_item(
+                    folder_item_id = uuid4(), 
+                    folder_id = content.folder_id,
+                    user_id = user_id, 
+                    content_id = new_content.content_id,
+                    added_at = datetime.utcnow()
+
+                )
+
+                db.add(new_item)
+                db.commit()
+                db.refresh(new_item)
+            else:
+                print("no valud fodler id found so skipping this part")
+            
+
+        print("Successfully saved content for user.")
+
+        return {"status": "Success"}
+
+    except Exception as e:
+        print("error occured in saving the bookmark: ", str(e))
+        return {'status': "unsucessful", 'error': str(e)}
 
 
 @app.post("/api/user/google")

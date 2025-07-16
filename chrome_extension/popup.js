@@ -160,13 +160,13 @@ function renderLoginInterface() {
   });
 }
 
-function getUserEmail() {
-  return new Promise((resolve) => {
-    chrome.identity.getProfileUserInfo({ accountStatus: "ANY" }, (userInfo) => {
-      resolve(userInfo.email);
-    });
-  });
-}
+// function getUserEmail() {
+//   return new Promise((resolve) => {
+//     chrome.identity.getProfileUserInfo({ accountStatus: "ANY" }, (userInfo) => {
+//       resolve(userInfo.email);
+//     });
+//   });
+// }
 
 function getNotes() {
   const textarea = document.getElementById("notesTextarea");
@@ -274,47 +274,40 @@ function setupBookmarkHandler() {
         console.warn("No active tab found or tab has no URL.");
         return;
       }
-      let userEmail = await getUserEmail();
 
-      console.log("current user email: ", userEmail);
+      try {
+        const notes = getNotes();
+        const endpoint = `${backend_url}/content/save`;
+        let token = await fetchToken();
+        console.log("auth token: ", token);
 
-      if (userEmail) {
-        try {
-          const notes = getNotes();
-          const endpoint = `${backend_url}/content/save`;
-          let token = await fetchToken();
-          console.log("auth token: ", token);
+        const response = await fetch(endpoint, {
+          method: "POST",
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            url: tab.url,
+            title: tab.title,
+            source: "chrome_extension",
+            notes: notes,
+            folder_id: selectedFolder,
+          }),
+        });
 
-          const response = await fetch(endpoint, {
-            method: "POST",
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-              Accept: "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({
-              url: tab.url,
-              title: tab.title,
-              source: "chrome_extension",
-              email: userEmail,
-              notes: notes,
-            }),
-          });
+        const data = await response.json();
 
-          const data = await response.json();
-
-          if (data.status !== "Success") {
-            throw new Error(`Server returned error status: ${data.status}`);
-          }
-
-          insertMessage("Bookmark successfully saved", "success");
-        } catch (err) {
-          alert("Error saving bookmark: " + err);
-          insertMessage("Failed to save bookmark", "error");
+        if (data.status !== "Success") {
+          throw new Error(`Server returned error status: ${data.status}`);
         }
-      } else {
-        alert("Could not find authentication token. Please log in.");
+
+        insertMessage("Bookmark successfully saved", "success");
+      } catch (err) {
+        alert("Error saving bookmark: " + err);
+        insertMessage("Failed to save bookmark", "error");
       }
     } catch (error) {
       insertMessage("An error occurred, please try again later", "error");
