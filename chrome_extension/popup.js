@@ -24,6 +24,8 @@ function renderInterface() {
         >
           <img class="logo" src="/images/Logo.png" />
         </a>
+
+        <button class="logout-btn"> logout </button>
       </header>
 
       <div class="notes-container">
@@ -39,8 +41,7 @@ function renderInterface() {
       <div  class="user-folders"></div >
 
       <div class="action-bar">
-        <button id="bookMarkBtn" class="primary-button">
-          <i class="fas fa-bookmark"></i>
+        <button id="bookMarkBtn"   class="primary-button">
           Bookmark Page
         </button>
       </div>
@@ -55,6 +56,8 @@ function renderLoginInterface() {
   app.innerHTML = `
     <header>
       <img class="logo" src="/images/Logo.png" />
+
+      
     </header>
     <div class="login-message">
       <p>Please log in to use CSphere Bookmarks</p>
@@ -74,13 +77,10 @@ function renderLoginInterface() {
     </div>
   `;
 
-  // Local login form submit handler
   document.getElementById("loginForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
-
-    // TODO: Replace with your own login request
 
     try {
       const LOGIN_URL = `${backend_url}/api/chrome/login`;
@@ -160,14 +160,6 @@ function renderLoginInterface() {
   });
 }
 
-// function getUserEmail() {
-//   return new Promise((resolve) => {
-//     chrome.identity.getProfileUserInfo({ accountStatus: "ANY" }, (userInfo) => {
-//       resolve(userInfo.email);
-//     });
-//   });
-// }
-
 function getNotes() {
   const textarea = document.getElementById("notesTextarea");
   const content = textarea.value;
@@ -176,7 +168,6 @@ function getNotes() {
 }
 
 function insertMessage(message, messageType) {
-  // const parent = document.querySelector("app");
   const message_p = document.querySelector(".message-p");
   const submit_button = document.querySelector(".action-bar");
 
@@ -228,7 +219,7 @@ async function getRecentFolders() {
     const folderOption = document.createElement("option");
     folderOption.className = "folder-card";
     folderOption.innerText = "none selected";
-    folderOption.value = "none";
+    folderOption.value = "default";
     folderOption.addEventListener("change", () => {
       selectedFolder = "default";
     });
@@ -254,8 +245,17 @@ async function getRecentFolders() {
   }
 }
 
+function logout() {
+  chrome.storage.local.remove("csphere_user_token", function () {
+    // Callback function (optional)
+    // This will be executed once the item is removed.
+    console.log("csphere_user_token removed from local storage");
+  });
+}
+
 function setupBookmarkHandler() {
   const btn = document.getElementById("bookMarkBtn");
+  const logoutBtn = document.getElementsByClassName("logout-btn")[0];
   console.log("Setting up bookmark handler. Button: ", btn);
 
   if (!btn) {
@@ -263,7 +263,22 @@ function setupBookmarkHandler() {
     return;
   }
 
+  if (!logoutBtn) {
+    console.error("logout button is not found");
+  }
+
+  logoutBtn.addEventListener("click", () => {
+    try {
+      logout();
+      renderLoginInterface();
+    } catch (error) {
+      console.log("error ocucred in logout: ", error);
+    }
+  });
+
   btn.addEventListener("click", async () => {
+    btn.disabled = true;
+
     try {
       let [tab] = await chrome.tabs.query({
         active: true,
@@ -271,47 +286,49 @@ function setupBookmarkHandler() {
       });
 
       if (!tab || !tab.url) {
-        console.warn("No active tab found or tab has no URL.");
-        return;
+        throw new Error("No active tab found or tab has no URL.");
       }
 
-      try {
-        const notes = getNotes();
-        const endpoint = `${backend_url}/content/save`;
-        let token = await fetchToken();
-        console.log("auth token: ", token);
+      const notes = getNotes();
+      const endpoint = `${backend_url}/content/save`;
+      let token = await fetchToken();
+      console.log("auth token: ", token);
 
-        const response = await fetch(endpoint, {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            url: tab.url,
-            title: tab.title,
-            source: "chrome_extension",
-            notes: notes,
-            folder_id: selectedFolder,
-          }),
-        });
+      let tabData = {
+        url: tab.url,
+        title: tab.title,
+        notes: notes,
+      };
 
-        const data = await response.json();
-
-        if (data.status !== "Success") {
-          throw new Error(`Server returned error status: ${data.status}`);
-        }
-
-        insertMessage("Bookmark successfully saved", "success");
-      } catch (err) {
-        alert("Error saving bookmark: " + err);
-        insertMessage("Failed to save bookmark", "error");
+      if (selectedFolder !== "default") {
+        tabData.folder_id = selectedFolder;
       }
-    } catch (error) {
-      insertMessage("An error occurred, please try again later", "error");
-      alert(`An error occurred: ${error.message}`);
+      console.log("console data: ", tabData);
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(tabData),
+      });
+
+      const data = await response.json();
+
+      if (data.status !== "Success") {
+        throw new Error(`Server returned error status: ${data.status}`);
+      }
+
+      insertMessage("Bookmark successfully saved", "success");
+    } catch (err) {
+      console.error(err);
+      alert("Error saving bookmark: " + err.message);
+      insertMessage("Failed to save bookmark", "error");
+    } finally {
+      btn.disabled = false;
     }
   });
 }
