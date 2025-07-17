@@ -303,17 +303,11 @@ def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depend
 
    #come back
     try:
+
+        
+ 
         folders= db.query(Folder).filter(Folder.user_id == user_id and Folder.folder_id == Folder.parent_id ).order_by(desc(Folder.created_at)).all()
 
-
-
-        # interface FolderDetail {
-        # folderId: string;
-        # createdAt: String;
-        # folderName: string;
-        # parentId: string;
-        # fileCount: number;
-        # }
 
         res = []
 
@@ -334,38 +328,6 @@ def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depend
         return {'success' : False, 'error' : str(e)}
     
 
-    # try:
-    #     folders = (
-    #         db.query(Folder)
-    #         .filter(Folder.user_id == user_id, Folder.folder_name == Folder.parent_id)
-    #         .order_by(desc(Folder.created_at))
-    #         .all()
-    #     )
-
-    #     res = []
-
-    #     for folder in folders:
-    #         file_count = (
-    #             db.query(func.count(FolderItem.folder_item_id))
-    #             .filter(FolderItem.folder_id == folder.folder_id)
-    #             .scalar()
-    #         )
-
-    #         folder_data = {
-    #             "folderId": folder.folder_id,
-    #             "createdAt": folder.created_at,
-    #             "folderName": folder.folder_name,
-    #             "parentId": folder.parent_id,
-    #             "fileCount": file_count
-    #         }
-    #         res.append(folder_data)
-    #     print("data : ", res)
-
-    #     return {'success': True, 'data': res}
-
-    # except Exception as e:
-    #     print("something went wrong: ", str(e))
-    #     return {'success': False, 'error': str(e)}
     
 @app.get("/user/folder/{folder_id}")
 def get_folder_items(
@@ -381,6 +343,7 @@ def get_folder_items(
         .outerjoin(ContentAI, ContentAI.content_id == Content.content_id)  # AI is optional
         .filter(folder_item.folder_id == folder_id)
         .filter(folder_item.user_id == user_id)
+        .order_by(desc(Content.first_saved_at))
         .all()
     )
 
@@ -633,6 +596,7 @@ async def handle_google_callback(
 # @app.post("/content/save", response_model=ContentWithSummary)
 @app.post("/content/save")
 def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    print("entered the function")
     notes = content.notes
 
     print("content logs: ", content)
@@ -656,7 +620,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
             new_content = Content(
                 url=content.url,
                 title=content.title,
-                source=content.source,
+                source="chrome_extension",
                 user_id=user_id,
                 first_saved_at=utc_time,
                 read=False
@@ -704,7 +668,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             #add to the corresponding folder if any 
 
-            if content.folder_id != '' and content.folder_id != 'default':
+            if content.folder_id and content.folder_id != '' and content.folder_id != 'default':
 
                 new_item = folder_item(
                     folder_item_id = uuid4(), 
