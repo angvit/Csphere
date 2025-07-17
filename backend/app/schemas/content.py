@@ -10,7 +10,6 @@ class NoteContentUpdate(BaseModel):
 class ContentCreate(BaseModel):
     url: str
     title: Optional[str]
-    source: Optional[str]
     notes: Optional[str]
     folder_id: Optional[UUID] = None
 

@@ -32,7 +32,7 @@ else:
 
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 6000
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 
 
 
 class Token(BaseModel):
@@ -74,7 +74,7 @@ def create_access_token(data: dict, expires_delta=None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     if "sub" not in to_encode:
         raise ValueError("Token data must include 'sub' key for username")

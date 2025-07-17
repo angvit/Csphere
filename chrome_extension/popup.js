@@ -74,6 +74,8 @@ function renderLoginInterface() {
         <img src="/images/google.svg" class="google-icon" />
         Continue with Google
       </button>
+
+      <p class="message-p"></p>
     </div>
   `;
 
@@ -97,6 +99,18 @@ function renderLoginInterface() {
       });
 
       const data = await response.json();
+      console.log("current data: ", data);
+      if (data && data.detail.trim() === "Incorrect password") {
+        console.log("here in incorrect password");
+        insertMessage("Incorrect password", "error");
+        return;
+      }
+
+      if (data && data.detail.trim() === "User not found") {
+        console.log("User not found");
+        insertMessage("User not found", "error");
+        return;
+      }
 
       if (data) {
         chrome.storage.local.set({ csphere_user_token: data.token }, () => {
@@ -169,9 +183,7 @@ function getNotes() {
 
 function insertMessage(message, messageType) {
   const message_p = document.querySelector(".message-p");
-  const submit_button = document.querySelector(".action-bar");
 
-  submit_button.disabled = true;
   if (!message_p) return;
 
   message_p.textContent = message;
@@ -180,7 +192,6 @@ function insertMessage(message, messageType) {
   setTimeout(() => {
     message_p.textContent = "";
     message_p.style.color = "";
-    submit_button.disabled = false;
   }, 5000);
 }
 
