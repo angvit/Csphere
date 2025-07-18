@@ -222,7 +222,7 @@ def google_login(user : UserGoogleSignIn, db : Session =  Depends(get_db)):
     
     
     profile_path = ''
-    if db_user.profile_path != None:
+    if db_user.profile_path != None and db_user.profile_path != '':
         profile_path = get_presigned_url(db_user.profile_path)
     token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : str(profile_path)})
 
