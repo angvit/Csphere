@@ -42,12 +42,6 @@ from app.utils.hashing import get_password_hash, verify_password, create_access_
 # Load environment variables from a .env file
 load_dotenv()
 
-# Access the environment variable for frontend origin
-# FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN")
-# if not FRONTEND_ORIGIN:
-#     raise ValueError("Environment variable FRONTEND_ORIGIN is not set.")
-
-# print("Frontend Origin:", FRONTEND_ORIGIN)
 
 app = FastAPI()
 
@@ -64,7 +58,7 @@ app.add_middleware(
 
 s3 = boto3.client(
     "s3",
-    region_name="us-east-1",  # change this to your S3 region
+    region_name="us-east-1",  
     aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
     aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
 )
