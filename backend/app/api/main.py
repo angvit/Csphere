@@ -290,7 +290,7 @@ def chrome_login(user: UserSignIn,  request: Request, db: Session = Depends(get_
     token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
     print("Token created: ", token)
 
-    return {"username": db_user.username, "token": token}
+    return {"username": db_user.username, "token": token, "detail" : 'sucessful login'}
    
 @app.get("/user/folder")
 def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depends(get_db)):
