@@ -42,12 +42,6 @@ from app.utils.hashing import get_password_hash, verify_password, create_access_
 # Load environment variables from a .env file
 load_dotenv()
 
-# Access the environment variable for frontend origin
-# FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN")
-# if not FRONTEND_ORIGIN:
-#     raise ValueError("Environment variable FRONTEND_ORIGIN is not set.")
-
-# print("Frontend Origin:", FRONTEND_ORIGIN)
 
 app = FastAPI()
 
@@ -64,7 +58,7 @@ app.add_middleware(
 
 s3 = boto3.client(
     "s3",
-    region_name="us-east-1",  # change this to your S3 region
+    region_name="us-east-1",  
     aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
     aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
 )
@@ -296,7 +290,7 @@ def chrome_login(user: UserSignIn,  request: Request, db: Session = Depends(get_
     token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
     print("Token created: ", token)
 
-    return {"username": db_user.username, "token": token}
+    return {"username": db_user.username, "token": token, "detail" : 'sucessful login'}
    
 @app.get("/user/folder")
 def get_folders( user_id: UUID=Depends(get_current_user_id), db:Session = Depends(get_db)):
