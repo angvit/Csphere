@@ -11,6 +11,14 @@ A full-stack web app and browser extension that helps users **save**, **summariz
 
 ---
 
+# Chrome Extension Download
+
+#### 1. Downonload the zipped folder from this link: [download](https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension)
+#### 2. Extract the folder.
+#### 3. Go to `chrome://extensions/` in Chrome.
+#### 4.  Enable **Developer mode**.
+#### 5. Click **"Load unpacked"** and select the extracted folder.
+
 ## Local Setup
 
 ### 1. Backend (Python + FastAPI)

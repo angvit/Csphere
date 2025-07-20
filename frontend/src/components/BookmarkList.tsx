@@ -10,7 +10,7 @@ type Bookmark = {
 
 export default function BookmarkList({ items }: { items: Bookmark[] }) {
   if (items.length === 0) {
-    return <p className="text-center text-gray-500">No bookmarks found.</p>;
+    return <p className="text-center text-gray-500">No bookmarks found</p>;
   }
 
   return (

@@ -18,3 +18,7 @@ class UserSignIn(BaseModel):
 
 class UserGoogleSignIn(BaseModel):
     google_id: str
+
+
+class UserProfilePicture(BaseModel):
+    profile_url: str

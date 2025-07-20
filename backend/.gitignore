@@ -12,9 +12,8 @@ __pycache__/
 .env/
 /.env
 
-# Ignore Alembic migration cache if unwanted
-alembic/__pycache__/
+# # Ignore Alembic migration cache if unwanted
+# alembic/__pycache__/
 
-alembic.ini
 
 app/data_models/__pycache__/** 

@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono, PT_Serif } from "next/font/google";
 
-import "./globals.css";
+import "../globals.css";
 import { Toaster } from "@/components/ui/sonner";
 
 import LoginButton from "@/app/components/LoginButton";

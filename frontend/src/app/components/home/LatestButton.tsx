@@ -8,7 +8,7 @@ function LatestButton() {
       <Button
         variant="ghost"
         size="sm"
-        className="text-gray-600 hover:text-gray-500"
+        className="text-gray-600 hover:text-gray-400"
       >
         Latest
       </Button>

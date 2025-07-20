@@ -10,9 +10,8 @@ class NoteContentUpdate(BaseModel):
 class ContentCreate(BaseModel):
     url: str
     title: Optional[str]
-    source: Optional[str]
-    email: str
     notes: Optional[str]
+    folder_id: Optional[UUID] = None
 
 class TabRemover(BaseModel):
     content_id: UUID 

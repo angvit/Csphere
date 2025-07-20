@@ -7,10 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
 
-  console.log("here");
-
-  console.log("curent date: " + date);
-
   if (isNaN(date.getTime())) {
     return "Invalid Date";
   }
@@ -24,9 +20,6 @@ export function formatDate(dateString: string): string {
     hour12: true,
     timeZoneName: "short",
   }).format(date);
-
-  console.log("Local date: ", local_date);
-  // debugger;
 
   return local_date;
 }

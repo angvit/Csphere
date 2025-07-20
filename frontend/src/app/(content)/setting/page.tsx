@@ -1,12 +1,14 @@
 "use client";
 import { useState } from "react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Collapsible, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronUp } from "lucide-react";
-import Account from "../components/settings/Account";
+import Account from "@/app/components/settings/Account";
+import { motion, AnimatePresence } from "framer-motion";
+
+const collapseVariants = {
+  open: { opacity: 1, height: "auto" },
+  collapsed: { opacity: 0, height: 0 },
+};
 
 const tabs = ["Account", "Notification", "Privacy", "Appearance"];
 
@@ -33,7 +35,10 @@ const CollapsibleTab = ({ title }: TabContent) => {
       onOpenChange={setIsOpen}
       className="w-full space-y-2"
     >
-      <div className="flex items-center justify-between space-x-4 px-4 py-2  rounded-lg border-b-[1px]">
+      <motion.div
+        layout
+        className="flex items-center justify-between space-x-4 px-4 py-2 rounded-lg border-b-[1px]"
+      >
         <h4 className="text-sm font-semibold">{title}</h4>
         <CollapsibleTrigger asChild>
           <button className="p-2">
@@ -45,20 +50,34 @@ const CollapsibleTab = ({ title }: TabContent) => {
             <span className="sr-only">Toggle</span>
           </button>
         </CollapsibleTrigger>
-      </div>
+      </motion.div>
 
-      <CollapsibleContent className="space-y-2 px-1 w-scren">
-        {renderContent()}
-      </CollapsibleContent>
+      <AnimatePresence initial={false}>
+        {isOpen && (
+          <motion.div
+            key="content"
+            className="px-1 overflow-hidden"
+            initial="collapsed"
+            animate="open"
+            exit="collapsed"
+            variants={collapseVariants}
+            transition={{ duration: 0.4, ease: "easeInOut" }}
+          >
+            <div className="space-y-2">{renderContent()}</div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </Collapsible>
   );
 };
 
 function page() {
   return (
-    <div className="w-full h-screen flex items-center justify-center bg-gray-300">
-      <div className="flex flex-col items-start justify-start h-[800px] w-2/3 p-8">
-        <h1 className="text-4xl mb-8">Settings</h1>
+    <div className="w-full min-h-screen flex items-start justify-center bg-gray-300 py-8">
+      <div className="flex flex-col items-start justify-start w-full md:w-2/3 max-w-4xl p-8">
+        <h1 className="text-4xl mb-8 md:text-left text-center w-full font-bold text-gray-900">
+          Settings
+        </h1>
 
         <div className="w-full space-y-4">
           {tabs.map((tab) => (

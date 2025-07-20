@@ -15,6 +15,7 @@ class User(Base):
     username = Column(String,  nullable=False)
     password = Column(String, nullable=False)
     google_id = Column(String, nullable=True)
+    profile_path = Column(String, default='')
 
 
 

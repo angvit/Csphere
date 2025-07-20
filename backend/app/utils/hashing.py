@@ -32,7 +32,7 @@ else:
 
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 
 
 
 class Token(BaseModel):
@@ -74,7 +74,7 @@ def create_access_token(data: dict, expires_delta=None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     if "sub" not in to_encode:
         raise ValueError("Token data must include 'sub' key for username")
@@ -110,6 +110,7 @@ def get_current_user_id(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:
         # token_data = TokenData(username=username)
         return UUID(user_id)
     except jwt_exceptions.PyJWTError:
+        print("error occured in get_current_user_id")
         raise credentials_exception
 
     # You can fetch the user from your DB here, but for example purposes:
