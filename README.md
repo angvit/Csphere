@@ -31,6 +31,12 @@ pip install -r requirements.txt
 uvicorn app.api.main:app --reload
 ```
 
+API general structure 
+```bash
+/<resource-prefix>/<resource-id>/<sub-resource>?<query-params>
+```
+
+
 ### 2. Frontend (Next.js)
 
 ```bash
