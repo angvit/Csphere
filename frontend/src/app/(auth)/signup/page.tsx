@@ -9,12 +9,12 @@ import {
 
 export default function page() {
   return (
-    <main className="text-black">
+    <main className="text-black ">
       <Card
         style={{
           padding: "20px",
         }}
-        className="mx-auto w-[400px] border-black  shadow-md rounded-2xl p-6"
+        className="mx-auto w-[400px] border-black  shadow-md rounded-2xl p-6 mt-32 mb-32"
       >
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold mb-4 text-black">
