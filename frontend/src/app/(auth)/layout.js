@@ -43,7 +43,7 @@ export default async function RootLayout({ children }) {
       style={{ "--font-custom": fontFamily }}
     >
       <body className="relative font-custom">
-        <header className="h-25 bg-gray-300 w-full flex items-center justify-between px-6 sm:px-8 lg:px-16">
+        <header className="h-25 absolute bg-gray-300 w-full flex items-center justify-between px-6 sm:px-8 lg:px-16">
           <div className="flex items-center space-x-4 md:space-x-8">
             <LogoComponent />
           </div>
