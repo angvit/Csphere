@@ -23,6 +23,8 @@ from app.data_models.content_ai  import ContentAI
 from app.data_models.content_item import ContentItem
 from app.data_models.content import Content
 from app.data_models.user import User
+from app.data_models.folder import Folder
+from app.data_models.folder_item import folder_item
 
 target_metadata = Base.metadata
 

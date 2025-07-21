@@ -11,7 +11,7 @@ export default function Home() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col items-center justify-center w-10/12 md:w-8/12 h-full gap-10"
+          className="flex flex-col items-center justify-center w-10/12 md:w-8/12 h-full gap-10 mt-12"
         >
           <section className="max-w-3xl">
             <h1 className="text-4xl md:text-6xl pt-serif-regular text-center text-white mb-8">
