@@ -14,8 +14,8 @@ export default function Home() {
           className="flex flex-col items-center justify-center w-10/12 md:w-8/12 h-full gap-10"
         >
           <section className="max-w-3xl">
-            <h1 className="text-5xl md:text-6xl pt-serif-regular text-center text-white mb-8">
-              Save and revisit your favorite bookmarks with{" "}
+            <h1 className="text-4xl md:text-6xl pt-serif-regular text-center text-white mb-8">
+              Save and Revisit your favorite bookmarks with{" "}
               <span className="block mt-2 font-bold italic text-6xl">
                 CSphere
               </span>
@@ -31,9 +31,13 @@ export default function Home() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-col md:flex-row justify-center gap-6 w-[300px] md:w-[400px] lg:w-[500px]"
           >
-            <button className="bg-white text-gray-900 text-sm font-medium px-6 py-3 rounded-lg w-full text-center hover:bg-gray-100 transition duration-300 flex items-center justify-center">
+            <a
+              href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension"
+              target="_blank"
+              className="bg-white text-gray-900 text-sm font-medium px-6 py-3 rounded-lg w-full text-center hover:bg-gray-100 transition duration-300 flex items-center justify-center"
+            >
               Download Chrome Extension
-            </button>
+            </a>
             <a
               href="#feature-section"
               className="text-white text-sm font-medium px-6 py-3 w-full text-center hover:text-gray-200 transition duration-300 bg-[#202A29] rounded-lg flex items-center justify-center"
