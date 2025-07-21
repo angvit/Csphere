@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { Bookmark, Globe, FolderTree } from "lucide-react";
@@ -137,8 +137,10 @@ export default function FeatureSection() {
           Start saving with the Chrome extension
         </h3>
         <a
-          href="https://chrome.google.com/webstore/detail/YOUR_EXTENSION_ID"
+          href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension"
           target="_blank"
+          // href="https://chrome.google.com/webstore/detail/YOUR_EXTENSION_ID"
+          // target="_blank"
           rel="noopener noreferrer"
           className="inline-block bg-white text-black font-semibold text-lg px-6 py-3 rounded-lg hover:bg-gray-200 transition"
         >
