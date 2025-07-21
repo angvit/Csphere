@@ -100,19 +100,19 @@ function renderLoginInterface() {
 
       const data = await response.json();
       console.log("current data: ", data);
-      if (data && data.detail.trim() === "Incorrect password") {
+      if (data && data.detail && data.detail.trim() === "Incorrect password") {
         console.log("here in incorrect password");
         insertMessage("Incorrect password", "error");
         return;
       }
 
-      if (data && data.detail.trim() === "User not found") {
+      if (data && data.detail && data.detail.trim() === "User not found") {
         console.log("User not found");
         insertMessage("User not found", "error");
         return;
       }
 
-      if (data) {
+      if (data && data.detail && data.detail.trim() === "sucessful login") {
         chrome.storage.local.set({ csphere_user_token: data.token }, () => {
           console.log("Value stored");
         });
