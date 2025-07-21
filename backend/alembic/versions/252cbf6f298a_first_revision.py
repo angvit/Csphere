@@ -19,6 +19,9 @@ down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+"""
+Mistake when first creating this file: make no changes to this one  
+"""
 
 def upgrade() -> None:
     """Upgrade schema."""
@@ -31,44 +34,44 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    op.create_table('users',
-    sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), autoincrement=False, nullable=False),
-    sa.Column('email', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
-    sa.Column('created_at', postgresql.TIMESTAMP(), server_default=sa.text('now()'), autoincrement=False, nullable=True),
-    sa.Column('username', sa.TEXT(), autoincrement=False, nullable=False),
-    sa.Column('password', sa.TEXT(), autoincrement=False, nullable=False),
-    sa.PrimaryKeyConstraint('id', name='users_pkey'),
-    sa.UniqueConstraint('email', name='users_email_key'),
-    postgresql_ignore_search_path=False
-    )
-    op.create_table('content',
-    sa.Column('content_id', sa.UUID(), autoincrement=False, nullable=False),
-    sa.Column('user_id', sa.UUID(), autoincrement=False, nullable=True),
-    sa.Column('url', sa.VARCHAR(), autoincrement=False, nullable=False),
-    sa.Column('title', sa.VARCHAR(), autoincrement=False, nullable=True),
-    sa.Column('source', sa.VARCHAR(), autoincrement=False, nullable=True),
-    sa.Column('first_saved_at', postgresql.TIMESTAMP(), server_default=sa.text("'2025-04-11 22:50:55.487632'::timestamp without time zone"), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='content_user_id_fkey'),
-    sa.PrimaryKeyConstraint('content_id', name='content_pkey'),
-    sa.UniqueConstraint('url', name='content_url_key'),
-    postgresql_ignore_search_path=False
-    )
-    op.create_table('content_item',
-    sa.Column('user_id', sa.UUID(), autoincrement=False, nullable=False),
-    sa.Column('content_id', sa.UUID(), autoincrement=False, nullable=False),
-    sa.Column('saved_at', postgresql.TIMESTAMP(), server_default=sa.text("'2025-04-11 22:50:55.487632'::timestamp without time zone"), autoincrement=False, nullable=True),
-    sa.Column('notes', sa.VARCHAR(), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['content_id'], ['content.content_id'], name=op.f('content_item_content_id_fkey')),
-    sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('content_item_user_id_fkey')),
-    sa.PrimaryKeyConstraint('user_id', 'content_id', name=op.f('content_item_pkey'))
-    )
-    op.create_table('content_ai',
-    sa.Column('content_id', sa.UUID(), autoincrement=False, nullable=False),
-    sa.Column('ai_summary', sa.VARCHAR(), autoincrement=False, nullable=True),
-    sa.Column('embedding', Vector(1536), autoincrement=False, nullable=True),
-    sa.ForeignKeyConstraint(['content_id'], ['content.content_id'], name=op.f('content_ai_content_id_fkey')),
-    sa.PrimaryKeyConstraint('content_id', name=op.f('content_ai_pkey'))
-    )
+    # op.create_table('users',
+    # sa.Column('id', sa.UUID(), server_default=sa.text('gen_random_uuid()'), autoincrement=False, nullable=False),
+    # sa.Column('email', sa.VARCHAR(length=255), autoincrement=False, nullable=False),
+    # sa.Column('created_at', postgresql.TIMESTAMP(), server_default=sa.text('now()'), autoincrement=False, nullable=True),
+    # sa.Column('username', sa.TEXT(), autoincrement=False, nullable=False),
+    # sa.Column('password', sa.TEXT(), autoincrement=False, nullable=False),
+    # sa.PrimaryKeyConstraint('id', name='users_pkey'),
+    # sa.UniqueConstraint('email', name='users_email_key'),
+    # postgresql_ignore_search_path=False
+    # )
+    # op.create_table('content',
+    # sa.Column('content_id', sa.UUID(), autoincrement=False, nullable=False),
+    # sa.Column('user_id', sa.UUID(), autoincrement=False, nullable=True),
+    # sa.Column('url', sa.VARCHAR(), autoincrement=False, nullable=False),
+    # sa.Column('title', sa.VARCHAR(), autoincrement=False, nullable=True),
+    # sa.Column('source', sa.VARCHAR(), autoincrement=False, nullable=True),
+    # sa.Column('first_saved_at', postgresql.TIMESTAMP(), server_default=sa.text("'2025-04-11 22:50:55.487632'::timestamp without time zone"), autoincrement=False, nullable=True),
+    # sa.ForeignKeyConstraint(['user_id'], ['users.id'], name='content_user_id_fkey'),
+    # sa.PrimaryKeyConstraint('content_id', name='content_pkey'),
+    # sa.UniqueConstraint('url', name='content_url_key'),
+    # postgresql_ignore_search_path=False
+    # )
+    # op.create_table('content_item',
+    # sa.Column('user_id', sa.UUID(), autoincrement=False, nullable=False),
+    # sa.Column('content_id', sa.UUID(), autoincrement=False, nullable=False),
+    # sa.Column('saved_at', postgresql.TIMESTAMP(), server_default=sa.text("'2025-04-11 22:50:55.487632'::timestamp without time zone"), autoincrement=False, nullable=True),
+    # sa.Column('notes', sa.VARCHAR(), autoincrement=False, nullable=True),
+    # sa.ForeignKeyConstraint(['content_id'], ['content.content_id'], name=op.f('content_item_content_id_fkey')),
+    # sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('content_item_user_id_fkey')),
+    # sa.PrimaryKeyConstraint('user_id', 'content_id', name=op.f('content_item_pkey'))
+    # )
+    # op.create_table('content_ai',
+    # sa.Column('content_id', sa.UUID(), autoincrement=False, nullable=False),
+    # sa.Column('ai_summary', sa.VARCHAR(), autoincrement=False, nullable=True),
+    # sa.Column('embedding', Vector(1536), autoincrement=False, nullable=True),
+    # sa.ForeignKeyConstraint(['content_id'], ['content.content_id'], name=op.f('content_ai_content_id_fkey')),
+    # sa.PrimaryKeyConstraint('content_id', name=op.f('content_ai_pkey'))
+    # )
 
     # ### end Al
     """Downgrade schema."""
