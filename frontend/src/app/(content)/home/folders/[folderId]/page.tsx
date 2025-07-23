@@ -68,7 +68,6 @@ export default function Page({
         const path_data: PathProps[] = data.path;
         console.log("path_data:", path_data);
         setPaths(path_data); // ✅ this keeps it as an array
-        debugger;
       } catch (error) {
         console.log("error occured in fetchPathStructure", error);
       }

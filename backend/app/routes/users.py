@@ -270,3 +270,25 @@ def connect_google_account(user: UserGoogleCreate, user_id: UUID = Depends(get_c
     
     except Exception as e:
         return {"success" : False, "message" : f"Following error occured: {e}"}
+    
+
+
+
+
+@router.get("/profile/info")
+def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    
+    print("user: ", user)
+
+    return {
+        
+        "username": user.username,
+        "email": user.email,
+        "profilePath" : get_presigned_url( user.profile_path) if user.profile_path != '' else ''
+  
+    }
+
