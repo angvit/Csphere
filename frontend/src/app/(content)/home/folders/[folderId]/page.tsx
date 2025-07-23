@@ -26,7 +26,7 @@ export default function Page({
 
   useEffect(() => {
     const fetchBookmarks = async (id: string) => {
-      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/folder/${id}`;
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/folder/${id}`;
       const token = fetchToken();
 
       try {
