@@ -25,7 +25,7 @@ export default function BookmarksPage() {
       const url = query.trim()
         ? `${
             process.env.NEXT_PUBLIC_API_BASE_URL
-          }/search?query=${encodeURIComponent(query)}`
+          }/content/search?query=${encodeURIComponent(query)}`
         : `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
 
       const res = await fetch(url, {
