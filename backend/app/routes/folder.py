@@ -1,6 +1,6 @@
 from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.dependencies import get_current_user_id
 from app.data_models.folder import Folder
@@ -11,22 +11,16 @@ from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 
 from app.db.database import get_db
-from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn, UserProfilePicture
-from app.schemas.folder import FolderCreate, FolderDetails, FolderItem
+from app.schemas.folder import  FolderDetails, FolderItem
 
-from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
-from app.data_models.user import User
-from app.functions.AWS_s3 import extract_s3_key, get_presigned_url
-from datetime import datetime, timezone
+from app.utils.hashing import get_current_user_id
+from datetime import datetime
 from uuid import uuid4
 from uuid import UUID
-import boto3
 
-import os
 
 
 router = APIRouter(
-    # prefix="/user",
     tags=['folder'],
 )
 

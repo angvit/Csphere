@@ -1,14 +1,13 @@
-from typing import Dict, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from app.dependencies import get_current_user_id
 from app.db.database import get_db
-from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn, UserProfilePicture
-from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
+from app.schemas.user import UserCreate, UserSignIn, UserGoogleCreate, UserGoogleSignIn
+from app.utils.hashing import get_password_hash, verify_password, create_access_token, get_current_user_id
 from app.data_models.user import User
 from app.functions.AWS_s3 import extract_s3_key, get_presigned_url
-from datetime import datetime, timezone
+from datetime import datetime
 from uuid import uuid4
 from uuid import UUID
 import boto3
@@ -31,16 +30,6 @@ s3 = boto3.client(
     aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
 )
 
-# """
-#     Fetches the body parts from the database based on pagination parameters.
-
-#     Parameters:
-#         db (Session): The database session.
-#         pagination_params (dict): The pagination parameters.
-
-#     Returns:
-#     BodyPartsInDB: The fetched body parts from the database.
-# """ 
 @router.post("/signup")
 def create_user(user: UserCreate, db: Session = Depends(get_db)):
     if not user:

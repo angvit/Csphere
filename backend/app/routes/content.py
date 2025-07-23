@@ -3,19 +3,17 @@ from app.db.database import get_db
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
-from app.data_models.folder import Folder
 from app.data_models.folder_item import folder_item
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
-from app.schemas.settings import UpdateSettings
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from datetime import datetime, timezone
 
-from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
+from app.utils.hashing import get_current_user_id
 from sqlalchemy.orm import Session
 from uuid import UUID
-from sqlalchemy import desc, func
+from sqlalchemy import desc
 
 router = APIRouter(
     # prefix="/content"

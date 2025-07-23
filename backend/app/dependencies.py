@@ -12,7 +12,6 @@ import jwt
 
 
 
-from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")

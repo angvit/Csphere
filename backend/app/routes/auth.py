@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
+from fastapi import APIRouter, Depends
 from fastapi.responses import RedirectResponse, JSONResponse
 from app.db.database import get_db
 from app.data_models.user import User
-from app.functions.AWS_s3 import extract_s3_key, get_presigned_url
-from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token, get_current_user_id
+from app.functions.AWS_s3 import  get_presigned_url
+from app.utils.hashing import create_access_token
 from sqlalchemy.orm import Session
 from urllib.parse import urlencode
 
