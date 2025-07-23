@@ -59,7 +59,7 @@ function Account() {
         return;
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/settings/update`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/setting/update`;
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
