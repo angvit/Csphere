@@ -206,7 +206,7 @@ function fetchToken() {
 
 async function getRecentFolders() {
   try {
-    const API_URL = `${backend_url}/user/folder`;
+    const API_URL = `${backend_url}/folder`;
     let token = await fetchToken();
 
     const response = await fetch(API_URL, {
