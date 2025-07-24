@@ -20,6 +20,11 @@ function page() {
         "First, download the extension file from your account dashboard or the provided download link.",
       instructions: [
         'Look for the "Download Extension" button on your dashboard',
+        {
+          type: "button",
+          text: "Download Chrome Extension",
+          href: "https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension",
+        },
         "Save the .zip file to your Downloads folder",
       ],
       media: {
@@ -147,10 +152,21 @@ function page() {
                     <div className="grid md:grid-cols-2 gap-8 items-start">
                       {/* Instructions */}
                       <div>
-                        <div className="bg-black/20 rounded-md p-4 font-mono text-sm">
+                        <div className="bg-black/20 rounded-md p-4 font-mono text-sm space-y-3">
                           {step.instructions.map((instruction, index) => (
-                            <div key={index} className="mb-2 last:mb-0">
-                              • {instruction}
+                            <div key={index} className="last:mb-0">
+                              {typeof instruction === "string" ? (
+                                <div>• {instruction}</div>
+                              ) : instruction.type === "button" ? (
+                                <a
+                                  href={instruction.href}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-white text-gray-900 text-sm font-medium px-6 py-3 rounded-lg w-full text-center hover:bg-gray-100 transition duration-300 flex items-center justify-center no-underline"
+                                >
+                                  {instruction.text}
+                                </a>
+                              ) : null}
                             </div>
                           ))}
                         </div>
