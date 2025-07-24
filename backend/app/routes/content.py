@@ -9,6 +9,7 @@ from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from datetime import datetime, timezone
+from uuid import uuid4
 
 from app.utils.hashing import get_current_user_id
 from sqlalchemy.orm import Session
@@ -136,7 +137,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
                 db.commit()
                 db.refresh(new_item)
             else:
-                print("no valud fodler id found so skipping this part")
+                print("no valid fodler id found so skipping this part")
             
 
         print("Successfully saved content for user.")
