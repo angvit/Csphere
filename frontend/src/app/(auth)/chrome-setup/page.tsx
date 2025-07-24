@@ -4,12 +4,21 @@ import Image from "next/image";
 
 function page() {
   const [openSteps, setOpenSteps] = useState({});
+  const [expandedImage, setExpandedImage] = useState(null);
 
   const toggleStep = (stepNumber) => {
     setOpenSteps((prev) => ({
       ...prev,
       [stepNumber]: !prev[stepNumber],
     }));
+  };
+
+  const openImageModal = (imageSrc, imageAlt) => {
+    setExpandedImage({ src: imageSrc, alt: imageAlt });
+  };
+
+  const closeImageModal = () => {
+    setExpandedImage(null);
   };
 
   const steps = [
@@ -19,17 +28,17 @@ function page() {
       description:
         "First, download the extension file from your account dashboard or the provided download link.",
       instructions: [
-        'Look for the "Download Extension" button on your dashboard',
+        "Click the botton below to download the chrome extension",
         {
           type: "button",
           text: "Download Chrome Extension",
           href: "https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension",
         },
-        "Save the .zip file to your Downloads folder",
+        "You should land on a page similar to the image on the right, it will automatically download a zipped version of the chrome extension",
       ],
       media: {
         type: "image", // or "video"
-        src: "/images/step1-download.png", // Replace with your actual image path
+        src: "/chrome/chrome-zip.png", // Replace with your actual image path
         alt: "Download extension screenshot",
       },
     },
@@ -43,9 +52,10 @@ function page() {
         "Or go to Chrome Menu > More Tools > Extensions",
       ],
       media: {
-        type: "video", // or "image"
-        src: "/videos/step2-navigate.mp4", // Replace with your actual video path
-        poster: "/images/step2-poster.png", // Optional poster image for video
+        type: "image", // or "video"
+        src: "/chrome/chrome-page1.png", // Replace with your actual image path
+        alt: "chrome developer dashboard",
+        // poster: "/images/step2-poster.png", // Optional poster image for video
       },
     },
     {
@@ -59,7 +69,7 @@ function page() {
       ],
       media: {
         type: "image",
-        src: "/images/step3-developer-mode.png",
+        src: "/chrome/chrome-page2.png",
         alt: "Developer mode toggle screenshot",
       },
     },
@@ -73,9 +83,10 @@ function page() {
         "Select the extracted folder containing the extension files",
       ],
       media: {
-        type: "video",
-        src: "/videos/step4-unpack.mp4",
-        poster: "/images/step4-poster.png",
+        type: "image",
+        src: "/chrome/chrome-unpack.png",
+        alt: "chrome unpack image",
+        // poster: "/images/step4-poster.png",
       },
     },
     {
@@ -90,8 +101,20 @@ function page() {
       ],
       media: {
         type: "image",
-        src: "/images/step5-login.png",
+        src: "/chrome/chrome-login.png",
         alt: "Extension login screenshot",
+      },
+    },
+    {
+      number: 6,
+      title: "Start bookmarking!",
+      description:
+        "You can now bookmark any webpage you're on. Add in any notes you want and select any folder you want to add in the bookmark into.",
+      instructions: [],
+      media: {
+        type: "image",
+        src: "/chrome/chrome-homepage.png",
+        alt: "chrome homepage",
       },
     },
   ];
@@ -175,7 +198,12 @@ function page() {
                       {/* Media */}
                       <div className="bg-black/10 rounded-lg p-4">
                         {step.media.type === "image" ? (
-                          <div className="relative w-full h-64 bg-gray-700 rounded-lg overflow-hidden">
+                          <div
+                            onClick={() =>
+                              openImageModal(step.media.src, step.media.alt)
+                            }
+                            className="relative w-full h-64 bg-gray-700 rounded-lg overflow-hidden"
+                          >
                             <Image
                               src={step.media.src}
                               alt={step.media.alt}
@@ -189,7 +217,7 @@ function page() {
                             <video
                               className="w-full h-full object-contain"
                               controls
-                              poster={step.media.poster}
+                              // poster={step.media.poster}
                               preload="metadata"
                             >
                               <source src={step.media.src} type="video/mp4" />
@@ -211,6 +239,49 @@ function page() {
           </div>
         </div>
       </div>
+
+      {/* Image Modal */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 bg-black/80  z-50 flex items-center justify-center p-4"
+          onClick={closeImageModal}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] w-full">
+            {/* Close button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute -top-12 right-0 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <svg
+                className="w-8 h-8"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Expanded image */}
+            <div className="relative w-full h-96 bg-gray-900 rounded-lg overflow-hidden">
+              {/* {expandedImage.src} */}
+              <Image
+                src={expandedImage.src}
+                alt={expandedImage.alt}
+                fill
+                className="object-contain"
+                sizes="90vw"
+                priority
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
