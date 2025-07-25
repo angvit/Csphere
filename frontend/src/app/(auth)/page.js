@@ -165,16 +165,16 @@ export default function LandingPage() {
             <motion.a
               href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension"
               target="_blank"
-              className="bg-white text-[#202A29] text-sm font-semibold px-8 py-4 rounded-xl w-full text-center  transition-all  flex items-center justify-center gap-2 shadow-sm "
+              className="bg-white text-[#202A29] text-sm font-semibold px-6 py-3 rounded-xl w-full text-center  transition-all  flex items-center justify-center gap-2 shadow-sm "
               rel="noreferrer"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-6 h-2" />
               Download Chrome Extension
             </motion.a>
 
             <motion.a
               href="#csphere-demo"
-              className="text-white text-sm font-semibold px-8 py-4 w-full text-center transition-all duration-300 bg-[#202A29]   border border-white/20 rounded-xl flex items-center justify-center gap-2"
+              className="text-white text-sm font-semibold px-6 py-3 w-full text-center transition-all duration-300 bg-[#202A29]   border border-white/20 rounded-xl flex items-center justify-center gap-2"
             >
               <Play className="w-4 h-4" />
               View Demo
@@ -231,9 +231,9 @@ export default function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer
+      {/* <footer
         id="contact"
-        className="bg-white flex w-ful h-full items-center justify-center text-white py-16 relative"
+        className="bg-[#202A29] flex w-ful h-full items-center justify-center text-white py-16 relative"
       >
         <div className="container px-4 md:px-6">
           <div className="grid gap-8 lg:grid-cols-4">
@@ -243,7 +243,7 @@ export default function LandingPage() {
                   src="/cspherelogo2.png"
                   alt="Logo"
                   fill
-                  className="object-contain"
+                  className="object-contain invert brightness-0"
                   sizes="(max-width: 768px) 64px, (max-width: 1024px) 80px, 128px"
                   priority
                   quality={100}
@@ -332,7 +332,7 @@ export default function LandingPage() {
             </p>
           </div>
         </div>
-      </footer>
+      </footer> */}
     </div>
   );
 }
