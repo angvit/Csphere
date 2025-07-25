@@ -59,7 +59,7 @@ function Account() {
         return;
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/settings/update`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/setting/update`;
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
@@ -90,7 +90,7 @@ function Account() {
   const connectGoogleAccount = async (credentials: any) => {
     try {
       const userGoogleData: GoogleUserData = fetchGoogleCredential(credentials);
-      const endpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/google`;
+      const endpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/google`;
 
       const response = await fetch(endpoint, {
         method: "POST",

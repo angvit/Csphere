@@ -31,6 +31,7 @@ class ContentEmbeddingManager:
         self.embedding_model_name = embedding_model_name
         self.summary_model = summary_model_name
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        print("Open ai key is as follows: ", self.openai_client)
 
 
     ###############################################################################
