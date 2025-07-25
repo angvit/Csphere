@@ -22,7 +22,7 @@ print("Loading .env file from:", dotenv_path)
 load_dotenv(dotenv_path)
 
 SECRET_KEY = os.getenv('SECRET_KEY')
-print("Secret key from .env:", SECRET_KEY)
+print("Secret key from .env within hashing file:", SECRET_KEY)
 
 if isinstance(SECRET_KEY, str):
     print("Secret key loaded successfully")

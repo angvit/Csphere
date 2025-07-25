@@ -1,152 +1,171 @@
 "use client";
-import Image from "next/image";
+
 import { motion } from "framer-motion";
-import { Bookmark, Globe, FolderTree } from "lucide-react";
+import {
+  Bookmark,
+  Search,
+  FolderSyncIcon as Sync,
+  Shield,
+  Zap,
+  Folder,
+} from "lucide-react";
 
 const features = [
   {
-    icon: <Bookmark className="h-5 w-5 text-black" />,
-    title: "Save and organize your research",
-    desc: "Collect articles, papers, and resources from across the web in one centralized location. Never lose track of important information again.",
-    imageAlt: "Bookmark collection interface",
-    imageSrc: "/csphere-chrome.mp4",
+    icon: Bookmark,
+    title: "Smart Bookmarking",
+    description:
+      "Automatically categorize and tag your bookmarks with AI-powered organization.",
   },
   {
-    icon: <Globe className="h-5 w-5 text-black" />,
-    title: "Access your content anywhere",
-    desc: "Seamlessly sync your saved content across all your devices. Your bookmarks are always available whether you're at home, work, or on the go.",
-    imageAlt: "Cross-device synchronization",
-    imageSrc: "/csphere-home.png",
+    icon: Search,
+    title: "Instant Search",
+    description:
+      "Find any bookmark in seconds with our powerful search and filtering system.",
   },
   {
-    icon: <FolderTree className="h-5 w-5 text-black" />,
-    title: "Organize with smart collections",
-    desc: "Create custom collections and let our AI help categorize your content automatically. Find what you need when you need it with powerful search and filtering.",
-    imageAlt: "Smart collections and organization",
-    imageSrc: "/csphere-search.mp4",
+    icon: Sync,
+    title: "Cross-Device Sync",
+    description:
+      "Access your bookmarks seamlessly across all your devices and browsers.",
+  },
+  {
+    icon: Shield,
+    title: "Privacy First",
+    description:
+      "Your data stays private. We don't track or store your personal information.",
+  },
+  {
+    icon: Zap,
+    title: "Lightning Fast",
+    description:
+      "Optimized for speed with instant bookmark saving and retrieval.",
+  },
+  {
+    icon: Folder,
+    title: "Smart Collections",
+    description:
+      "Organize bookmarks into intelligent collections that adapt to your usage.",
   },
 ];
 
-function TextBlock({ feature }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.8 }}
-      className="flex flex-col justify-center space-y-6 max-w-xl mx-auto lg:mx-0"
-    >
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white">
-          {feature.icon}
-        </div>
-        <h2 className="text-3xl sm:text-4xl font-bold tracking-tight !text-white">
-          {feature.title}
-        </h2>
-      </div>
-      <p className="text-lg md:text-xl leading-relaxed !text-white">
-        {feature.desc}
-      </p>
-    </motion.div>
-  );
-}
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+    },
+  },
+};
 
-function ImageBlock({ feature }) {
-  const isVideo = feature.imageSrc.endsWith(".mp4");
-  const isImage =
-    feature.imageSrc.endsWith(".png") || feature.imageSrc.endsWith(".jpg");
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, scale: 0.9 }}
-      whileInView={{ opacity: 1, scale: 1 }}
-      viewport={{ once: true, amount: 0.5 }}
-      transition={{ duration: 0.8 }}
-      className="flex justify-center"
-    >
-      <div className="relative w-full max-w-[500px] h-auto">
-        <div className="relative z-10 overflow-hidden rounded-lg bg-gray-900 p-6 shadow-sm">
-          <div className="aspect-square w-full overflow-hidden rounded-md bg-gray-700">
-            {isVideo ? (
-              <video
-                className="w-fit h-fit object-cover"
-                autoPlay
-                loop
-                muted
-                playsInline
-              >
-                <source src={feature.imageSrc} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
-            ) : isImage ? (
-              <Image
-                src={`${feature.imageSrc}?height=800&width=800`}
-                width={800}
-                height={800}
-                alt={feature.imageAlt}
-                className="object-contain scroll-auto"
-              />
-            ) : (
-              <div className="h-full w-full bg-gray-800 flex items-center justify-center text-white">
-                Unsupported media type
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
-}
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: {
+      duration: 0.6,
+    },
+  },
+};
 
 export default function FeatureSection() {
   return (
-    <div className="w-full bg-[#202A29] text-white">
-      <div className="text-center py-16">
-        <p className="text-4xl md:text-5xl font-normal tracking-tight !text-white">
-          Pronounced{" "}
-          <span className="italic font-bold !text-white">see sphere</span>
-        </p>
-      </div>
-
-      {/* Feature Sections */}
-      {features.map((feature, index) => (
-        <section
-          key={index}
-          className="w-full py-16 md:py-24 border-t border-gray-800"
+    <section className="py-20 md:py-32 bg-gradient-to-b bg-gray-300 ">
+      <div className="container mx-auto px-4 md:px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="text-center mb-16"
         >
-          <div className="mx-auto max-w-7xl px-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              {index === 1 ? (
-                <>
-                  <ImageBlock feature={feature} />
-                  <TextBlock feature={feature} />
-                </>
-              ) : (
-                <>
-                  <TextBlock feature={feature} />
-                  <ImageBlock feature={feature} />
-                </>
-              )}
+          <div className="inline-block bg-white/10 backdrop-blur-sm border border-white/20 rounded-full px-4 py-2 text-sm mb-6">
+            Features
+          </div>
+          <h2 className="text-4xl md:text-6xl font-bold pt-serif-regular mb-6">
+            Everything you need to manage bookmarks
+          </h2>
+          <p className="text-xl text-gray-300 max-w-3xl mx-auto pt-serif-semibold">
+            Powerful features designed to transform how you save, organize, and
+            access your favorite content
+          </p>
+        </motion.div>
+
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 max-w-7xl mx-auto"
+        >
+          {features.map((feature, index) => (
+            <motion.div
+              key={index}
+              variants={itemVariants}
+              whileHover={{ y: -2, scale: 1.01 }}
+              className="group relative"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-white/10 rounded-2xl blur-xl group-hover:blur-2xl transition-all duration-300" />
+              <div className="relative bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8 hover:bg-white/10 hover:border-white/20 transition-all duration-300">
+                <div className="flex items-center justify-center w-14 h-14 bg-white/10 rounded-xl mb-6 group-hover:bg-white/20 transition-all duration-300">
+                  <feature.icon className="w-7 h-7 text-gray-600" />
+                </div>
+                <h3 className="text-xl font-bold mb-4 pt-serif-semibold">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-300 leading-relaxed pt-serif-regular">
+                  {feature.description}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Demo Preview Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          viewport={{ once: true }}
+          className="mt-20 text-center"
+        >
+          <h3
+            id="csphere-demo"
+            className="text-3xl md:text-4xl font-bold pt-serif-regular mb-8"
+          >
+            See CSphere in action
+          </h3>
+          <div className="relative max-w-4xl mx-auto">
+            <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 rounded-2xl blur-2xl" />
+            <div className="relative bg-white/5 backdrop-blur-sm border border-white/20 rounded-2xl p-2">
+              <div className="bg-[#1a2221] rounded-xl overflow-hidden">
+                <div className="flex items-center gap-2 p-4 border-b border-white/10">
+                  <div className="w-3 h-3 bg-red-400 rounded-full" />
+                  <div className="w-3 h-3 bg-yellow-400 rounded-full" />
+                  <div className="w-3 h-3 bg-green-400 rounded-full" />
+                  <div className="ml-4 text-sm text-gray-400">
+                    CSphere Extension
+                  </div>
+                </div>
+                <div className="aspect-video bg-gradient-to-br from-[#202A29] to-[#1a2221] flex items-center justify-center">
+                  <motion.div
+                    animate={{ scale: [1, 1.05, 1] }}
+                    transition={{
+                      duration: 2,
+                      repeat: Number.POSITIVE_INFINITY,
+                    }}
+                    className="text-6xl"
+                  >
+                    🔖
+                  </motion.div>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
-      ))}
-
-      <div className="w-full py-16 text-center border-t border-gray-800 bg-black">
-        <h3 className="text-2xl md:text-3xl font-semibold mb-6 !text-white">
-          Start saving with the Chrome extension
-        </h3>
-        <a
-          href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension"
-          target="_blank"
-          // href="https://chrome.google.com/webstore/detail/YOUR_EXTENSION_ID"
-          // target="_blank"
-          rel="noopener noreferrer"
-          className="inline-block bg-white text-black font-semibold text-lg px-6 py-3 rounded-lg hover:bg-gray-200 transition"
-        >
-          Download
-        </a>
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
 }
