@@ -37,8 +37,8 @@ function page() {
         "You should land on a page similar to the image on the right, it will automatically download a zipped version of the chrome extension",
       ],
       media: {
-        type: "image", // or "video"
-        src: "/chrome/chrome-zip.png", // Replace with your actual image path
+        type: "image",
+        src: "/chrome/chrome-zip.png",
         alt: "Download extension screenshot",
       },
     },
@@ -52,10 +52,10 @@ function page() {
         "Or go to Chrome Menu > More Tools > Extensions",
       ],
       media: {
-        type: "image", // or "video"
-        src: "/chrome/chrome-page1.png", // Replace with your actual image path
+        type: "image",
+        src: "/chrome/chrome-page1.png",
         alt: "chrome developer dashboard",
-        // poster: "/images/step2-poster.png", // Optional poster image for video
+        // poster: "/images/step2-poster.png",
       },
     },
     {
