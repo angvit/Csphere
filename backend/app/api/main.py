@@ -1,6 +1,8 @@
 import uvicorn 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.requests import Request
+
 from dotenv import load_dotenv
 import os 
 import logging
@@ -16,14 +18,13 @@ load_dotenv()
 app = FastAPI()
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 # StreamHandler
-stream_handler = logging.StreamHandler(sys.stdout)
-log_formatter = logging.Formatter("%(asctime)s [%(processName)s: %(process)d] [%(threadName)s: %(thread)d] [%(levelname)s] %(name)s: %(message)s")
-stream_handler.setFormatter(log_formatter)
-logger.addHandler(stream_handler)
-
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 logger.info('API is starting up')
 
 
@@ -46,7 +47,15 @@ app.include_router(content_router)
 app.include_router(setting_router)
 
 
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code} for {request.method} {request.url.path}")
+    return response
 
+
+logger.info('API has started up')
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("app.api.main:app", host="0.0.0.0", port=port)

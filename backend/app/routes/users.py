@@ -1,5 +1,5 @@
 
-from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File, status
 from sqlalchemy.orm import Session
 from app.dependencies import get_current_user_id
 from app.db.database import get_db
@@ -11,8 +11,12 @@ from datetime import datetime
 from uuid import uuid4
 from uuid import UUID
 import boto3
+import logging
+
+
 
 import os
+
 
 
 router = APIRouter(
@@ -20,6 +24,10 @@ router = APIRouter(
     tags=['user'],
     dependencies=[]
 )
+
+
+logger = logging.getLogger(__name__) 
+
 BUCKET_NAME = os.environ.get('BUCKET_NAME')
 
 
@@ -36,12 +44,13 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Invalid user data")
     
     hashed_password = get_password_hash(user.password)
-    print("Hashed password: ", hashed_password)
+    logger.info(f"hashed password was sucesfuuly created: { hashed_password}")
     user.password = hashed_password
 
     # Check if user already exists by username
     existing_user = db.query(User).filter(User.username == user.username).first()
     if existing_user:
+        logger.error(f"Username {user.username} already exists")
         raise HTTPException(status_code=400, detail="Username already registered")
     
     #Insert user into the database
@@ -56,7 +65,7 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(new_user)  # Refresh to get the user with the generated ID
 
-    print("User created: ", new_user)
+    logger.info(f"user created succesfully for username {user.username}")
     presigned_url = ''
     if (new_user.profile_path != ''):
         presigned_url = get_presigned_url(new_user.profile_path)
@@ -68,51 +77,57 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login")
 def login(user: UserSignIn,  db: Session = Depends(get_db)):
+    logger.info(f"Logging in user with user credentials: {user.username} and {user.password}")
+
     if not user:
-        raise HTTPException(status_code=400, detail="Invalid user data")
+        raise HTTPException(status_code=400, detail=f"Invalid user data. No username found for {user.username}")
 
     # Check if the user exists
     db_user = db.query(User).filter(User.username == user.username).first()
     if not db_user:
-        print("User not found: ", user.username)
+        logger.error(f"User not found with username {user.username}")
         raise HTTPException(status_code=400, detail="User not found")
     
-    print("User found: ", db_user, "id of user: ", db_user.id)
+   
 
     # Verify the password
     if not verify_password(user.password, db_user.password):
-        print("Incorrect password for user: ", user.username)
-         # If the password is incorrect, raise an HTTPException
-         # This will return a 400 status code with the detail "Incorrect password"
+        logger.error(f"username and password do not match for user {user.username}")
+
         raise HTTPException(status_code=400, detail="Incorrect password")
     
     presigned_url = ''
     if db_user.profile_path != '' and db_user.profile_path != None:
         presigned_url = get_presigned_url(db_user.profile_path)
-    print("presigned url; ", presigned_url)
     token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
-    print("Token created: ", token)
 
     return {"username": db_user.username, "token": token}
 
 
 @router.get("/media/profile")
 def get_profile_picture(profile_url: str = Query(...), user_id: UUID = Depends(get_current_user_id)):
-    print("profile url: ", profile_url)
-    presigned_url = s3.generate_presigned_url(
-    ClientMethod="get_object",
-    Params={
-        "Bucket": BUCKET_NAME,
-        "Key": extract_s3_key(profile_url)
-    },
-    ExpiresIn=3600  # seconds = 1 hour
+    try:
+        presigned_url = s3.generate_presigned_url(
+        ClientMethod="get_object",
+        Params={
+            "Bucket": BUCKET_NAME,
+            "Key": extract_s3_key(profile_url)
+        },
+        ExpiresIn=3600  # seconds = 1 hour
 
-   
-    )
-
-    print("pre signed url: ", presigned_url)
     
-    return {'success' : True, "presigned_url": presigned_url}
+        )
+
+        logger.info(f"Presigned url created succesfully for user profile {profile_url}")
+        
+        return {'success' : True, "presigned_url": presigned_url}
+    
+    except Exception as e:
+        logger.error(f"Error occured in creating the aws presigned url: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Error occured in creating the aws presigned url: {e}",
+        ) from e
 
 
 
@@ -147,7 +162,6 @@ def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_c
 
 
     
-    print("returning presigned url: ", presigned_url)
 
     return {"success":True,"profile_media": presigned_url}
 
@@ -156,33 +170,35 @@ def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_c
 
 @router.post("/google/signup")
 def google_signup(user: UserGoogleCreate,  db: Session = Depends(get_db)):
-    print(user)
 
+    try:
     #Check for existing user
-    existing_user = db.query(User).filter(User.email == user.email and User.google_id == user.google_id).first()
+        existing_user = db.query(User).filter(User.email == user.email and User.google_id == user.google_id).first()
 
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Google account already registered")
-    
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Google account already registered")
+        
 
-    new_user = User(
-        id=uuid4(),  # Generate UUID for the user
-        username=user.username,
-        email=user.email,
-        password='',
-        created_at=datetime.utcnow() ,
-        google_id=user.google_id
-    )
+        new_user = User(
+            id=uuid4(),  # Generate UUID for the user
+            username=user.username,
+            email=user.email,
+            password='',
+            created_at=datetime.utcnow() ,
+            google_id=user.google_id
+        )
 
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)  # Refresh to get the user with the generated ID
-    presigned_url = ''
-    if (new_user.profile_path != ''):
-        presigned_url = get_presigned_url(new_user.profile_path)
-    print("presigned url: ", presigned_url)
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)  # Refresh to get the user with the generated ID
+        presigned_url = ''
+        if (new_user.profile_path != ''):
+            presigned_url = get_presigned_url(new_user.profile_path)
 
-    token = create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
+        token = create_access_token(data={"sub": str(new_user.id), "email" : str(new_user.email), "username" : str(new_user.username), "profilePath" : presigned_url})
+
+    except Exception as e:
+        logger.error(f"Error occured with google signup for username : {user.username}, \n error: {e} " )
     
 
 
@@ -198,49 +214,55 @@ def google_signup(user: UserGoogleCreate,  db: Session = Depends(get_db)):
 
 @router.post("/google/login")
 def google_login(user : UserGoogleSignIn, db : Session =  Depends(get_db)):
-    db_user = db.query(User).filter(user.google_id == User.google_id).first()
-    if not db_user:
-        raise HTTPException(status_code=400, detail="User not found")
-    
-    
-    profile_path = ''
-    if db_user.profile_path != None and db_user.profile_path != '':
-        profile_path = get_presigned_url(db_user.profile_path)
-    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : str(profile_path)})
+    try:
+        db_user = db.query(User).filter(user.google_id == User.google_id).first()
+        if not db_user:
+            raise HTTPException(status_code=400, detail="User not found")
+        
+        
+        profile_path = ''
+        if db_user.profile_path != None and db_user.profile_path != '':
+            profile_path = get_presigned_url(db_user.profile_path)
+        token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : str(profile_path)})
 
-    return {'message' : 'user found', 'token' : token, 'success' : True}
+        return {'message' : 'user found', 'token' : token, 'success' : True}
+    
+    except Exception as e:
+
+        logger.error(f"An error occured with the google login for user {user.google_id}: {e} ")
 
 
 
 
 @router.post("/chrome/login")
 def chrome_login(user: UserSignIn,  db: Session = Depends(get_db)):
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid user data")
+    try:
+        if not user:
+            raise HTTPException(status_code=400, detail="Invalid user data")
 
-    # Check if the user exists
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if not db_user:
-        print("User not found: ", user.username)
-        raise HTTPException(status_code=400, detail="User not found")
-    
-    print("User found: ", db_user, "id of user: ", db_user.id)
+        # Check if the user exists
+        db_user = db.query(User).filter(User.username == user.username).first()
+        if not db_user:
+            logger.error(f"User not found: {user.username}" )
+            raise HTTPException(status_code=400, detail="User not found")
+        
 
-    # Verify the password
-    if not verify_password(user.password, db_user.password):
-        print("Incorrect password for user: ", user.username)
-         # If the password is incorrect, raise an HTTPException
-         # This will return a 400 status code with the detail "Incorrect password"
-        raise HTTPException(status_code=400, detail="Incorrect password")
-    
-    presigned_url = ''
-    if db_user.profile_path != '' and db_user.profile_path != None:
-        presigned_url = get_presigned_url(db_user.profile_path)
-    print("presigned url; ", presigned_url)
-    token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
-    print("Token created: ", token)
+        # Verify the password
+        if not verify_password(user.password, db_user.password):
+            logger.error(f"Incorrect password for user: {user.username}")
+            # If the password is incorrect, raise an HTTPException
+            # This will return a 400 status code with the detail "Incorrect password"
+            raise HTTPException(status_code=400, detail="Incorrect password")
+        
+        presigned_url = ''
+        if db_user.profile_path != '' and db_user.profile_path != None:
+            presigned_url = get_presigned_url(db_user.profile_path)
+        token = create_access_token(data={"sub": str(db_user.id), "email" : str(db_user.email), "username" : str(db_user.username), "profilePath" : presigned_url})
 
-    return {"username": db_user.username, "token": token, "detail" : 'sucessful login'}
+        return {"username": db_user.username, "token": token, "detail" : 'sucessful login'}
+    except Exception as e:
+        logger.error(f"error occured in logging in user through the chrome interface {e}")
+        raise HTTPException(status_code=400, detail=f"error occured in logging in user through the chrome interface {e}")
 
 
 
@@ -266,18 +288,22 @@ def connect_google_account(user: UserGoogleCreate, user_id: UUID = Depends(get_c
 
 @router.get("/profile/info")
 def get_user_info(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == user_id).first()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
 
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found.")
-    
-    print("user: ", user)
-
-    return {
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found.")
         
-        "username": user.username,
-        "email": user.email,
-        "profilePath" : get_presigned_url( user.profile_path) if user.profile_path != '' else ''
-  
-    }
+        
+
+        return {
+            
+            "username": user.username,
+            "email": user.email,
+            "profilePath" : get_presigned_url( user.profile_path) if user.profile_path != '' else ''
+    
+        }
+    except Exception as e:
+        logger.error(f"Error occured in fetching users profile info with userId: {user_id}")
+        raise HTTPException(status_code=400, detail=f"Error fetching user profile info: {e}")
 
