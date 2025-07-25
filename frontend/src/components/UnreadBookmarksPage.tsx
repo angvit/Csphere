@@ -19,8 +19,8 @@ function UnreadBookmarksPage() {
       const url = query.trim()
         ? `${
             process.env.NEXT_PUBLIC_API_BASE_URL
-          }/search?query=${encodeURIComponent(query)}`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/content/unread`;
+          }/content/search?query=${encodeURIComponent(query)}`
+        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/content/unread`;
 
       const res = await fetch(url, {
         headers: {

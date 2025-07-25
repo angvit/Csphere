@@ -26,7 +26,7 @@ export default function Page({
 
   useEffect(() => {
     const fetchBookmarks = async (id: string) => {
-      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/folder/${id}`;
+      const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/folder/${id}`;
       const token = fetchToken();
 
       try {
@@ -68,7 +68,6 @@ export default function Page({
         const path_data: PathProps[] = data.path;
         console.log("path_data:", path_data);
         setPaths(path_data); // ✅ this keeps it as an array
-        debugger;
       } catch (error) {
         console.log("error occured in fetchPathStructure", error);
       }
