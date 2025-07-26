@@ -139,7 +139,7 @@ export default function LandingPage() {
               transition={{ duration: 0.8, delay: 0.2 }}
               className="text-4xl md:text-5xl lg:text-6xl pt-serif-regular text-center  mb-6 leading-tight"
             >
-              Save and Revisit your favorite bookmarks with{" "}
+              Rediscover your bookmarks with{" "}
               <motion.span
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -154,10 +154,10 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-xl md:text-2xl pt-serif-semibold text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed"
+              className="text-base md:text-xl pt-serif-semibold text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed"
             >
-              Never miss out on saving your content again. Organize, search, and
-              access your bookmarks seamlessly across all your devices.
+              Never lose your content again. Organize, search, and access your
+              bookmarks seamlessly across all your devices.
             </motion.p>
           </section>
 
@@ -217,14 +217,15 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
-              <Button
-                size="lg"
-                variant="secondary"
-                className="text-lg text-black bg-white px-8 py-6"
+              <motion.a
+                href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension"
+                target="_blank"
+                className="bg-white text-[#202A29] text-sm font-semibold px-6 py-3 rounded-xl w-auto text-center  transition-all  flex items-center justify-center gap-2 shadow-sm "
+                rel="noreferrer"
               >
-                Download Extension
-                <Download className="ml-2 h-5 w-5" />
-              </Button>
+                <Download className="w-6 h-2" />
+                Download Chrome Extension
+              </motion.a>
             </motion.div>
           </div>
         </div>
