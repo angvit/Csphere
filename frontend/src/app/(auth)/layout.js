@@ -188,10 +188,10 @@ export default async function RootLayout({ children }) {
               </div>
             </div>
 
-            <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-              <p>
-                &copy; {new Date().getFullYear()} CSphere. All rights reserved.
-              </p>
+            <div className="mt-8 pt-8 text-center text-white z-40">
+              <h3 className="!important !text-white ">
+                2025 CSphere. All rights reserved.
+              </h3>
             </div>
           </div>
         </footer>
