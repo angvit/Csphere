@@ -32,6 +32,11 @@ const fontFamily = `${geistSans.variable}, ${geistMono.variable}, ${ptSerif.vari
 export const metadata = {
   title: "Csphere",
   description: "Rediscover your content",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
