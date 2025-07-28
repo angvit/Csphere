@@ -9,9 +9,13 @@ import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 
 import Loading from "./ux/Loading";
+type ChildProps = {
+  activeTab?: string;
+};
 
-export default function BookmarksPage() {
+const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
+  console.log("current active tab: ", activeTab);
 
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
@@ -55,4 +59,6 @@ export default function BookmarksPage() {
       </Suspense>{" "}
     </BookmarkLayout>
   );
-}
+};
+
+export default BookmarksPage;

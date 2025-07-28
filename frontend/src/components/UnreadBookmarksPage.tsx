@@ -4,8 +4,14 @@ import { useEffect, useState } from "react";
 
 import BookmarkList from "./BookmarkList";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
-function UnreadBookmarksPage() {
+
+type ChildProps = {
+  activeTab?: string;
+};
+
+const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
+  console.log("current active tab: ", activeTab);
 
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
@@ -47,6 +53,6 @@ function UnreadBookmarksPage() {
       <BookmarkList items={bookmarks} />
     </BookmarkLayout>
   );
-}
+};
 
 export default UnreadBookmarksPage;
