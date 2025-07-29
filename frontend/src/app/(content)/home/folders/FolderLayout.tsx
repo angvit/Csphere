@@ -53,15 +53,7 @@ export default function FolderLayout({ children }: Props) {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          <Button
-            variant="outline"
-            size="sm"
-            className="bg-gray-800 text-white border-gray-700 hover:bg-gray-700"
-          >
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <div className="flex border rounded-lg">
+          {/* <div className="flex border rounded-lg">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
@@ -89,7 +81,7 @@ export default function FolderLayout({ children }: Props) {
             >
               <List className="h-4 w-4" />
             </Button>
-          </div>
+          </div> */}
         </div>
 
         {/* Search and Categories */}
