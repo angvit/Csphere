@@ -20,7 +20,7 @@ const categories = [
 
 export default function CategoryFilter() {
   return (
-    <div className="flex flex-wrap gap-2 justify-center mb-8">
+    <div className="flex flex-wrap gap-2 justify-start mb-8">
       {categories.map((category) => (
         <button
           key={category}
