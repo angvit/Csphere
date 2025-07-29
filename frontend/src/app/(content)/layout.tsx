@@ -9,6 +9,7 @@ import LogoComponent from "@/app/components/LogoComponent";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import AuthNavbar from "../components/navbar/AuthNavbar";
 import AuthIcon from "../components/navbar/AuthIcon";
+import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -47,6 +48,13 @@ export default async function RootLayout({ children }) {
         <header className="h-28  bg-gray-300 w-full flex items-center justify-between px-6 sm:px-8 lg:px-16">
           <div className="flex items-center space-x-4 md:space-x-8">
             <AuthIcon />
+            <Link
+              className="hover:text-gray-200 transition-all"
+              href="/collections"
+            >
+              {" "}
+              Collections
+            </Link>
           </div>
 
           <div className="flex items-center space-x-4">

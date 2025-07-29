@@ -1,7 +1,11 @@
 import BookmarksPage from "@/components/BookmarksPage";
 
-function page() {
-  return <BookmarksPage />;
+interface BookmarkListProps {
+  activeTab?: string;
 }
+const Page = ({ activeTab }: BookmarkListProps) => {
+  console.log("active tab in first pass for page: ", activeTab);
+  return <BookmarksPage activeTab={activeTab} />;
+};
 
-export default page;
+export default Page;
