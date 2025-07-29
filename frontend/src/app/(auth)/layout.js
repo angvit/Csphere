@@ -32,6 +32,11 @@ const fontFamily = `${geistSans.variable}, ${geistMono.variable}, ${ptSerif.vari
 export const metadata = {
   title: "Csphere",
   description: "Rediscover your content",
+  icons: {
+    icon: "/favicon.ico",
+    shortcut: "/favicon-32x32.png",
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
@@ -188,10 +193,10 @@ export default async function RootLayout({ children }) {
               </div>
             </div>
 
-            <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-400">
-              <p>
-                &copy; {new Date().getFullYear()} CSphere. All rights reserved.
-              </p>
+            <div className="mt-8 pt-8 text-center text-white z-40">
+              <h3 className="!important !text-white ">
+                2025 CSphere. All rights reserved.
+              </h3>
             </div>
           </div>
         </footer>
