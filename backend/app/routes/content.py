@@ -10,6 +10,7 @@ from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from datetime import datetime, timezone
 from uuid import uuid4
+import logging
 
 from app.utils.hashing import get_current_user_id
 from sqlalchemy.orm import Session
@@ -19,6 +20,9 @@ from sqlalchemy import desc
 router = APIRouter(
     # prefix="/content"
 )
+
+logger = logging.getLogger(__name__) 
+
 
 
 @router.get("/content/search", response_model=list[ContentWithSummary])
@@ -147,6 +151,21 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
     except Exception as e:
         print("error occured in saving the bookmark: ", str(e))
         return {'status': "unsucessful", 'error': str(e)}
+    
+
+@router.get("/content/unread/count")
+def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    try:
+        total_count = db.query(Content).filter(Content.user_id == user_id).count()
+
+        logger.debug(f"Total count fetched for user id {user_id} : {total_count}")
+        return {'status' : "succesful", 'total_count' : total_count}
+
+
+    except Exception as e:
+        logger.error(f"Error occured in count api router: {e}")
+        return {'status' : 'unsuccesfull', 'error' : str(e)}
 
 
 @router.get("/content/unread",response_model=list[UserSavedContent] )
