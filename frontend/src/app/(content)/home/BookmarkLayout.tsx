@@ -1,6 +1,6 @@
 // components/BookmarkLayout.tsx
 "use client";
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, createContext } from "react";
 import SearchInput from "@/components/SearchInput";
 import CategoryFilter from "@/components/CategoryFilter";
 // import LatestButton from "@/app/components/home/LatestButton";
@@ -23,6 +23,8 @@ type Props = {
 type ChildProps = {
   activeTab?: string;
 };
+
+export const LayoutContext = createContext<string>("grid"); // default value
 
 export default function BookmarkLayout({ onSearch, children }: Props) {
   const [activeTab, setActiveTab] = useState("latest");
@@ -176,9 +178,9 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
         </TabsList>
         <SearchInput onSearch={onSearch} />
         <CategoryFilter />
-        {/* <TabsContent value="latest"> */}
-        {children}
-        {/* </TabsContent> */}
+        <LayoutContext.Provider value={viewMode}>
+          {children}
+        </LayoutContext.Provider>
       </Tabs>
     </div>
   );

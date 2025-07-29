@@ -1,10 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import SearchInput from "./SearchInput";
-import CategoryFilter from "./CategoryFilter";
 import BookmarkList from "./BookmarkList";
-import { DotPattern } from "@/components/ui/dot-pattern";
 import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 

@@ -12,6 +12,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import BookmarkLayout from "../BookmarkLayout";
 
 interface FolderDetail {
   folderId: string;
@@ -28,15 +29,11 @@ function page() {
   const [folderName, setFolderName] = useState("");
   const [folders, setFolders] = useState<FolderDetail[]>([]);
 
-  const [folderPath, setFolderPath] = useState<{ name: string; id: string }[]>(
-    []
-  );
-
   // handle navigation via breadcrumb
   const router = useRouter();
-  const handleNavigateToFolder = (folderId: string) => {
-    router.push(`/folders/${folderId}`); // or whatever your dynamic route is
-  };
+  // const handleNavigateToFolder = (folderId: string) => {
+  //   router.push(`/folders/${folderId}`); // or whatever your dynamic route is
+  // };
 
   interface FolderCreateProps {
     foldername: string;
