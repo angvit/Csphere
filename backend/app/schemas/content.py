@@ -12,6 +12,7 @@ class ContentCreate(BaseModel):
     title: Optional[str]
     notes: Optional[str]
     folder_id: Optional[UUID] = None
+    html: str
 
 class TabRemover(BaseModel):
     content_id: UUID 

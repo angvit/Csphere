@@ -53,11 +53,15 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
     print("entered the function")
     notes = content.notes
 
-    print("content logs: ", content)
+    print("content logs: ", content.title, content.notes, content.url)
+    # print("html content: ", content.html)
 
     user = db.query(User).filter(User.id == user_id).first()
+    print("made it up to here") 
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
+
+    print("current user: ", user)
     
     try:
         user_id = user.id
@@ -84,7 +88,8 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             # Generate embedding only for new content
             embedding_manager = ContentEmbeddingManager(db)
-            content_ai = embedding_manager.process_content(new_content)
+            raw_html = content.html
+            content_ai = embedding_manager.process_content(new_content, raw_html)
             db.commit()
 
             if not content_ai:
