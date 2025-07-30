@@ -5,7 +5,6 @@ const app = document.getElementById("app");
 let selectedFolder = "default";
 
 chrome.storage.local.get(["csphere_user_token"], (result) => {
-  console.log("Value is", result.csphere_user_token);
   const token = result.csphere_user_token;
   if (token === null || token === undefined) {
     renderLoginInterface();
@@ -14,41 +13,72 @@ chrome.storage.local.get(["csphere_user_token"], (result) => {
   }
 });
 
+/**
+ * =========================
+ * HTML Extraction Logic
+ * =========================
+ */
+function extractHTMLFromPage() {
+  return new Promise(async (resolve) => {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    const listener = (request) => {
+      if (request.action === "htmlExtracted") {
+        chrome.runtime.onMessage.removeListener(listener);
+        resolve({ html: request.html, tab });
+      }
+    };
+
+    chrome.runtime.onMessage.addListener(listener);
+
+    // Inject content script directly (no content.js file needed)
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      function: () => {
+        const htmlContent = document.documentElement.outerHTML;
+        chrome.runtime.sendMessage({
+          action: "htmlExtracted",
+          html: htmlContent,
+        });
+      },
+    });
+  });
+}
+
+/**
+ * =========================
+ * Render Interfaces
+ * =========================
+ */
 function renderInterface() {
   app.innerHTML = `
     <header>
-        <a
-          target="_blank"
-          href="https://csphere-nly9.vercel.app/"
-          rel="noopener noreferrer"
-        >
-          <img class="logo" src="/images/Logo.png" />
-        </a>
+      <a target="_blank" href="https://csphere-nly9.vercel.app/" rel="noopener noreferrer">
+        <img class="logo" src="/images/Logo.png" />
+      </a>
+      <button class="logout-btn"> logout </button>
+    </header>
 
-        <button class="logout-btn"> logout </button>
-      </header>
+    <div class="notes-container">
+      <textarea id="notesTextarea" class="notes-textarea" placeholder="Add any notes here..."></textarea>
+      <div class="character-counter"><span id="charCount">0</span>/280</div>
+    </div>
 
-      <div class="notes-container">
-        <textarea
-          id="notesTextarea"
-          class="notes-textarea"
-          placeholder="Add any notes here..."
-        ></textarea>
-        <div class="character-counter"><span id="charCount">0</span>/280</div>
-      </div>
+    <h3>Folders</h3>
+    <div class="user-folders"></div>
 
-      <h3>Folders</h3>
-      <div  class="user-folders"></div >
-
-      <div class="action-bar">
-        <button id="bookMarkBtn"   class="primary-button">
-          Bookmark Page
-        </button>
-      </div>
-      <p class="message-p"></p>
+    <div class="action-bar">
+      <button id="bookMarkBtn" class="primary-button">
+        Bookmark Page
+      </button>
+    </div>
+    <p class="message-p"></p>
   `;
-  getRecentFolders();
 
+  getRecentFolders();
   setupBookmarkHandler();
 }
 
@@ -56,8 +86,6 @@ function renderLoginInterface() {
   app.innerHTML = `
     <header>
       <img class="logo" src="/images/Logo.png" />
-
-      
     </header>
     <div class="login-message">
       <p>Please log in to use CSphere Bookmarks</p>
@@ -89,42 +117,29 @@ function renderLoginInterface() {
 
       const response = await fetch(LOGIN_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username: username,
-          password: password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
       });
 
       const data = await response.json();
-      console.log("current data: ", data);
-      if (data && data.detail && data.detail.trim() === "Incorrect password") {
-        console.log("here in incorrect password");
+      if (data?.detail?.trim() === "Incorrect password") {
         insertMessage("Incorrect password", "error");
         return;
       }
-
-      if (data && data.detail && data.detail.trim() === "User not found") {
-        console.log("User not found");
+      if (data?.detail?.trim() === "User not found") {
         insertMessage("User not found", "error");
         return;
       }
-
-      if (data && data.detail && data.detail.trim() === "sucessful login") {
+      if (data?.detail?.trim() === "sucessful login") {
         chrome.storage.local.set({ csphere_user_token: data.token }, () => {
-          console.log("Value stored");
+          renderInterface();
         });
-
-        renderInterface();
       }
     } catch (error) {
-      console.log("error loggin in: ", error);
+      console.log("error logging in: ", error);
     }
   });
 
-  // Google login handler
   document.getElementById("googleAuthBtn").addEventListener("click", () => {
     chrome.identity.launchWebAuthFlow(
       {
@@ -132,8 +147,6 @@ function renderLoginInterface() {
         interactive: true,
       },
       function (redirectUrl) {
-        console.log("redriect url: ", redirectUrl);
-
         if (chrome.runtime.lastError || !redirectUrl) {
           console.error("Google login failed", chrome.runtime.lastError);
           return;
@@ -141,7 +154,6 @@ function renderLoginInterface() {
 
         const url = new URL(redirectUrl);
         const code = url.searchParams.get("code");
-
         if (!code) {
           console.error("Token missing from redirect");
           return;
@@ -154,15 +166,11 @@ function renderLoginInterface() {
         })
           .then((res) => res.json())
           .then((data) => {
-            const token = data.token;
-
-            if (!token) {
+            if (!data.token) {
               console.error("Token missing from backend response");
               return;
             }
-
-            chrome.storage.local.set({ csphere_user_token: token }, () => {
-              console.log("Token stored successfully");
+            chrome.storage.local.set({ csphere_user_token: data.token }, () => {
               renderInterface();
             });
           })
@@ -174,20 +182,21 @@ function renderLoginInterface() {
   });
 }
 
+/**
+ * =========================
+ * Utility Functions
+ * =========================
+ */
 function getNotes() {
   const textarea = document.getElementById("notesTextarea");
-  const content = textarea.value;
-
-  return content;
+  return textarea.value;
 }
 
-function insertMessage(message, messageType) {
+function insertMessage(message, type) {
   const message_p = document.querySelector(".message-p");
-
   if (!message_p) return;
-
   message_p.textContent = message;
-  message_p.style.color = messageType === "error" ? "red" : "green";
+  message_p.style.color = type === "error" ? "red" : "green";
 
   setTimeout(() => {
     message_p.textContent = "";
@@ -198,7 +207,6 @@ function insertMessage(message, messageType) {
 function fetchToken() {
   return new Promise((resolve) => {
     chrome.storage.local.get(["csphere_user_token"], (result) => {
-      console.log("Fetched token from storage:", result.csphere_user_token);
       resolve(result.csphere_user_token);
     });
   });
@@ -218,38 +226,27 @@ async function getRecentFolders() {
     });
 
     const data = await response.json();
-    console.log("data here for folders: ", data);
     const folders = data.data;
 
     const folderContainer = document.querySelector(".user-folders");
     folderContainer.innerHTML = `<select class="folder-grid"></select>`;
-
     const folderGrid = folderContainer.querySelector(".folder-grid");
 
-    //Create a default one
+    // Default option
     const folderOption = document.createElement("option");
-    folderOption.className = "folder-card";
-    folderOption.innerText = "none selected";
+    folderOption.textContent = "none selected";
     folderOption.value = "default";
-    folderOption.addEventListener("change", () => {
-      selectedFolder = "default";
-    });
     folderGrid.appendChild(folderOption);
 
     folders.forEach((folder) => {
-      const folderOption = document.createElement("option");
-      folderOption.className = "folder-card";
-      folderOption.textContent = folder.folderName;
-      folderOption.innerText = folder.folderName;
-      folderOption.value = folder.folderId;
-
-      folderGrid.appendChild(folderOption);
+      const option = document.createElement("option");
+      option.textContent = folder.folderName;
+      option.value = folder.folderId;
+      folderGrid.appendChild(option);
     });
 
     folderGrid.addEventListener("change", (event) => {
-      const selectedValue = event.target.value;
-      console.log("Selected folder:", selectedValue);
-      selectedFolder = selectedValue;
+      selectedFolder = event.target.value;
     });
   } catch (error) {
     console.log(error);
@@ -257,89 +254,68 @@ async function getRecentFolders() {
 }
 
 function logout() {
-  chrome.storage.local.remove("csphere_user_token", function () {
-    // Callback function (optional)
-    // This will be executed once the item is removed.
+  chrome.storage.local.remove("csphere_user_token", () => {
     console.log("csphere_user_token removed from local storage");
   });
 }
 
+/**
+ * =========================
+ * Bookmark Handler
+ * =========================
+ */
 function setupBookmarkHandler() {
   const btn = document.getElementById("bookMarkBtn");
   const logoutBtn = document.getElementsByClassName("logout-btn")[0];
-  console.log("Setting up bookmark handler. Button: ", btn);
-
-  if (!btn) {
-    console.error("Button with ID 'bookMarkBtn' not found.");
-    return;
-  }
-
-  if (!logoutBtn) {
-    console.error("logout button is not found");
-  }
-
-  logoutBtn.addEventListener("click", () => {
-    try {
-      logout();
-      renderLoginInterface();
-    } catch (error) {
-      console.log("error ocucred in logout: ", error);
-    }
-  });
+  if (!btn) return;
 
   btn.addEventListener("click", async () => {
     btn.disabled = true;
 
     try {
-      let [tab] = await chrome.tabs.query({
-        active: true,
-        currentWindow: true,
-      });
-
-      if (!tab || !tab.url) {
-        throw new Error("No active tab found or tab has no URL.");
-      }
+      const { html, tab } = await extractHTMLFromPage();
+      console.log("Extracted HTML:", html);
 
       const notes = getNotes();
-      const endpoint = `${backend_url}/content/save`;
       let token = await fetchToken();
-      console.log("auth token: ", token);
 
-      let tabData = {
+      const tabData = {
         url: tab.url,
         title: tab.title,
         notes: notes,
+        html: html,
       };
 
       if (selectedFolder !== "default") {
         tabData.folder_id = selectedFolder;
       }
-      console.log("console data: ", tabData);
 
+      const endpoint = `${backend_url}/content/save`;
       const response = await fetch(endpoint, {
         method: "POST",
-        credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify(tabData),
       });
 
       const data = await response.json();
-
       if (data.status !== "Success") {
-        throw new Error(`Server returned error status: ${data.status}`);
+        throw new Error(`Server returned error: ${data.status}`);
       }
 
       insertMessage("Bookmark successfully saved", "success");
     } catch (err) {
       console.error(err);
-      alert("Error saving bookmark: " + err.message);
       insertMessage("Failed to save bookmark", "error");
     } finally {
       btn.disabled = false;
     }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    logout();
+    renderLoginInterface();
   });
 }

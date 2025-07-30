@@ -39,7 +39,7 @@ class ContentEmbeddingManager:
     ###############################################################################
 
 
-    def process_content(self, content: Content) -> ContentAI | None:
+    def process_content(self, content: Content, raw_html)-> ContentAI | None:
         '''
         Inserts content into the database if it doesn't exist, summarizes it, and embeds the summary
         If any exceptions occur, the transaction will be rolled back
@@ -50,9 +50,12 @@ class ContentEmbeddingManager:
                 return None
 
             # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
-            summary_input = self._enrich_content(content.url, content.content_id, self.db)
+            #add in raw html to the enrich content function 
+            summary_input = self._enrich_content(content.url, content.content_id, self.db, raw_html)
             if not summary_input:
                 summary_input = content.title or "No title avaliable"
+
+            print("summary input: ", summary_input)
 
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
@@ -141,14 +144,10 @@ class ContentEmbeddingManager:
             print(f"Failed to write with error: {e}")
     
 
-    def _enrich_content(self, url: str, content_id: UUID, db: Session):
+    def _enrich_content(self, url: str, content_id: UUID, db: Session, raw_html):
         try:
-            response = requests.get(url, timeout=5)
-            if response.status_code != 200:
-                print(f"Error: {response.status_code}: failed get request for {url}, defaulting to title for summarization input")
-                return None
-            
-            raw_html = response.text
+           
+            # print("extracting raw html from : ", raw_html[:20])
             metadata = self._extract_metadata_and_body(raw_html)
             metadata["body_text"] = self._clean_text(metadata["body_text"])
 
@@ -264,21 +263,26 @@ class ContentEmbeddingManager:
     
     
     def _summarize_content(self, summary_input):
+        print("summary input : ", summary_input)
         try:
             response = self.openai_client.chat.completions.create(
                 model=self.summary_model,
                 messages=[
                     {
                         "role": "system", 
-                        "content": (
-                            "You are a concise technical summarizer. "
-                            "Summarize the article in exactly **2 short sentences**. "
-                            "Focus only on the main point. Ignore ads, disclaimers, and unrelated text."
-                        )
+                         "content": (
+                            "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
+                            "Use the following process to ensure accuracy and relevance:\n\n"
+                            "1. Identify the main topic of the article.\n"
+                            "2. Extract any key details related to this main topic.\n"
+                            "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
+                            "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
+                            "Make sure to keep a neutral tone throughout the summary."
+                    )
                     },
                     {"role": "user", "content": summary_input},
                 ],
-                temperature=0.7,
+                temperature=0.8,
                 max_tokens=150,
             )
             return response.choices[0].message.content.strip()
