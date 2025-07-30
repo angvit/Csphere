@@ -184,7 +184,7 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
             <Calendar className="h-3 w-3 mr-1" />
             {formatDate(bookmark.first_saved_at)}
             <div onClick={(e) => e.stopPropagation()}>
-              <BookMarkSettingIcon content_id={bookmark.content_id} />
+              <BookMarkSettingIcon content_id={bookmark.content_id} url={bookmark.url} />
             </div>
           </div>
         </div>
