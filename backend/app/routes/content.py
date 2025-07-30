@@ -10,6 +10,7 @@ from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from datetime import datetime, timezone
 from uuid import uuid4
+import logging
 
 from app.utils.hashing import get_current_user_id
 from sqlalchemy.orm import Session
@@ -19,6 +20,9 @@ from sqlalchemy import desc
 router = APIRouter(
     # prefix="/content"
 )
+
+logger = logging.getLogger(__name__) 
+
 
 
 @router.get("/content/search", response_model=list[ContentWithSummary])
@@ -53,11 +57,15 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
     print("entered the function")
     notes = content.notes
 
-    print("content logs: ", content)
+    print("content logs: ", content.title, content.notes, content.url)
+    # print("html content: ", content.html)
 
     user = db.query(User).filter(User.id == user_id).first()
+    print("made it up to here") 
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
+
+    print("current user: ", user)
     
     try:
         user_id = user.id
@@ -84,7 +92,8 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             # Generate embedding only for new content
             embedding_manager = ContentEmbeddingManager(db)
-            content_ai = embedding_manager.process_content(new_content)
+            raw_html = content.html
+            content_ai = embedding_manager.process_content(new_content, raw_html)
             db.commit()
 
             if not content_ai:
@@ -147,6 +156,21 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
     except Exception as e:
         print("error occured in saving the bookmark: ", str(e))
         return {'status': "unsucessful", 'error': str(e)}
+    
+
+@router.get("/content/unread/count")
+def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+
+    try:
+        total_count = db.query(Content).filter(Content.user_id == user_id).count()
+
+        logger.debug(f"Total count fetched for user id {user_id} : {total_count}")
+        return {'status' : "succesful", 'total_count' : total_count}
+
+
+    except Exception as e:
+        logger.error(f"Error occured in count api router: {e}")
+        return {'status' : 'unsuccesfull', 'error' : str(e)}
 
 
 @router.get("/content/unread",response_model=list[UserSavedContent] )

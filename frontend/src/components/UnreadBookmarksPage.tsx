@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 
 import BookmarkList from "./BookmarkList";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
+import { LayoutContext } from "@/app/(content)/home/BookmarkLayout";
 
 type ChildProps = {
   activeTab?: string;
@@ -12,6 +13,7 @@ type ChildProps = {
 const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
   console.log("current active tab: ", activeTab);
+  const viewMode = useContext(LayoutContext);
 
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
