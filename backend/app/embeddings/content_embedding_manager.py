@@ -54,6 +54,8 @@ class ContentEmbeddingManager:
             if not summary_input:
                 summary_input = content.title or "No title avaliable"
 
+            print("summary input: ", summary_input)
+
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
 
