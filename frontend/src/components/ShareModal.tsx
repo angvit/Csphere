@@ -1,14 +1,20 @@
 import React from 'react';
-import { shareTo, useCopyUrl } from '@/lib/utils';
+import { shareTo } from '@/lib/utils';
 import PlatformButton from './PlatformButton';
 
 const ShareModal = ({ onClose, bookmarkUrl }) => {
-  const { copiedUrl, handleCopyUrl } = useCopyUrl();
+  const [copiedUrl, setCopiedUrl] = React.useState(false);
 
   const handleShare = async (platform: keyof typeof shareTo) => {
     const { message } = await shareTo[platform](bookmarkUrl);
     if (message) alert(message);
     onClose();
+  };
+
+  const handleCopyUrl = async () => {
+    await navigator.clipboard.writeText(bookmarkUrl);
+    setCopiedUrl(true);
+    setTimeout(() => setCopiedUrl(false), 2000);
   };
 
   return (
@@ -51,7 +57,7 @@ const ShareModal = ({ onClose, bookmarkUrl }) => {
             className="flex-1 border border-gray-300 rounded-l px-3 py-2 text-[15px]"
           />
           <button
-            onClick={() => handleCopyUrl(bookmarkUrl)}
+            onClick={handleCopyUrl}
             className="bg-blue-500 text-white px-4 py-2 rounded-r hover:bg-blue-600 text-[15px]"
             >
             {copiedUrl ? 'Copied!' : 'Copy'}
