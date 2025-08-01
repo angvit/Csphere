@@ -25,22 +25,6 @@ export function formatDate(dateString: string): string {
   return local_date;
 }
 
-export const useCopyUrl = () => {
-  const [copiedUrl, setCopiedUrl] = useState(false);
-
-  const handleCopyUrl = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopiedUrl(true);
-      setTimeout(() => setCopiedUrl(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy URL:', err);
-    }
-  };
-
-  return { copiedUrl, handleCopyUrl };
-};
-
 type ShareResult = Promise<{
   success: boolean;
   message?: string;
