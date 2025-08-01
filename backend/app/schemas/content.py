@@ -22,7 +22,6 @@ class DBContent(BaseModel):
     title: Optional[str]
     source: Optional[str]
 
-
 class ContentWithSummary(BaseModel):
     content_id: UUID
     title: Optional[str]
@@ -30,6 +29,7 @@ class ContentWithSummary(BaseModel):
     source: Optional[str]
     first_saved_at: datetime 
     ai_summary: Optional[str]
+    folder: Optional[str]
 
     class Config:
         from_attributes = True
