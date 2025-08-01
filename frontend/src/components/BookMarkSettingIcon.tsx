@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import { fetchToken } from "@/functions/user/UserData";
 import { toast } from "sonner";
+import ShareModal from './ShareModal';
 
 interface BookMarkSettingProps {
   content_id: string;
+  url: string;
 }
 
 interface FolderProps {
@@ -115,8 +117,9 @@ const FolderPopover = ({
   );
 };
 
-function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
+function BookMarkSettingIcon({ content_id, url }: BookMarkSettingProps) {
   const [mainPopoverOpen, setMainPopoverOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const handleAddToFolder = async (folder: FolderProps) => {
     try {
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/folder/add`;
@@ -163,7 +166,12 @@ function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
               <div className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors">
                 <p className="text-gray-700">Edit bookmark</p>
               </div>
-              <div className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors">
+              <div className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors"
+                  onClick={() => {
+                  setMainPopoverOpen(false);
+                  setShareModalOpen(true);
+                }}
+              >
                 <p className="text-gray-700">Share</p>
               </div>
               <div className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors text-red-600">
@@ -180,6 +188,7 @@ function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
           onClick={() => setMainPopoverOpen(false)}
         />
       )}
+      {shareModalOpen && <ShareModal onClose={() => setShareModalOpen(false)} bookmarkUrl={url} />}
     </div>
   );
 }
