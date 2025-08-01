@@ -4,6 +4,7 @@ from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.data_models.folder_item import folder_item
+from app.data_models.folder import Folder
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
@@ -374,3 +375,36 @@ def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session 
     if not content:
         raise HTTPException(status_code=404, detail="Content not found for this user")
     return content
+
+
+@router.post("/content/recent", response_model=list[ContentWithSummary])
+def get_recent_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    try:
+        results = (
+            db.query(Content, Folder)
+            .join(ContentAI, ContentAI.content_id == Content.content_id)
+            .join(folder_item, folder_item.content_id == Content.content_id)
+            .join(Folder, folder_item.folder_id == Folder.folder_id)
+            .filter(Content.user_id == user_id)
+            .order_by(Content.first_saved_at.desc())
+            .limit(5)
+            .all()
+        )
+
+        response = []
+        for content, folder in results:
+            response.append(ContentWithSummary(
+                content_id=content.content_id,
+                title=content.title,
+                url=content.url,
+                source=content.source,
+                first_saved_at=content.first_saved_at,
+                ai_summary=content.content_ai.ai_summary if content.content_ai else None,
+                folder = folder.folder_name
+            ))
+
+        return response
+
+    except Exception as e:
+        print("Error:", e)
+        return []  # must return a list

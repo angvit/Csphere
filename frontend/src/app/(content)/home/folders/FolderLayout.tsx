@@ -1,6 +1,6 @@
 // components/BookmarkLayout.tsx
 
-import React, { ReactNode, useState } from "react";
+import React, { ReactNode, useState, useEffect, createContext } from "react";
 import SearchInput from "@/components/SearchInput";
 import CategoryFilter from "@/components/CategoryFilter";
 // import LatestButton from "@/app/components/home/LatestButton";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Filter, Grid3X3, List, Folder, Clock, BookOpen } from "lucide-react";
 import { Tabs, TabsList } from "@/components/ui/tabs";
+import { fetchToken } from "@/functions/user/UserData";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -18,31 +19,49 @@ type Props = {
   children: ReactNode;
 };
 
+interface MetaDataProps {
+  unreadCount: number;
+}
+export const LayoutContext = createContext<string>("grid");
+
 export default function FolderLayout({ children }: Props) {
   const [activeTab, setActiveTab] = useState("latest");
   const [viewMode, setViewMode] = useState("grid");
+  const [metaData, setMetaData] = useState<MetaDataProps>({
+    unreadCount: 0,
+  });
   console.log("active tab in bookmark layout: ", activeTab);
+
+  useEffect(() => {
+    const FetchMetaData = async () => {
+      try {
+        const url = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content/unread/count`;
+        const token = fetchToken();
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          method: "GET",
+        });
+        const data = await res.json();
+        console.log("DATA BEING returned: ", data);
+        if (data.status === "succesful") {
+          console.log("medata dat count: ", data.total_count);
+          setMetaData((prev) => ({
+            ...prev,
+            unreadCount: data.total_count,
+          }));
+        }
+      } catch (error) {
+        console.log("error occured in fetchimg meta data: ", error);
+      }
+    };
+
+    FetchMetaData();
+  }, []);
+
   return (
     <div className="container  px-4 py-8 min-h-screen flex flex-col space-y-6">
-      {/* <div className="flex items-center justify-between mb-6 z-10 relative">
-        <h1 className="md:text-2xl text-lg font-bold">Your Bookmarks</h1>
-        <div className="flex items-center gap-2">
-          <LatestButton />
-          <UnreadButton />
-          <FolderButton />
-        </div>
-      </div>
-      <div className="relative mb-8 overflow-visible">
-        <div className="relative z-10 flex flex-col items-center space-y-6 pt-4">
-          <h1 className="text-4xl md:text-5xl font-bold text-center">
-            Rediscover
-          </h1>
-          <div className="w-full max-w-7xl px-4 mx-auto">
-            <SearchInput onSearch={onSearch} />
-          </div>
-          <CategoryFilter />
-        </div>
-      </div> */}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">
@@ -53,7 +72,7 @@ export default function FolderLayout({ children }: Props) {
           </p>
         </div>
         <div className="flex items-center space-x-3">
-          {/* <div className="flex border rounded-lg">
+          <div className="flex border rounded-lg">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
@@ -81,26 +100,9 @@ export default function FolderLayout({ children }: Props) {
             >
               <List className="h-4 w-4" />
             </Button>
-          </div> */}
+          </div>
         </div>
-
-        {/* Search and Categories */}
-        {/* <div className="space-y-4 mb-8">
-            <div className="relative max-w-2xl">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input placeholder="Search your bookmarks..." className="pl-10 h-12 text-lg" />
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <Badge key={category} variant="outline" className="cursor-pointer hover:bg-gray-100 transition-colors">
-                  {category}
-                </Badge>
-              ))}
-            </div>
-          </div> */}
       </div>
-      {/* Enhanced Tab Navigation */}
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
@@ -140,7 +142,7 @@ export default function FolderLayout({ children }: Props) {
                     variant="secondary"
                     className="ml-1 bg-blue-300 text-white"
                   >
-                    3
+                    {metaData.unreadCount}
                   </Badge>
                 </Link>
 
@@ -160,10 +162,10 @@ export default function FolderLayout({ children }: Props) {
             );
           })()}
         </TabsList>
-
-        {/* <TabsContent value="latest"> */}
-        {children}
-        {/* </TabsContent> */}
+        {/* <CategoryFilter /> */}
+        <LayoutContext.Provider value={viewMode}>
+          {children}
+        </LayoutContext.Provider>
       </Tabs>
     </div>
   );
