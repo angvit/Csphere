@@ -39,6 +39,31 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
 
     print(f"Search results for query '{query}': {len(results)} results found.\n results: {results}")
 
+    # class ContentWithSummary(BaseModel):
+    # content_id: UUID
+    # title: Optional[str]
+    # url: str
+    # source: Optional[str]
+    # first_saved_at: datetime 
+    # ai_summary: Optional[str]
+    # folder: Optional[str]
+
+    # class Config:
+    #     from_attributes = True
+
+
+    # class ContentWithSummary(BaseModel):
+    # content_id: UUID
+    # title: Optional[str]
+    # url: str
+    # source: Optional[str]
+    # first_saved_at: datetime 
+    # ai_summary: Optional[str]
+
+    # class Config:
+    #     from_attributes = True
+
+
     return [
     {
         "content_id": content_ai.content_id,
@@ -47,6 +72,7 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
         "source": content.source,
         "first_saved_at": content.first_saved_at,
         "ai_summary": content_ai.ai_summary,
+        "folder" : None,
     }
     for content_ai, content in results
     ]
