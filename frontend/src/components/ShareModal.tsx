@@ -1,25 +1,13 @@
 import React from "react";
-import { BookmarkDetailModal } from "@/app/components/bookmark/BookmarkModel";
+import { shareTo } from "@/lib/utils";
+import PlatformButton from "./PlatformButton";
 
 const ShareModal = ({ onClose, bookmarkUrl }) => {
   const [copiedUrl, setCopiedUrl] = React.useState(false);
 
-  const handleShare = (platform) => {
-    const encodedUrl = encodeURIComponent(bookmarkUrl);
-    switch (platform) {
-      case "gmail":
-        window.open(
-          `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(
-            "Check out this bookmark from CSphere"
-          )}&body=${encodeURIComponent(
-            "I bookmarked this on CSphere: " + bookmarkUrl
-          )}`,
-          "_blank"
-        );
-        break;
-      default:
-        console.warn("Unknown platform:", platform);
-    }
+  const handleShare = async (platform: keyof typeof shareTo) => {
+    const { message } = await shareTo[platform](bookmarkUrl);
+    if (message) alert(message);
     onClose();
   };
 
@@ -30,7 +18,7 @@ const ShareModal = ({ onClose, bookmarkUrl }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 ">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-lg p-6 w-[500px]">
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-medium">Share</h3>
@@ -44,51 +32,24 @@ const ShareModal = ({ onClose, bookmarkUrl }) => {
 
         <div className="grid grid-cols-3 gap-4 mb-4">
           {/* Slack Button */}
-          <button
+          <PlatformButton
+            platform="slack"
             onClick={() => handleShare("slack")}
-            className="flex flex-col items-center p-3 hover:bg-gray-100 rounded-lg text-[15px] w-full"
-          >
-            <img
-              src="https://www.google.com/s2/favicons?domain=slack.com&sz=32"
-              alt="Slack"
-              className="w-8 h-8 mb-1.5"
-            />
-            <span className="whitespace-nowrap">
-              Slack
-              <br />
-              (coming)
-            </span>
-          </button>
+            comingSoon
+          />
 
           {/* Instagram Button */}
-          <button
+          <PlatformButton
+            platform="instagram"
             onClick={() => handleShare("instagram")}
-            className="flex flex-col items-center p-3 hover:bg-gray-100 rounded-lg text-[15px] w-full"
-          >
-            <img
-              src="https://www.google.com/s2/favicons?domain=instagram.com&sz=32"
-              alt="Instagram"
-              className="w-8 h-8 mb-1.5"
-            />
-            <span className="whitespace-nowrap">
-              Instagram
-              <br />
-              (coming){" "}
-            </span>
-          </button>
+            comingSoon
+          />
 
           {/* Gmail Button */}
-          <button
+          <PlatformButton
+            platform="gmail"
             onClick={() => handleShare("gmail")}
-            className="flex flex-col items-center p-3 hover:bg-gray-100 rounded-lg text-[15px] w-full"
-          >
-            <img
-              src="https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico"
-              alt="Gmail"
-              className="w-8 h-8 mb-1.5"
-            />
-            <span className="whitespace-nowrap">Gmail</span>
-          </button>
+          />
         </div>
 
         <div className="flex">
