@@ -2,6 +2,22 @@ import React from "react";
 import { shareTo } from "@/lib/utils";
 import PlatformButton from "./PlatformButton";
 
+interface PlatformProps {
+  platform: "slack" | "instagram" | "gmail";
+}
+
+const PlatformValues: PlatformProps[] = [
+  {
+    platform: "slack",
+  },
+  {
+    platform: "instagram",
+  },
+  {
+    platform: "gmail",
+  },
+];
+
 const ShareModal = ({ onClose, bookmarkUrl }) => {
   const [copiedUrl, setCopiedUrl] = React.useState(false);
 
@@ -31,25 +47,14 @@ const ShareModal = ({ onClose, bookmarkUrl }) => {
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-4">
-          {/* Slack Button */}
-          <PlatformButton
-            platform="slack"
-            onClick={() => handleShare("slack")}
-            comingSoon
-          />
-
-          {/* Instagram Button */}
-          <PlatformButton
-            platform="instagram"
-            onClick={() => handleShare("instagram")}
-            comingSoon
-          />
-
-          {/* Gmail Button */}
-          <PlatformButton
-            platform="gmail"
-            onClick={() => handleShare("gmail")}
-          />
+          {PlatformValues.map((platformProp, index) => (
+            <PlatformButton
+              key={index}
+              platform={platformProp.platform}
+              onClick={() => handleShare(platformProp.platform)}
+              comingSoon
+            />
+          ))}
         </div>
 
         <div className="flex">
