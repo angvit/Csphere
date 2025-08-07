@@ -34,6 +34,13 @@ class ContentWithSummary(BaseModel):
     class Config:
         from_attributes = True
 
+class CategoryOut(BaseModel):
+    category_id: UUID
+    category_name: str
+
+    class Config:
+        from_attributes = True
+
 class UserSavedContent(BaseModel):
     content_id: UUID
     url: str
@@ -42,3 +49,12 @@ class UserSavedContent(BaseModel):
     ai_summary: Optional[str]
     first_saved_at: datetime
     notes: Optional[str]
+    tags: Optional[list[CategoryOut]]
+
+class CategoryItem(BaseModel):
+    category_id: str
+    category_name: str
+ 
+class UserSavedContentResponse(BaseModel):
+    bookmarks: list[UserSavedContent]
+    categories: Optional[list[CategoryOut] ]

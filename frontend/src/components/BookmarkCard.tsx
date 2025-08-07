@@ -184,7 +184,10 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
             <Calendar className="h-3 w-3 mr-1" />
             {formatDate(bookmark.first_saved_at)}
             <div onClick={(e) => e.stopPropagation()}>
-              <BookMarkSettingIcon content_id={bookmark.content_id} url={bookmark.url} />
+              <BookMarkSettingIcon
+                content_id={bookmark.content_id}
+                url={bookmark.url}
+              />
             </div>
           </div>
         </div>
@@ -203,8 +206,12 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
         {bookmark?.tags?.length > 0 && (
           <div className="mb-3 flex flex-wrap gap-2">
             {bookmark.tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
+              <Badge
+                key={tag.category_id}
+                variant="secondary"
+                className="text-xs bg-gray-500"
+              >
+                {tag.category_name}
               </Badge>
             ))}
           </div>

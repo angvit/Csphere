@@ -2,13 +2,17 @@ import BookmarkCard from "./BookmarkCard";
 
 import { useContext } from "react";
 import { LayoutContext } from "@/app/(content)/home/BookmarkLayout";
-
+interface Tag {
+  category_id: string;
+  category_name: string;
+}
 type Bookmark = {
   content_id: string;
   title?: string;
   source?: string;
   ai_summary?: string;
   url: string;
+  tags?: Tag[];
 };
 
 export default function BookmarkList({ items }: { items: Bookmark[] }) {

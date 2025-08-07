@@ -5,13 +5,14 @@ from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.data_models.folder_item import folder_item
 from app.data_models.folder import Folder
-from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
+from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate, UserSavedContentResponse, CategoryOut
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from datetime import datetime, timezone
 from uuid import uuid4
 import logging
+from sqlalchemy.orm import joinedload
 
 from app.utils.hashing import get_current_user_id
 from sqlalchemy.orm import Session
@@ -26,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 
-@router.get("/content/search", response_model=list[ContentWithSummary])
-def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session = Depends(get_db)):
+@router.get("/content/search", response_model=UserSavedContentResponse)
+def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     preprocessor = QueryPreprocessor()
     parsed_query = preprocessor.preprocess_query(query)
 
@@ -37,45 +38,31 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
         user_id=user_id,
     )
 
-    print(f"Search results for query '{query}': {len(results)} results found.\n results: {results}")
 
-    # class ContentWithSummary(BaseModel):
-    # content_id: UUID
-    # title: Optional[str]
-    # url: str
-    # source: Optional[str]
-    # first_saved_at: datetime 
-    # ai_summary: Optional[str]
-    # folder: Optional[str]
+    bookmark_data = []
 
-    # class Config:
-    #     from_attributes = True
+    for content_ai, content in results:
+        bookmark_data.append(
+            UserSavedContent(
+                content_id=content_ai.content_id,
+                title=content.title,
+                url=content.url,
+                source=content.source,
+                first_saved_at=content.first_saved_at,
+                ai_summary=content_ai.ai_summary,
+                notes="", 
+                tags=[]    
+            )
+        )
 
-
-    # class ContentWithSummary(BaseModel):
-    # content_id: UUID
-    # title: Optional[str]
-    # url: str
-    # source: Optional[str]
-    # first_saved_at: datetime 
-    # ai_summary: Optional[str]
-
-    # class Config:
-    #     from_attributes = True
-
-
-    return [
-    {
-        "content_id": content_ai.content_id,
-        "title": content.title,
-        "url": content.url,
-        "source": content.source,
-        "first_saved_at": content.first_saved_at,
-        "ai_summary": content_ai.ai_summary,
-        "folder" : None,
+    return {
+        "bookmarks": bookmark_data,
+        "categories": []  # or `None`, depending on how you define Optional
     }
-    for content_ai, content in results
-    ]
+
+
+
+
 
 
 
@@ -193,69 +180,87 @@ def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session =
         return {'status' : 'unsuccesfull', 'error' : str(e)}
 
 
-@router.get("/content/unread",response_model=list[UserSavedContent] )
+@router.get("/content/unread", response_model=UserSavedContentResponse)
 def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
     results = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .options(joinedload(Content.categories))  # Eager load categories
         .filter(ContentItem.user_id == user_id, Content.read == False)
-        .order_by(desc(ContentItem.saved_at)) 
+        .order_by(desc(ContentItem.saved_at))
         .all()
     )
 
+    bookmark_data = []
+    category_list = []
 
-
-    response = [
-        UserSavedContent(
-            content_id=content.content_id,
-            url=content.url,
-            title=content.title,
-            source=content.source,
-            ai_summary=ai_summary,
-            first_saved_at=item.saved_at,
-            notes=item.notes
+    for item, content, ai_summary in results:
+        tags = [CategoryOut.from_orm(cat) for cat in content.categories]
+        bookmark_data.append(
+            UserSavedContent(
+                content_id=content.content_id,
+                url=content.url,
+                title=content.title,
+                source=content.source,
+                ai_summary=ai_summary,
+                first_saved_at=item.saved_at,
+                notes=item.notes,
+                tags=tags
+            )
         )
-        for item, content, ai_summary in results
-    ]
+        category_list.extend(tags)
 
-    return response
+    # Deduplicate categories by category_id
+    unique_categories = {cat.category_id: cat for cat in category_list}.values()
+
+    return {
+        "bookmarks": bookmark_data,
+        "categories": list(unique_categories)
+    }
 
 
 
-
-@router.get("/content", response_model=list[UserSavedContent])
+@router.get("/content", response_model=UserSavedContentResponse)
 def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
-
-    
     results = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .options(joinedload(Content.categories))  # Eager load categories
         .filter(ContentItem.user_id == user_id)
         .order_by(desc(ContentItem.saved_at)) 
         .all()
     )
 
+    category_list = []
+    bookmark_data = []
 
-
-    response = [
-        UserSavedContent(
-            content_id=content.content_id,
-            url=content.url,
-            title=content.title,
-            source=content.source,
-            ai_summary=ai_summary,
-            first_saved_at=item.saved_at,
-            notes=item.notes
+    for item, content, ai_summary in results:
+        tags = [CategoryOut.from_orm(cat) for cat in content.categories]
+        bookmark_data.append(
+            UserSavedContent(
+                content_id=content.content_id,
+                url=content.url,
+                title=content.title,
+                source=content.source,
+                ai_summary=ai_summary,
+                first_saved_at=item.saved_at,
+                notes=item.notes,
+                tags=tags
+            )
         )
-        for item, content, ai_summary in results
-    ]
+        category_list.extend(tags)
 
-    return response
+    unique_categories = {cat.category_id: cat for cat in category_list}.values()
 
+    return {
+        "bookmarks": bookmark_data,
+        "categories": list(unique_categories)
+        
+    }
 
 
 @router.post("/content/update/notes")
