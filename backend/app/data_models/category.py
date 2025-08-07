@@ -3,6 +3,8 @@ from sqlalchemy.orm import relationship
 from sqlalchemy import text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from app.data_models.content_category import ContentCategory
+# from app.data_models.content import Content
 
 
 from app.db.database import Base
@@ -16,3 +18,9 @@ class Category(Base):
     category_name = Column(String, unique=True, nullable=True, default='')
     created_at = Column(TIMESTAMP(timezone=True), default=func.now())
     date_modified = Column(TIMESTAMP(timezone=True), default=func.now())
+
+    contents = relationship(
+        "Content",                       
+        secondary=ContentCategory,
+        back_populates="categories"     
+    )

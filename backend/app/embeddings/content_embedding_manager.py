@@ -10,9 +10,16 @@ from readability import Document
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from keybert import KeyBERT
+from sklearn.metrics.pairwise import cosine_similarity
+import torch
+from uuid import uuid4
+from datetime import datetime, timezone
+
 
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
+from app.data_models.category import Category
 
 
 class ContentEmbeddingManager:
@@ -31,7 +38,8 @@ class ContentEmbeddingManager:
         self.embedding_model_name = embedding_model_name
         self.summary_model = summary_model_name
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        print("Open ai key is as follows: ", self.openai_client)
+        self.kw_model = KeyBERT(model='all-MiniLM-L6-v2')
+
 
 
     ###############################################################################
@@ -46,7 +54,6 @@ class ContentEmbeddingManager:
         '''
         try:
             if self._content_ai_exists(content.content_id):
-                print(f"Embedding already exists for content ID: {content.content_id}")
                 return None
 
             # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
@@ -55,7 +62,6 @@ class ContentEmbeddingManager:
             if not summary_input:
                 summary_input = content.title or "No title avaliable"
 
-            print("summary input: ", summary_input)
 
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
@@ -67,10 +73,52 @@ class ContentEmbeddingManager:
                 title= content.title
             )
 
-            print(f"Generated summary: {summary}")
             
             if not summary: 
                 raise Exception("Failed to summarize content and/or there is no title")
+            
+            tags = self._extract_keywords(summary)
+
+
+            #Now create categories that are not yet in the DB
+            category_set = set()
+            db = self.db
+            for tag in tags:
+                exists = db.query(Category).filter(Category.category_name == tag).first()
+
+                if exists:
+                    category_set.add(exists.category_id)
+                    continue
+
+                #now create the new catgeory entry 
+
+                #category_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+                # category_name = Column(String, unique=True, nullable=True, default='')
+                # created_at = Column(TIMESTAMP(timezone=True), default=func.now())
+                # date_modified = Column(TIMESTAMP(timezone=True), default=func.now())
+                utc_time = datetime.now(timezone.utc)
+
+                new_category = Category(
+                    category_id = uuid4(), 
+                    category_name = tag, 
+                    created_at = utc_time, 
+                    date_modified = utc_time
+
+                )
+
+                db.add(new_category)
+
+                category_set.add(new_category.category_id)
+
+            db.flush()
+
+            #add them to the corresponding content object
+
+            content.categories = db.query(Category).filter(Category.category_id.in_(category_set)).all()
+
+
+
+
 
             # Embed the summary associated with the content ORM
             embedding = self._generate_embedding(summary)
@@ -86,7 +134,6 @@ class ContentEmbeddingManager:
 
             self.db.add(content_ai)
             self.db.commit()
-            print(f"ContentAI created for content_id={content.content_id}")
             return content_ai
         
         
@@ -126,6 +173,48 @@ class ContentEmbeddingManager:
     # HELPER METHODS
     ###############################################################################
 
+    def _extract_keywords(self, summary : str):
+        raw_keywords = self.kw_model.extract_keywords(summary, keyphrase_ngram_range=(1, 2), stop_words='english', top_n=4)
+        return self._deduplicate_keywords_semantically(raw_keywords, summary)
+    
+
+    def _deduplicate_keywords_semantically(self, keywords, summary, threshold=0.75):
+        if len(keywords) <= 1:
+            return [kw[0] for kw in keywords]
+
+        phrases = [kw[0] for kw in keywords]
+        phrase_embeddings = self.kw_model.model.embed(phrases)
+        summary_embedding = self.kw_model.model.embed([summary])[0]
+
+        if isinstance(phrase_embeddings, torch.Tensor):
+            phrase_embeddings = phrase_embeddings.cpu().detach().numpy()
+        if isinstance(summary_embedding, torch.Tensor):
+            summary_embedding = summary_embedding.cpu().detach().numpy()
+
+        sim_matrix = cosine_similarity(phrase_embeddings)
+        rep_scores = cosine_similarity(phrase_embeddings, [summary_embedding]).flatten()
+
+        selected = []
+        removed = set()
+
+        for i, kw_i in enumerate(phrases):
+            if kw_i in removed:
+                continue
+            best_kw = kw_i
+            best_score = rep_scores[i]
+            for j in range(i + 1, len(phrases)):
+                kw_j = phrases[j]
+                if kw_j in removed or sim_matrix[i][j] < threshold:
+                    continue
+                if rep_scores[j] > best_score:
+                    removed.add(best_kw)
+                    best_kw = kw_j
+                    best_score = rep_scores[j]
+                else:
+                    removed.add(kw_j)
+            selected.append(best_kw)
+
+        return selected
     def _store_article_summary_pair(self, article_text, summary, url, title):
         record = {
             "url": url,
@@ -208,7 +297,6 @@ class ContentEmbeddingManager:
         # html snippet of main content body with boilerplate (nav bars, ads, footers) removed
         body = BeautifulSoup(doc.summary(), "html.parser").get_text()
 
-        print(f"The title from soup is: {title}")
 
         return {
             "title": title,
@@ -232,7 +320,6 @@ class ContentEmbeddingManager:
         
         # snippet = metadata["body_text"][:500]
         # input_parts.append(f"Content Snippet: {snippet}")
-        print("\n".join(input_parts))
         return "\n".join(input_parts)
 
 
@@ -263,7 +350,6 @@ class ContentEmbeddingManager:
     
     
     def _summarize_content(self, summary_input):
-        print("summary input : ", summary_input)
         try:
             response = self.openai_client.chat.completions.create(
                 model=self.summary_model,
@@ -271,18 +357,19 @@ class ContentEmbeddingManager:
                     {
                         "role": "system", 
                          "content": (
-                            "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
-                            "Use the following process to ensure accuracy and relevance:\n\n"
-                            "1. Identify the main topic of the article.\n"
-                            "2. Extract any key details related to this main topic.\n"
-                            "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
-                            "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
-                            "Make sure to keep a neutral tone throughout the summary."
+                             "Summarize the following webpage content in 2-3 sentences"
+                            # "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
+                            # "Use the following process to ensure accuracy and relevance:\n\n"
+                            # "1. Identify the main topic of the article.\n"
+                            # "2. Extract any key details related to this main topic.\n"
+                            # "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
+                            # "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
+                            # "Make sure to keep a neutral tone throughout the summary."
                     )
                     },
                     {"role": "user", "content": summary_input},
                 ],
-                temperature=0.8,
+                temperature=0.6,
                 max_tokens=150,
             )
             return response.choices[0].message.content.strip()

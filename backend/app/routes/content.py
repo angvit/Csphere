@@ -81,31 +81,24 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
 
 @router.post("/content/save")
 def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    print("entered the function")
     notes = content.notes
 
-    print("content logs: ", content.title, content.notes, content.url)
-    # print("html content: ", content.html)
-
     user = db.query(User).filter(User.id == user_id).first()
-    print("made it up to here") 
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
 
-    print("current user: ", user)
     
     try:
         user_id = user.id
-        print("User ID: ", user_id)
 
         existing_content = db.query(Content).filter(Content.url == content.url).first()
 
         utc_time = datetime.now(timezone.utc)
 
-        print("utc value: ", utc_time)
 
 
         if not existing_content:
+            #create the new content
             new_content = Content(
                 url=content.url,
                 title=content.title,
@@ -154,7 +147,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
             print(f"Retrieved from DB: {saved_item.saved_at}")
-            print(f"Retrieved type: {type(saved_item.saved_at)}")
+         
 
             #add to the corresponding folder if any 
 
