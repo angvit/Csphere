@@ -5,9 +5,13 @@ from bs4 import BeautifulSoup
 from openai import OpenAI
 from keybert import KeyBERT
 from sklearn.metrics.pairwise import cosine_similarity
+import numpy as np
 import torch
-
-
+import urllib.request
+from io import BytesIO
+# from docling.backend.html_backend import HTMLDocumentBackend
+# from docling.datamodel.base_models import InputFormat
+# from docling.datamodel.document import InputDocument
 
 load_dotenv()
 
