@@ -52,6 +52,7 @@ export function BookmarkDetailModal({
   const [copiedUrl, setCopiedUrl] = useState(false);
 
   if (!bookmark) return null;
+  console.log("bookmark data: ", bookmark);
 
   const handleCopyUrl = async () => {
     await navigator.clipboard.writeText(bookmark.url);
@@ -127,7 +128,7 @@ export function BookmarkDetailModal({
               </div>
             </div>
 
-            <div>
+            {/* <div>
               <div className="flex items-center gap-2 mb-3">
                 <Tag className="w-4 h-4" />
                 <span className="font-medium">Tags</span>
@@ -143,7 +144,7 @@ export function BookmarkDetailModal({
                   </Badge>
                 ))}
               </div>
-            </div>
+            </div> */}
 
             {/* Tags */}
             {bookmark.tags?.length > 0 && (
@@ -153,9 +154,13 @@ export function BookmarkDetailModal({
                   <span className="font-medium">Tags</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {tags.map((tag, index) => (
-                    <Badge key={index} variant="secondary">
-                      {tag}
+                  {bookmark.tags.map((tag, index) => (
+                    <Badge
+                      key={index}
+                      variant="secondary"
+                      className="bg-gray-200"
+                    >
+                      {tag.category_name}
                     </Badge>
                   ))}
                 </div>
