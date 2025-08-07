@@ -18,15 +18,15 @@ const categories = [
   "Other",
 ];
 
-export default function CategoryFilter() {
+export default function CategoryFilter({ categories }) {
   return (
     <div className="flex flex-wrap gap-2 justify-start mb-8">
-      {categories.map((category) => (
+      {categories?.map((category) => (
         <button
-          key={category}
+          key={category.category_id}
           className="px-3 py-1 rounded-full border-[0.5px] border-black text-sm text-black hover:bg-gray-100 transition-colors bg-gray-300"
         >
-          {category}
+          {category.category_name}
         </button>
       ))}
     </div>

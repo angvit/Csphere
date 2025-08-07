@@ -40,7 +40,7 @@ const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
       const data = await res.json();
       console.log("bookmark data being returned: ", data);
-      setBookmarks(data);
+      setBookmarks(data.bookmarks);
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
     }

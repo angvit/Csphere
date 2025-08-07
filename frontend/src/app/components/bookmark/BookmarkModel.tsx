@@ -20,6 +20,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+interface Tag {
+  category_id: string;
+  category_name: string;
+}
+
 interface BookmarkData {
   content_id: string;
   title?: string;
@@ -27,7 +32,7 @@ interface BookmarkData {
   source?: string;
   ai_summary?: string;
   first_saved_at?: string; // ISO timestamp, might also be Date if parsed
-  tags?: string[];
+  tags?: Tag[];
   notes?: string;
 }
 
