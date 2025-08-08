@@ -104,6 +104,8 @@ def login(user: UserSignIn,  db: Session = Depends(get_db)):
     return {"username": db_user.username, "token": token}
 
 
+
+from app.utils.token import Token
 @router.get("/media/profile")
 def get_profile_picture(profile_url: str = Query(...), user_id: UUID = Depends(get_current_user_id)):
     try:
@@ -119,8 +121,18 @@ def get_profile_picture(profile_url: str = Query(...), user_id: UUID = Depends(g
         )
 
         logger.info(f"Presigned url created succesfully for user profile {profile_url}")
+
+        #set a new cookie with this 
+
+        token_obj = Token(user_id)
+
+        new_jwt = token_obj.createAccessTokenWithUserId()
+
+        logger.info("new presigned url successfully generated: ", new_jwt)
+
+
         
-        return {'success' : True, "presigned_url": presigned_url}
+        return {'success' : True, "presigned_url": presigned_url, "jwt" : new_jwt}
     
     except Exception as e:
         logger.error(f"Error occured in creating the aws presigned url: {e}")
@@ -156,6 +168,9 @@ def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_c
             return {'success': False, 'message': "no user found with the user_id"}
         
         user.profile_path = image_url
+        token_obj = Token(user_id)
+
+        new_jwt = token_obj.createAccessTokenWithUserId()
         db.commit()
     except Exception as e:
         return {'success' : False, 'error': str(e)}
@@ -163,7 +178,7 @@ def upload_user_media(pfp: UploadFile = File(...), user_id: UUID = Depends(get_c
 
     
 
-    return {"success":True,"profile_media": presigned_url}
+    return {"success":True,"profile_media": presigned_url, "token" : new_jwt}
 
 
 

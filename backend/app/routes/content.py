@@ -411,7 +411,7 @@ def get_recent_content(user_id: UUID = Depends(get_current_user_id), db: Session
             .outerjoin(Folder, folder_item.folder_id == Folder.folder_id)
             .filter(Content.user_id == user_id)
             .order_by(Content.first_saved_at.desc())
-            .limit(5)
+            .limit(10)
             .all()
         )
 

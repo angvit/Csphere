@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import ProfileDropdown from "./navbar/ProfileDropdown";
 
 function DropdownMenu() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
