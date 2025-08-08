@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import BookmarkList from "./BookmarkList";
 import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
+import CategoryFilter from "./CategoryFilter";
 
 import Loading from "./ux/Loading";
 type ChildProps = {
@@ -12,6 +13,7 @@ type ChildProps = {
 
 const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
+  const [categories, setCategories] = useState([]);
   console.log("current active tab: ", activeTab);
 
   const fetchBookmarks = async (query = "") => {
@@ -39,7 +41,8 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
       const data = await res.json();
       console.log("bookmark data being returned: ", data);
-      setBookmarks(data);
+      setBookmarks(data.bookmarks);
+      setCategories(data.categories);
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
     }
@@ -51,6 +54,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
   return (
     <BookmarkLayout onSearch={fetchBookmarks}>
+      <CategoryFilter categories={categories} />
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}

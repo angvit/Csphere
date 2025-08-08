@@ -54,6 +54,10 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Response status: {response.status_code} for {request.method} {request.url.path}")
     return response
 
+@app.post("/")
+def status():
+    return {'status' : 'alive'}
+
 
 logger.info('API has started up')
 if __name__ == "__main__":

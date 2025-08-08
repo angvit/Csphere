@@ -161,7 +161,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
           })()}
         </TabsList>
         <SearchInput onSearch={onSearch} />
-        <CategoryFilter />
+
         <LayoutContext.Provider value={viewMode}>
           {children}
         </LayoutContext.Provider>
