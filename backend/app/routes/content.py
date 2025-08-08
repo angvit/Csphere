@@ -4,13 +4,15 @@ from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.data_models.folder_item import folder_item
-from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate
+from app.data_models.folder import Folder
+from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate, UserSavedContentResponse, CategoryOut
 from app.preprocessing.preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 from datetime import datetime, timezone
 from uuid import uuid4
 import logging
+from sqlalchemy.orm import joinedload
 
 from app.utils.hashing import get_current_user_id
 from sqlalchemy.orm import Session
@@ -25,8 +27,8 @@ logger = logging.getLogger(__name__)
 
 
 
-@router.get("/content/search", response_model=list[ContentWithSummary])
-def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session = Depends(get_db)):
+@router.get("/content/search", response_model=UserSavedContentResponse)
+def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     preprocessor = QueryPreprocessor()
     parsed_query = preprocessor.preprocess_query(query)
 
@@ -36,49 +38,54 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id),db: Session 
         user_id=user_id,
     )
 
-    print(f"Search results for query '{query}': {len(results)} results found.\n results: {results}")
 
-    return [
-    {
-        "content_id": content_ai.content_id,
-        "title": content.title,
-        "url": content.url,
-        "source": content.source,
-        "first_saved_at": content.first_saved_at,
-        "ai_summary": content_ai.ai_summary,
+    bookmark_data = []
+
+    for content_ai, content in results:
+        bookmark_data.append(
+            UserSavedContent(
+                content_id=content_ai.content_id,
+                title=content.title,
+                url=content.url,
+                source=content.source,
+                first_saved_at=content.first_saved_at,
+                ai_summary=content_ai.ai_summary,
+                notes="", 
+                tags=[]    
+            )
+        )
+
+    return {
+        "bookmarks": bookmark_data,
+        "categories": []  # or `None`, depending on how you define Optional
     }
-    for content_ai, content in results
-    ]
+
+
+
+
 
 
 
 @router.post("/content/save")
 def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    print("entered the function")
     notes = content.notes
 
-    print("content logs: ", content.title, content.notes, content.url)
-    # print("html content: ", content.html)
-
     user = db.query(User).filter(User.id == user_id).first()
-    print("made it up to here") 
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
 
-    print("current user: ", user)
     
     try:
         user_id = user.id
-        print("User ID: ", user_id)
 
         existing_content = db.query(Content).filter(Content.url == content.url).first()
 
         utc_time = datetime.now(timezone.utc)
 
-        print("utc value: ", utc_time)
 
 
         if not existing_content:
+            #create the new content
             new_content = Content(
                 url=content.url,
                 title=content.title,
@@ -127,7 +134,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
             print(f"Retrieved from DB: {saved_item.saved_at}")
-            print(f"Retrieved type: {type(saved_item.saved_at)}")
+         
 
             #add to the corresponding folder if any 
 
@@ -162,7 +169,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
     try:
-        total_count = db.query(Content).filter(Content.user_id == user_id).count()
+        total_count = db.query(Content).filter(Content.user_id == user_id, Content.read == False).count()
 
         logger.debug(f"Total count fetched for user id {user_id} : {total_count}")
         return {'status' : "succesful", 'total_count' : total_count}
@@ -173,69 +180,87 @@ def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session =
         return {'status' : 'unsuccesfull', 'error' : str(e)}
 
 
-@router.get("/content/unread",response_model=list[UserSavedContent] )
+@router.get("/content/unread", response_model=UserSavedContentResponse)
 def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
     results = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .options(joinedload(Content.categories))  # Eager load categories
         .filter(ContentItem.user_id == user_id, Content.read == False)
-        .order_by(desc(ContentItem.saved_at)) 
+        .order_by(desc(ContentItem.saved_at))
         .all()
     )
 
+    bookmark_data = []
+    category_list = []
 
-
-    response = [
-        UserSavedContent(
-            content_id=content.content_id,
-            url=content.url,
-            title=content.title,
-            source=content.source,
-            ai_summary=ai_summary,
-            first_saved_at=item.saved_at,
-            notes=item.notes
+    for item, content, ai_summary in results:
+        tags = [CategoryOut.from_orm(cat) for cat in content.categories]
+        bookmark_data.append(
+            UserSavedContent(
+                content_id=content.content_id,
+                url=content.url,
+                title=content.title,
+                source=content.source,
+                ai_summary=ai_summary,
+                first_saved_at=item.saved_at,
+                notes=item.notes,
+                tags=tags
+            )
         )
-        for item, content, ai_summary in results
-    ]
+        category_list.extend(tags)
 
-    return response
+    # Deduplicate categories by category_id
+    unique_categories = {cat.category_id: cat for cat in category_list}.values()
+
+    return {
+        "bookmarks": bookmark_data,
+        "categories": list(unique_categories)
+    }
 
 
 
-
-@router.get("/content", response_model=list[UserSavedContent])
+@router.get("/content", response_model=UserSavedContentResponse)
 def get_user_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
-
-    
     results = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .options(joinedload(Content.categories))  # Eager load categories
         .filter(ContentItem.user_id == user_id)
         .order_by(desc(ContentItem.saved_at)) 
         .all()
     )
 
+    category_list = []
+    bookmark_data = []
 
-
-    response = [
-        UserSavedContent(
-            content_id=content.content_id,
-            url=content.url,
-            title=content.title,
-            source=content.source,
-            ai_summary=ai_summary,
-            first_saved_at=item.saved_at,
-            notes=item.notes
+    for item, content, ai_summary in results:
+        tags = [CategoryOut.from_orm(cat) for cat in content.categories]
+        bookmark_data.append(
+            UserSavedContent(
+                content_id=content.content_id,
+                url=content.url,
+                title=content.title,
+                source=content.source,
+                ai_summary=ai_summary,
+                first_saved_at=item.saved_at,
+                notes=item.notes,
+                tags=tags
+            )
         )
-        for item, content, ai_summary in results
-    ]
+        category_list.extend(tags)
 
-    return response
+    unique_categories = {cat.category_id: cat for cat in category_list}.values()
 
+    return {
+        "bookmarks": bookmark_data,
+        "categories": list(unique_categories)
+        
+    }
 
 
 @router.post("/content/update/notes")
@@ -374,3 +399,39 @@ def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session 
     if not content:
         raise HTTPException(status_code=404, detail="Content not found for this user")
     return content
+
+
+@router.post("/content/recent", response_model=list[ContentWithSummary])
+def get_recent_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    try:
+        results = (
+            db.query(Content, Folder)
+            .join(ContentAI, ContentAI.content_id == Content.content_id)
+            .outerjoin(folder_item, folder_item.content_id == Content.content_id)
+            .outerjoin(Folder, folder_item.folder_id == Folder.folder_id)
+            .filter(Content.user_id == user_id)
+            .order_by(Content.first_saved_at.desc())
+            .limit(10)
+            .all()
+        )
+
+
+        response = []
+        for content, folder in results:
+            response.append(ContentWithSummary(
+                content_id=content.content_id,
+                title=content.title,
+                url=content.url,
+                source=content.source,
+                first_saved_at=content.first_saved_at,
+                ai_summary=content.content_ai.ai_summary if content.content_ai else None,
+                folder = folder.folder_name if  folder and folder.folder_name else 'none'
+            ))
+
+        logger.info(f"Recent content for user id {user_id} being returned: {response}")
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error occured in api endpoint '/content/recent' : {e}")
+        return []  
