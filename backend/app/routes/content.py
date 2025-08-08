@@ -169,7 +169,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
     try:
-        total_count = db.query(Content).filter(Content.user_id == user_id).count()
+        total_count = db.query(Content).filter(Content.user_id == user_id, Content.read == False).count()
 
         logger.debug(f"Total count fetched for user id {user_id} : {total_count}")
         return {'status' : "succesful", 'total_count' : total_count}
@@ -407,13 +407,14 @@ def get_recent_content(user_id: UUID = Depends(get_current_user_id), db: Session
         results = (
             db.query(Content, Folder)
             .join(ContentAI, ContentAI.content_id == Content.content_id)
-            .join(folder_item, folder_item.content_id == Content.content_id)
-            .join(Folder, folder_item.folder_id == Folder.folder_id)
+            .outerjoin(folder_item, folder_item.content_id == Content.content_id)
+            .outerjoin(Folder, folder_item.folder_id == Folder.folder_id)
             .filter(Content.user_id == user_id)
             .order_by(Content.first_saved_at.desc())
             .limit(5)
             .all()
         )
+
 
         response = []
         for content, folder in results:
@@ -424,11 +425,13 @@ def get_recent_content(user_id: UUID = Depends(get_current_user_id), db: Session
                 source=content.source,
                 first_saved_at=content.first_saved_at,
                 ai_summary=content.content_ai.ai_summary if content.content_ai else None,
-                folder = folder.folder_name
+                folder = folder.folder_name if  folder and folder.folder_name else 'none'
             ))
+
+        logger.info(f"Recent content for user id {user_id} being returned: {response}")
 
         return response
 
     except Exception as e:
-        print("Error:", e)
-        return []  # must return a list
+        logger.error(f"Error occured in api endpoint '/content/recent' : {e}")
+        return []  
