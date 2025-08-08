@@ -58,6 +58,10 @@ function ProfileDropdown() {
         ?.split("=")[1];
 
       try {
+        console.log(
+          "document cookie before we set a new one: ",
+          document.cookie
+        );
         const response = await fetch(apiUrl, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -66,10 +70,17 @@ function ProfileDropdown() {
         });
 
         const data = await response.json();
-        console.log("data fetched successfullyL ", data);
+        console.log("data fetched successfully:  ", data);
 
         if (data.success && data.presigned_url) {
           setProfileImage(data.presigned_url);
+
+          //set the new jwt
+          const new_jwt = data.jwt;
+
+          document.cookie = `token=${new_jwt}; path=/; max-age=3600`;
+
+          console.log("set the new coument cookie to: ", document.cookie);
         }
       } catch (err) {
         console.error("Error fetching pre-signed URL:", err);
