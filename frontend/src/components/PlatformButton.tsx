@@ -1,17 +1,16 @@
 import React from 'react';
 
 type PlatformButtonProps = {
-  platform: "slack" | "instagram"| "gmail";
+  platform: "slack" | "instagram" | "gmail" | "messages";
   onClick: () => void;
-  inProgress?: boolean;
-  comingSoon?: boolean;
 };
 
-const PlatformButton = ({ platform, onClick, inProgress, comingSoon }: PlatformButtonProps) => {
+const PlatformButton = ({ platform, onClick }: PlatformButtonProps) => {
   const iconMap = {
     slack: 'https://www.google.com/s2/favicons?domain=slack.com&sz=32',
     instagram: 'https://www.google.com/s2/favicons?domain=instagram.com&sz=32',
-    gmail: 'https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico'
+    gmail: 'https://ssl.gstatic.com/ui/v1/icons/mail/rfr/gmail.ico',
+    messages: 'https://fonts.gstatic.com/s/i/short-term/release/materialsymbolsoutlined/sms/default/24px.svg'
   };
 
   return (
@@ -22,8 +21,6 @@ const PlatformButton = ({ platform, onClick, inProgress, comingSoon }: PlatformB
       <img src={iconMap[platform]} alt={platform} className="w-8 h-8 mb-1.5" />
       <span className="whitespace-nowrap">
         {platform.charAt(0).toUpperCase() + platform.slice(1)}
-        {inProgress && <><br />(Preview)</>}
-        {comingSoon && <><br />(Coming)</>}
       </span>
     </button>
   );
