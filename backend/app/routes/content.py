@@ -98,7 +98,9 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
             db.flush()  # generate content_id without commit
 
             # Generate embedding only for new content
-            embedding_manager = ContentEmbeddingManager(db)
+            print("generating manager")
+            embedding_manager = ContentEmbeddingManager(db, content_url=content.url)
+            print("done generating")
             raw_html = content.html
             content_ai = embedding_manager.process_content(new_content, raw_html)
             db.commit()

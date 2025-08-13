@@ -10,9 +10,6 @@ from readability import Document
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
-from keybert import KeyBERT
-from sklearn.metrics.pairwise import cosine_similarity
-import torch
 from uuid import uuid4
 from datetime import datetime, timezone
 
@@ -20,6 +17,7 @@ from datetime import datetime, timezone
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
 from app.data_models.category import Category
+from app.classes import iab
 
 
 class ContentEmbeddingManager:
@@ -32,13 +30,21 @@ class ContentEmbeddingManager:
         - Handling database interactions for both `Content` and `ContentAI` models
     '''
 
-    def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo'):
+    def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo', content_url : str = ''):
         self.db = db
         self.embedding_model = embedding_model_name
         self.embedding_model_name = embedding_model_name
         self.summary_model = summary_model_name
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        self.kw_model = KeyBERT(model='all-MiniLM-L6-v2')
+        # self.kw_model = KeyBERT(model='all-MiniLM-L6-v2')
+
+        print("Setting new files with content url: ", content_url)
+
+        self.categorizer = iab.SolrQueryIAB(file_path="dummy.txt", file_url=content_url)
+
+        self.ai_summary = ''
+
+        print("class initalized")
 
 
 
@@ -77,37 +83,37 @@ class ContentEmbeddingManager:
             if not summary: 
                 raise Exception("Failed to summarize content and/or there is no title")
             
-            tags = self._extract_keywords(summary)
+            self.ai_summary = summary
+            
+            print("generating categories: ")
+            categories = self.generateCategories()
+
+            print("categories returned: ", categories)
 
 
             #Now create categories that are not yet in the DB
             category_set = set()
             db = self.db
-            for tag in tags:
-                exists = db.query(Category).filter(Category.category_name == tag).first()
+            for tag, cat_list in categories.items():
+                # get the first element's name from the list of tuples
+                category_name = cat_list[0][0]
+
+                exists = db.query(Category).filter(Category.category_name == category_name).first()
 
                 if exists:
                     category_set.add(exists.category_id)
                     continue
 
-                #now create the new catgeory entry 
-
-                #category_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-                # category_name = Column(String, unique=True, nullable=True, default='')
-                # created_at = Column(TIMESTAMP(timezone=True), default=func.now())
-                # date_modified = Column(TIMESTAMP(timezone=True), default=func.now())
                 utc_time = datetime.now(timezone.utc)
 
                 new_category = Category(
-                    category_id = uuid4(), 
-                    category_name = tag, 
-                    created_at = utc_time, 
-                    date_modified = utc_time
-
+                    category_id=uuid4(),
+                    category_name=category_name,
+                    created_at=utc_time,
+                    date_modified=utc_time
                 )
 
                 db.add(new_category)
-
                 category_set.add(new_category.category_id)
 
             db.flush()
@@ -173,48 +179,14 @@ class ContentEmbeddingManager:
     # HELPER METHODS
     ###############################################################################
 
-    def _extract_keywords(self, summary : str):
-        raw_keywords = self.kw_model.extract_keywords(summary, keyphrase_ngram_range=(1, 2), stop_words='english', top_n=4)
-        return self._deduplicate_keywords_semantically(raw_keywords, summary)
-    
 
-    def _deduplicate_keywords_semantically(self, keywords, summary, threshold=0.75):
-        if len(keywords) <= 1:
-            return [kw[0] for kw in keywords]
+    def generateCategories(self):
+        self.categorizer.setAiSummary(ai_summary=self.ai_summary)
+        self.categorizer.index_data()
+        categories_dic = self.categorizer.get_categories()
 
-        phrases = [kw[0] for kw in keywords]
-        phrase_embeddings = self.kw_model.model.embed(phrases)
-        summary_embedding = self.kw_model.model.embed([summary])[0]
+        return categories_dic
 
-        if isinstance(phrase_embeddings, torch.Tensor):
-            phrase_embeddings = phrase_embeddings.cpu().detach().numpy()
-        if isinstance(summary_embedding, torch.Tensor):
-            summary_embedding = summary_embedding.cpu().detach().numpy()
-
-        sim_matrix = cosine_similarity(phrase_embeddings)
-        rep_scores = cosine_similarity(phrase_embeddings, [summary_embedding]).flatten()
-
-        selected = []
-        removed = set()
-
-        for i, kw_i in enumerate(phrases):
-            if kw_i in removed:
-                continue
-            best_kw = kw_i
-            best_score = rep_scores[i]
-            for j in range(i + 1, len(phrases)):
-                kw_j = phrases[j]
-                if kw_j in removed or sim_matrix[i][j] < threshold:
-                    continue
-                if rep_scores[j] > best_score:
-                    removed.add(best_kw)
-                    best_kw = kw_j
-                    best_score = rep_scores[j]
-                else:
-                    removed.add(kw_j)
-            selected.append(best_kw)
-
-        return selected
     def _store_article_summary_pair(self, article_text, summary, url, title):
         record = {
             "url": url,
