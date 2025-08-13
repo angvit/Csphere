@@ -31,88 +31,10 @@ type ShareResult = Promise<{
 }>;
 
 export const shareTo = {
-  slack: async (bookmarkUrl: string): ShareResult => {
-    try {
-      const redirectPermission = await requestRedirectPermission();
-      if (!redirectPermission) {
-        return {
-          success: false,
-          message: 'Please enable popups to share'
-        };
-      }
-
-      let clipboardError = false;
-      try {
-        await navigator.clipboard.writeText(bookmarkUrl);
-      } catch {
-        clipboardError = true;
-      }
-
-      if (clipboardError) {
-        return {
-          success: false,
-          message: 'Copying was blocked! Please allow clipboard access for this site.'
-        };
-      }
-      
-      alert('Link copied for Slack. Redirecting now...');
-      const newWindow = window.open('', '_blank');
-      if (!newWindow || newWindow.closed) {
-        return {
-          success: false,
-          message: 'Redirect blocked. Please allow popups for this site.'
-        };
-      }
-      newWindow.location.href = 'https://slack.com/signin#/signin';
-      return { success: true };
-    } catch (err) {
-      return {
-        success: false,
-        message: 'Sharing failed. Please check permissions.'
-      };
-    }
-  },
-  instagram: async (bookmarkUrl: string): ShareResult => {
-    try {
-      const redirectPermission = await requestRedirectPermission();
-      if (!redirectPermission) {
-        return {
-          success: false,
-          message: 'Please enable popups to share'
-        };
-      }
-
-      let clipboardError = false;
-      try {
-        await navigator.clipboard.writeText(bookmarkUrl);
-      } catch {
-        clipboardError = true;
-      }
-
-      if (clipboardError) {
-        return {
-          success: false,
-          message: 'Copying was blocked! Please allow clipboard access for this site.'
-        };
-      }
-      
-      alert('Link copied for Instagram. Redirecting now...');
-      const newWindow = window.open('', '_blank');
-      if (!newWindow || newWindow.closed) {
-        return {
-          success: false,
-          message: 'Redirect blocked. Please allow popups for this site.'
-        };
-      }
-      newWindow.location.href = 'https://www.instagram.com';
-      return { success: true };
-    } catch (err) {
-      return {
-        success: false,
-        message: 'Sharing failed. Please check permissions.'
-      };
-    }
-  },
+  slack: (bookmarkUrl: string) => 
+    openLogIn('Slack', 'https://slack.com/signin#/signin', bookmarkUrl),
+  instagram: (bookmarkUrl: string) =>
+    openLogIn('Instagram', 'https://www.instagram.com', bookmarkUrl),
   gmail: async (bookmarkUrl: string): ShareResult => {
     window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(
       'Check out this bookmark from CSphere!')}&body=${encodeURIComponent(
@@ -124,7 +46,7 @@ export const shareTo = {
       .then(() => alert('Message copied! Please paste it into your messaging app.'))
       .catch(() => {
         const textArea = document.createElement('textarea');
-        textArea.value = 'I bookmarked this on CSphere: ' + bookmarkUrl + '\nStart bookmarking on CSphere: https://csphere-nly9.vercel.app/';
+        textArea.value = 'I bookmarked this on CSphere: ' + bookmarkUrl;
         document.body.appendChild(textArea);
         textArea.select();
         document.execCommand('copy');
@@ -134,6 +56,52 @@ export const shareTo = {
       return { success: true }
   }
 };
+
+async function openLogIn(
+  platformName: string,
+  redirectUrl: string,
+  bookmarkUrl: string
+): Promise<ShareResult> {
+  try {
+    const redirectPermission = await requestRedirectPermission();
+    if (!redirectPermission) {
+      return {
+        success: false,
+        message: 'Please allow popups for sharing to work.'
+      };
+    }
+
+    let clipboardError = false;
+    try {
+      await navigator.clipboard.writeText(bookmarkUrl);
+    } catch {
+      clipboardError = true;
+    }
+
+    if (clipboardError) {
+      return {
+        success: false,
+        message: 'Copying was blocked! Please allow clipboard access for this site.'
+      };
+    }
+
+    alert(`Link copied for ${platformName}. Redirecting now...`);
+    const newWindow = window.open('', '_blank');
+    if (!newWindow || newWindow.closed) {
+      return {
+        success: false,
+        message: 'Redirect failed. Please make sure popups are allowed for this site.'
+      };
+    }
+    newWindow.location.href = redirectUrl;
+    return { success: true };
+  } catch {
+    return {
+      success: false,
+      message: 'Sharing failed. Please check permissions.'
+    };
+  }
+}
 
 export const requestRedirectPermission = async (): Promise<boolean> => {
   try {
