@@ -150,7 +150,20 @@ class SolrQueryIAB(SolrQuery):
                 score = float(score_str)
             except ValueError:
                 score = 0.0
-            res[key].append((key, score))
+            
+            #process the subtopic after the '/'
+            parts = key.split('/')
+
+            if len(parts) >= 2:
+
+
+
+                res[key].append((parts[1].strip(), score))
+            elif len(parts) == 1:
+                res[key].append((parts[0], score))
+            else:
+                print("the current parts seperated: ", parts)
+                res[key].append((key, score))
         return res
     
     # def test_open(self):

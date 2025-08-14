@@ -1,1 +1,1 @@
-The webpage is about contributing to the development of a project on GitHub called wilsonliu2. It mentions a specific action that will remove a repository from a list it has been added to.
+Datadog, Inc. is a cloud-native company specializing in analyzing machine data through its software as a service platform. This allows clients to monitor and analyze their IT infrastructure in real-time by ingesting and processing large amounts of machine-generated data for various business applications.
