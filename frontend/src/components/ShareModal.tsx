@@ -3,7 +3,7 @@ import { shareTo } from "@/lib/utils";
 import PlatformButton from "./PlatformButton";
 
 interface PlatformProps {
-  platform: "slack" | "instagram" | "gmail";
+  platform: "slack" | "instagram" | "gmail" | "messages";
 }
 
 const PlatformValues: PlatformProps[] = [
@@ -16,6 +16,9 @@ const PlatformValues: PlatformProps[] = [
   {
     platform: "gmail",
   },
+  {
+    platform: "messages",
+  }
 ];
 
 const ShareModal = ({ onClose, bookmarkUrl }) => {
@@ -46,13 +49,12 @@ const ShareModal = ({ onClose, bookmarkUrl }) => {
           </button>
         </div>
 
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="grid grid-cols-4 gap-4 mb-4">
           {PlatformValues.map((platformProp, index) => (
             <PlatformButton
               key={index}
               platform={platformProp.platform}
               onClick={() => handleShare(platformProp.platform)}
-              comingSoon
             />
           ))}
         </div>
