@@ -182,7 +182,7 @@ function renderLoginInterface() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     try {
-      const LOGIN_URL = `${backend_url}/api/chrome/login`;
+      const LOGIN_URL = `${backend_url}/user/chrome/login`;
       const response = await fetch(LOGIN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
