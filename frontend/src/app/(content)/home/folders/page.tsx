@@ -4,9 +4,8 @@ import FolderLayout from "./FolderLayout";
 import { Plus, ChevronDown } from "lucide-react";
 import FolderCard from "./foldercomponents/FolderCard";
 import { createFolder } from "./functions/foldercreate";
-import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { fetchHomeFolders } from "./functions/folderfetch";
-import { useRouter } from "next/navigation";
 import {
   Popover,
   PopoverContent,
@@ -29,6 +28,8 @@ interface ResponseModel {
   message: string;
 }
 
+const sortOptions = ["Latest", "Oldest", "Name A-Z", "Name Z-A"];
+
 function page() {
   const [sortBy, setSortBy] = useState("Latest");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -39,7 +40,6 @@ function page() {
     const updateFolderPosition = () => {
       switch (sortBy.trim()) {
         case "Latest":
-          console.log("Sorting by latest");
           setFolders((prev) => {
             const sorted = [...prev].sort((a, b) => {
               const aDate = new Date(a.createdAt);
@@ -51,7 +51,6 @@ function page() {
 
           break;
         case "Oldest":
-          console.log("Sorting bu oldest");
           setFolders((prev) => {
             const sorted = [...prev].sort((a, b) => {
               const aDate = new Date(a.createdAt);
@@ -63,7 +62,6 @@ function page() {
 
           break;
         case "Name A-Z":
-          console.log("Sorting by name a-z");
           setFolders((prev) => {
             const sorted = [...prev].sort((a, b) => {
               return a.folderName
@@ -76,7 +74,6 @@ function page() {
           break;
 
         case "Name Z-A":
-          console.log("Sorting by z - a");
           setFolders((prev) => {
             const sorted = [...prev]
               .sort((a, b) => {
@@ -113,15 +110,17 @@ function page() {
 
       if (data && data.success) {
         console.log("successfully deleted");
-        //Remove the bookmark with the bookmark id
         setFolders((prev) =>
           prev.filter((folder) => folder.folderId != folderId)
         );
+
+        toast.success("Folder succesfully deleted");
       } else {
         console.log("An error occured on the server: ", data.message);
       }
     } catch (error) {
       console.log("error occured in handleFolerDelete: ", error);
+      toast.error("Error occured when trying to delete folder");
     }
   };
 
@@ -129,8 +128,6 @@ function page() {
     foldername: string;
     folderId: string | null;
   }
-
-  const sortOptions = ["Latest", "Oldest", "Name A-Z", "Name Z-A"];
 
   useEffect(() => {
     const fetchFolders = async () => {
@@ -166,6 +163,7 @@ function page() {
           fileCount: folder_details.file_count,
         };
         setFolders((prev) => [newFolder, ...prev]);
+        toast.success("Folder created succesfully");
       }
     } catch (error) {
       console.error("Error creating folder:", error);
