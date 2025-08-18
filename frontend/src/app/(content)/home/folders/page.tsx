@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import FolderLayout from "./FolderLayout";
-import { Plus, Filter, ChevronDown } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
 import FolderCard from "./foldercomponents/FolderCard";
 import { createFolder } from "./functions/foldercreate";
 import { Toaster } from "@/components/ui/sonner";
@@ -14,12 +14,11 @@ import {
 } from "@/components/ui/popover";
 import { fetchToken } from "@/functions/user/UserData";
 
-import BookmarkLayout from "../BookmarkLayout";
 import { UUID } from "crypto";
 
 interface FolderDetail {
   folderId: string;
-  createdAt: String;
+  createdAt: string;
   folderName: string;
   parentId: string;
   fileCount: number;
@@ -33,15 +32,70 @@ interface ResponseModel {
 function page() {
   const [sortBy, setSortBy] = useState("Latest");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [folderCreat, setFolderCreat] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [folders, setFolders] = useState<FolderDetail[]>([]);
 
-  // handle navigation via breadcrumb
-  const router = useRouter();
-  // const handleNavigateToFolder = (folderId: string) => {
-  //   router.push(`/folders/${folderId}`); // or whatever your dynamic route is
-  // };
+  useEffect(() => {
+    const updateFolderPosition = () => {
+      switch (sortBy.trim()) {
+        case "Latest":
+          console.log("Sorting by latest");
+          setFolders((prev) => {
+            const sorted = [...prev].sort((a, b) => {
+              const aDate = new Date(a.createdAt);
+              const bDate = new Date(b.createdAt);
+              return aDate.getTime() - bDate.getTime();
+            });
+            return sorted;
+          });
+
+          break;
+        case "Oldest":
+          console.log("Sorting bu oldest");
+          setFolders((prev) => {
+            const sorted = [...prev].sort((a, b) => {
+              const aDate = new Date(a.createdAt);
+              const bDate = new Date(b.createdAt);
+              return aDate.getTime() - bDate.getTime();
+            });
+            return sorted;
+          });
+
+          break;
+        case "Name A-Z":
+          console.log("Sorting by name a-z");
+          setFolders((prev) => {
+            const sorted = [...prev].sort((a, b) => {
+              return a.folderName
+                .toLocaleLowerCase()
+                .localeCompare(b.folderName.toLocaleLowerCase());
+            });
+            return sorted;
+          });
+
+          break;
+
+        case "Name Z-A":
+          console.log("Sorting by z - a");
+          setFolders((prev) => {
+            const sorted = [...prev]
+              .sort((a, b) => {
+                return a.folderName
+                  .toLocaleLowerCase()
+                  .localeCompare(b.folderName.toLocaleLowerCase());
+              })
+              .reverse();
+            return sorted;
+          });
+
+          break;
+        default:
+          console.log("Sorting option not available");
+      }
+    };
+
+    updateFolderPosition();
+  }, [sortBy]);
 
   const handleFolderDelete = async (folderId: UUID) => {
     try {
@@ -76,13 +130,7 @@ function page() {
     folderId: string | null;
   }
 
-  const sortOptions = [
-    "Latest",
-    "Oldest",
-    "Name A-Z",
-    "Name Z-A",
-    "Most Popular",
-  ];
+  const sortOptions = ["Latest", "Oldest", "Name A-Z", "Name Z-A"];
 
   useEffect(() => {
     const fetchFolders = async () => {
@@ -167,12 +215,6 @@ function page() {
               </div>
             </PopoverContent>
           </Popover>
-
-          {/* Filters Button */}
-          <button className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
-            <Filter size={16} />
-            Filters
-          </button>
 
           {/* Sort By Dropdown */}
           <div className="relative">
