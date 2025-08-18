@@ -12,7 +12,10 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { fetchToken } from "@/functions/user/UserData";
+
 import BookmarkLayout from "../BookmarkLayout";
+import { UUID } from "crypto";
 
 interface FolderDetail {
   folderId: string;
@@ -20,6 +23,11 @@ interface FolderDetail {
   folderName: string;
   parentId: string;
   fileCount: number;
+}
+
+interface ResponseModel {
+  success: boolean;
+  message: string;
 }
 
 function page() {
@@ -34,6 +42,34 @@ function page() {
   // const handleNavigateToFolder = (folderId: string) => {
   //   router.push(`/folders/${folderId}`); // or whatever your dynamic route is
   // };
+
+  const handleFolderDelete = async (folderId: UUID) => {
+    try {
+      const APIURL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/folder/${folderId}`;
+      const token = fetchToken();
+
+      const response = await fetch(APIURL, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data: ResponseModel = await response.json();
+
+      if (data && data.success) {
+        console.log("successfully deleted");
+        //Remove the bookmark with the bookmark id
+        setFolders((prev) =>
+          prev.filter((folder) => folder.folderId != folderId)
+        );
+      } else {
+        console.log("An error occured on the server: ", data.message);
+      }
+    } catch (error) {
+      console.log("error occured in handleFolerDelete: ", error);
+    }
+  };
 
   interface FolderCreateProps {
     foldername: string;
@@ -199,6 +235,7 @@ function page() {
             title={folder.folderName}
             fileCount={folder.fileCount}
             folderId={folder.folderId}
+            handleFolderDelete={handleFolderDelete}
           />
         ))}
       </div>

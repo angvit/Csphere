@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_current_user_id
 from app.data_models.folder import Folder
 from app.data_models.folder_item import folder_item
-from sqlalchemy import desc, func
+from sqlalchemy import desc, func, delete
 from app.data_models.content import Content
 from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
@@ -17,12 +17,15 @@ from app.utils.hashing import get_current_user_id
 from datetime import datetime
 from uuid import uuid4
 from uuid import UUID
+import logging
 
 
 
 router = APIRouter(
     tags=['folder'],
 )
+
+logger = logging.getLogger(__name__) 
 
 
 
@@ -209,3 +212,37 @@ def create_folder(folderDetails: FolderDetails, user_id: UUID=Depends(get_curren
 
     except Exception as e:
         return {'success' : False, 'message' : str(e)}
+
+
+@router.delete("/folder/{folder_id}")
+def deleteFolder(folder_id: UUID, user_id: UUID=Depends(get_current_user_id), db: Session = Depends(get_db)):
+    
+    try:
+        #make sure the folder_id exists 
+        exist = db.query(Folder).filter(
+                Folder.user_id == user_id,
+                Folder.folder_id == folder_id
+                    ).first()
+        
+        if not exist:
+            logger.error(f"Folder with folder id {folder_id} does not exist ")
+            return {'success' : False, 'message' : "Folder does not exists"}
+        
+        db.delete(exist)
+
+
+        db.commit()
+
+        logger.info(f"Folder id {folder_id} was deleted")
+
+        return {'success' : True, 'message' : "folder was deleted successfully"}
+        
+
+
+    
+
+
+    except Exception as e:
+
+        return {'success' : False, 'message' : str(e)}
+        
