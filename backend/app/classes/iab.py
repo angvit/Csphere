@@ -34,7 +34,7 @@ class SolrQueryIAB(SolrQuery):
     """Handles IAB-specific Solr operations."""
 
     def __init__(self, file_path: str = '', title: str = 'csphere-cat',
-                 file_url: str = '', ai_summary: str = ''):
+                 file_url: str = '', ai_summary: str = '', cutoff : float = .1):
         super().__init__()
         self.file_path = file_path
         self.title = title
@@ -42,6 +42,10 @@ class SolrQueryIAB(SolrQuery):
     
         self.file_url = file_url #make sure file_url is there
         self.ai_summary = ai_summary
+
+        self.cutoff = cutoff
+
+    
 
     def _build_metadata(self) -> str:
         """Returns standard metadata JSON."""
@@ -151,30 +155,30 @@ class SolrQueryIAB(SolrQuery):
             except ValueError:
                 score = 0.0
             
-            #process the subtopic after the '/'
-            parts = key.split('/')
+            if score >= self.cutoff:
+                #process the subtopic after the '/'
+                parts = key.split('/')
 
-            if len(parts) >= 2:
+                if len(parts) >= 2:
 
 
 
-                res[key].append((parts[1].strip(), score))
-            elif len(parts) == 1:
-                res[key].append((parts[0], score))
-            else:
-                print("the current parts seperated: ", parts)
-                res[key].append((key, score))
+                    res[key].append((parts[1].strip(), score))
+                elif len(parts) == 1:
+                    res[key].append((parts[0], score))
+                else:
+                    print("the current parts seperated: ", parts)
+                    res[key].append((key, score))
         return res
     
-    # def test_open(self):
-    #     text = 'The webpage features a YouTube video clip from the TV show "Suits" showcasing a confrontation between characters Mike Ross and Nick Rinaldi. The show follows the story of a high-stakes Manhattan corporate law firm and the dynamics between the characters as they navigate the legal world.'
-    #     self.ai_summary = text
-    #     with open('dummy.txt', 'w') as file:
-    #         file.write(self.ai_summary)
+    #Setters and getters
+    def setCutOff(self, cutoff: float) -> None :
 
-    #     with open('dummy.txt', 'r') as file:
-    #         text_string = file.read()
-    #         print("returned string: ", text_string)
+        self.cutoff = cutoff
+    
+
+
+    #Helper functions 
     def print_dict(self, dic: dict):
         """Pretty prints dictionary contents."""
         for key, values in dic.items():
