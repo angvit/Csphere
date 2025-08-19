@@ -58,3 +58,5 @@ class CategoryItem(BaseModel):
 class UserSavedContentResponse(BaseModel):
     bookmarks: list[UserSavedContent]
     categories: Optional[list[CategoryOut] ]
+    next_cursor: Optional[str]
+    has_next: bool
