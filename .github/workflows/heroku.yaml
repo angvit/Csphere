@@ -1,4 +1,4 @@
-name: Backend deployment on heroku
+name: Backend deployment on Heroku
 
 on:
   push:
@@ -10,11 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout github code
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up python enviorment for backend
-
+      - name: Set up Python environment
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
@@ -25,3 +24,4 @@ jobs:
           heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
           heroku_app_name: ${{ secrets.HEROKU_APP_NAME }}
           heroku_email: ${{ secrets.HEROKU_EMAIL }}
+          branch: heroku
