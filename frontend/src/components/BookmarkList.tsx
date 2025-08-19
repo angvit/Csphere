@@ -30,8 +30,8 @@ export default function BookmarkList({ items }: { items: Bookmark[] }) {
           : "grid-cols-1"
       }`}
     >
-      {items.map((item) => (
-        <BookmarkCard key={item.content_id} bookmark={item} />
+      {items.map((item, index) => (
+        <BookmarkCard key={index} bookmark={item} />
       ))}
     </div>
   );
