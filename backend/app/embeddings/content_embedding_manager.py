@@ -96,25 +96,27 @@ class ContentEmbeddingManager:
             db = self.db
             for tag, cat_list in categories.items():
                 # get the first element's name from the list of tuples
+
                 category_name = cat_list[0][0]
+                if category_name.strip() != '':
 
-                exists = db.query(Category).filter(Category.category_name == category_name).first()
+                    exists = db.query(Category).filter(Category.category_name == category_name).first()
 
-                if exists:
-                    category_set.add(exists.category_id)
-                    continue
+                    if exists:
+                        category_set.add(exists.category_id)
+                        continue
 
-                utc_time = datetime.now(timezone.utc)
+                    utc_time = datetime.now(timezone.utc)
 
-                new_category = Category(
-                    category_id=uuid4(),
-                    category_name=category_name,
-                    created_at=utc_time,
-                    date_modified=utc_time
-                )
+                    new_category = Category(
+                        category_id=uuid4(),
+                        category_name=category_name,
+                        created_at=utc_time,
+                        date_modified=utc_time
+                    )
 
-                db.add(new_category)
-                category_set.add(new_category.category_id)
+                    db.add(new_category)
+                    category_set.add(new_category.category_id)
 
             db.flush()
 

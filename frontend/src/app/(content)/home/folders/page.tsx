@@ -1,52 +1,133 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import FolderLayout from "./FolderLayout";
-import { Plus, Filter, ChevronDown } from "lucide-react";
+import { Plus, ChevronDown } from "lucide-react";
 import FolderCard from "./foldercomponents/FolderCard";
 import { createFolder } from "./functions/foldercreate";
-import { Toaster } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { fetchHomeFolders } from "./functions/folderfetch";
-import { useRouter } from "next/navigation";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import BookmarkLayout from "../BookmarkLayout";
+import { fetchToken } from "@/functions/user/UserData";
+
+import { UUID } from "crypto";
 
 interface FolderDetail {
   folderId: string;
-  createdAt: String;
+  createdAt: string;
   folderName: string;
   parentId: string;
   fileCount: number;
 }
 
+interface ResponseModel {
+  success: boolean;
+  message: string;
+}
+
+const sortOptions = ["Latest", "Oldest", "Name A-Z", "Name Z-A"];
+
 function page() {
   const [sortBy, setSortBy] = useState("Latest");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [folderCreat, setFolderCreat] = useState(false);
   const [folderName, setFolderName] = useState("");
   const [folders, setFolders] = useState<FolderDetail[]>([]);
 
-  // handle navigation via breadcrumb
-  const router = useRouter();
-  // const handleNavigateToFolder = (folderId: string) => {
-  //   router.push(`/folders/${folderId}`); // or whatever your dynamic route is
-  // };
+  useEffect(() => {
+    const updateFolderPosition = () => {
+      switch (sortBy.trim()) {
+        case "Latest":
+          setFolders((prev) => {
+            const sorted = [...prev].sort((a, b) => {
+              const aDate = new Date(a.createdAt);
+              const bDate = new Date(b.createdAt);
+              return aDate.getTime() - bDate.getTime();
+            });
+            return sorted;
+          });
+
+          break;
+        case "Oldest":
+          setFolders((prev) => {
+            const sorted = [...prev].sort((a, b) => {
+              const aDate = new Date(a.createdAt);
+              const bDate = new Date(b.createdAt);
+              return aDate.getTime() - bDate.getTime();
+            });
+            return sorted;
+          });
+
+          break;
+        case "Name A-Z":
+          setFolders((prev) => {
+            const sorted = [...prev].sort((a, b) => {
+              return a.folderName
+                .toLocaleLowerCase()
+                .localeCompare(b.folderName.toLocaleLowerCase());
+            });
+            return sorted;
+          });
+
+          break;
+
+        case "Name Z-A":
+          setFolders((prev) => {
+            const sorted = [...prev]
+              .sort((a, b) => {
+                return a.folderName
+                  .toLocaleLowerCase()
+                  .localeCompare(b.folderName.toLocaleLowerCase());
+              })
+              .reverse();
+            return sorted;
+          });
+
+          break;
+        default:
+          console.log("Sorting option not available");
+      }
+    };
+
+    updateFolderPosition();
+  }, [sortBy]);
+
+  const handleFolderDelete = async (folderId: UUID) => {
+    try {
+      const APIURL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/folder/${folderId}`;
+      const token = fetchToken();
+
+      const response = await fetch(APIURL, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      const data: ResponseModel = await response.json();
+
+      if (data && data.success) {
+        console.log("successfully deleted");
+        setFolders((prev) =>
+          prev.filter((folder) => folder.folderId != folderId)
+        );
+
+        toast.success("Folder succesfully deleted");
+      } else {
+        console.log("An error occured on the server: ", data.message);
+      }
+    } catch (error) {
+      console.log("error occured in handleFolerDelete: ", error);
+      toast.error("Error occured when trying to delete folder");
+    }
+  };
 
   interface FolderCreateProps {
     foldername: string;
     folderId: string | null;
   }
-
-  const sortOptions = [
-    "Latest",
-    "Oldest",
-    "Name A-Z",
-    "Name Z-A",
-    "Most Popular",
-  ];
 
   useEffect(() => {
     const fetchFolders = async () => {
@@ -82,6 +163,7 @@ function page() {
           fileCount: folder_details.file_count,
         };
         setFolders((prev) => [newFolder, ...prev]);
+        toast.success("Folder created succesfully");
       }
     } catch (error) {
       console.error("Error creating folder:", error);
@@ -131,12 +213,6 @@ function page() {
               </div>
             </PopoverContent>
           </Popover>
-
-          {/* Filters Button */}
-          <button className="bg-white hover:bg-gray-50 border border-gray-200 text-gray-700 px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
-            <Filter size={16} />
-            Filters
-          </button>
 
           {/* Sort By Dropdown */}
           <div className="relative">
@@ -199,6 +275,7 @@ function page() {
             title={folder.folderName}
             fileCount={folder.fileCount}
             folderId={folder.folderId}
+            handleFolderDelete={handleFolderDelete}
           />
         ))}
       </div>
