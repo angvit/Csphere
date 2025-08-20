@@ -5,9 +5,8 @@ import BookmarkList from "./BookmarkList";
 import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 import CategoryFilter from "./CategoryFilter";
-import { fetchToken } from "@/functions/user/UserData";
-
 import Loading from "./ux/Loading";
+
 type ChildProps = {
   activeTab?: string;
 };
@@ -16,6 +15,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [cursor, setCursor] = useState("");
+  const [hasNext, setHasNext] = useState(false);
 
   const loadNextBatch = async (query = "") => {
     const token = document.cookie
@@ -51,6 +51,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       // setBookmarks(data.bookmarks);
       setCategories((prev) => [...prev, ...data.categories]);
       // setCategories(data.categories);
+      setHasNext(data.has_next);
       if (data.has_next) {
         setCursor(data.next_cursor);
       }
@@ -108,7 +109,9 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}
-      <button onClick={() => loadNextBatch()}>load next</button>
+      {hasNext && bookmarks.length > 0 && (
+        <button onClick={() => loadNextBatch()}>load next</button>
+      )}
     </BookmarkLayout>
   );
 };

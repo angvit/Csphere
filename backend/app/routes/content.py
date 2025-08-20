@@ -220,7 +220,9 @@ def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session
 
     return {
         "bookmarks": bookmark_data,
-        "categories": list(unique_categories)
+        "categories": list(unique_categories),
+        "next_cursor" : None, 
+        "has_next" : None
     }
 
 
@@ -278,7 +280,10 @@ def get_user_content(
                 tags=tags
             )
         )
+
         category_list.extend(tags)
+
+    
 
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
 
