@@ -21,9 +21,9 @@ const categories = [
 export default function CategoryFilter({ categories }) {
   return (
     <div className="flex flex-wrap gap-2 justify-start mb-8">
-      {categories?.map((category) => (
+      {categories?.map((category, index) => (
         <button
-          key={category.category_id}
+          key={index}
           className="px-3 py-1 rounded-full border-[0.5px] border-black text-sm text-black hover:bg-gray-100 transition-colors bg-gray-300"
         >
           {category.category_name}

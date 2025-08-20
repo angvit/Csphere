@@ -52,7 +52,6 @@ export function BookmarkDetailModal({
   const [copiedUrl, setCopiedUrl] = useState(false);
 
   if (!bookmark) return null;
-  console.log("bookmark data: ", bookmark);
 
   const handleCopyUrl = async () => {
     await navigator.clipboard.writeText(bookmark.url);
