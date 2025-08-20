@@ -1,4 +1,4 @@
-name: Backend deployment on Heroku
+name: Backend deployment via Heroku
 
 on:
   push:
@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Set up Python environment
         uses: actions/setup-python@v5
