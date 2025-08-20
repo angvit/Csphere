@@ -58,9 +58,14 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
             )
         )
 
+    #  next_cursor: Optional[str]
+    # has_next: Optional[bool]
+
     return {
         "bookmarks": bookmark_data,
-        "categories": []  # or `None`, depending on how you define Optional
+        "categories": [] , # or `None`, depending on how you define Optional
+        "next_cursor" : None,
+        "has_next" : None
     }
 
 

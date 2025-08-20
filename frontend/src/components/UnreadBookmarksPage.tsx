@@ -1,25 +1,14 @@
 "use client";
 
 import { useEffect, useState, useContext } from "react";
-
 import BookmarkList from "./BookmarkList";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 import { LayoutContext } from "@/app/(content)/home/BookmarkLayout";
-import { list } from "postcss";
 import CategoryFilter from "./CategoryFilter";
 
 type ChildProps = {
   activeTab?: string;
 };
-
-// "bookmarks": bookmark_data,
-//       "categories": list(unique_categories),
-//       "next_cursor" : next_cursor,
-//       "has_next" : has_next
-
-// interface bookmark  {
-
-// }
 
 type dataParmas = {
   bookmarks: [];
