@@ -1,15 +1,9 @@
 // components/BookmarkLayout.tsx
 
 import React, { ReactNode, useState, useEffect, createContext } from "react";
-import SearchInput from "@/components/SearchInput";
-import CategoryFilter from "@/components/CategoryFilter";
-// import LatestButton from "@/app/components/home/LatestButton";
-// import UnreadButton from "@/app/components/home/UnreadButton";
-// import FolderButton from "@/app/components/home/FolderButton";
 import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Filter, Grid3X3, List, Folder, Clock, BookOpen } from "lucide-react";
+import { Grid3X3, List, Folder, Clock, BookOpen } from "lucide-react";
 import { Tabs, TabsList } from "@/components/ui/tabs";
 import { fetchToken } from "@/functions/user/UserData";
 

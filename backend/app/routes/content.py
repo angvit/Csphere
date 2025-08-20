@@ -26,6 +26,8 @@ router = APIRouter(
 
 logger = logging.getLogger(__name__) 
 
+PAGE_SIZE = 18
+
 
 
 @router.get("/content/search", response_model=UserSavedContentResponse)
@@ -56,9 +58,14 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
             )
         )
 
+    #  next_cursor: Optional[str]
+    # has_next: Optional[bool]
+
     return {
         "bookmarks": bookmark_data,
-        "categories": []  # or `None`, depending on how you define Optional
+        "categories": [] , # or `None`, depending on how you define Optional
+        "next_cursor" : None,
+        "has_next" : None
     }
 
 
@@ -184,18 +191,38 @@ def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session =
 
 
 @router.get("/content/unread", response_model=UserSavedContentResponse)
-def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def get_unread_content(cursor : str = None,  user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
-    results = (
+
+    cursor_dt = None
+    if cursor:
+        try:
+            cursor_dt = isoparse(cursor)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid cursor format. Use ISO8601 datetime.")
+
+
+
+    query = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
-        .options(joinedload(Content.categories))  # Eager load categories
+        .options(joinedload(Content.categories)) 
         .filter(ContentItem.user_id == user_id, Content.read == False)
-        .order_by(desc(ContentItem.saved_at))
-        .all()
+        # .order_by(desc(ContentItem.saved_at))
+        # .all()
     )
 
+    if cursor_dt:
+        query = query.filter(ContentItem.saved_at < cursor_dt)
+
+    query = query.order_by(desc(ContentItem.saved_at)).limit(PAGE_SIZE + 1)
+
+    results = query.all()
+
+    has_next = len(results) > PAGE_SIZE
+
+        
     bookmark_data = []
     category_list = []
 
@@ -217,10 +244,14 @@ def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session
 
     # Deduplicate categories by category_id
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
+    next_cursor = bookmark_data[-1].first_saved_at.isoformat() if bookmark_data else None
+
 
     return {
         "bookmarks": bookmark_data,
-        "categories": list(unique_categories)
+        "categories": list(unique_categories),
+        "next_cursor" : next_cursor, 
+        "has_next" : has_next
     }
 
 
@@ -231,7 +262,7 @@ def get_user_content(
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-    PAGE_SIZE = 18
+
 
     # Parse cursor into datetime if provided
     cursor_dt = None
@@ -278,7 +309,10 @@ def get_user_content(
                 tags=tags
             )
         )
+
         category_list.extend(tags)
+
+    
 
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
 
