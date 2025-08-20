@@ -38,6 +38,8 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
   const [editNotes, setEditNotes] = useState<boolean>(false);
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
 
+  console.log("bookmark data being returned; ", bookmark);
+
   const token = document.cookie
     .split("; ")
     .find((row) => row.startsWith("token="))
