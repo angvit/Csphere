@@ -66,7 +66,7 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
 
 
-
+#switching to the active MQ arch
 @router.post("/content/save")
 def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     notes = content.notes
@@ -84,9 +84,30 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
         utc_time = datetime.now(timezone.utc)
 
 
-
+        #adding the content shouldn't take long, getting the categories is what we shoud push to the MQ 
         if not existing_content:
             #create the new content
+
+            #send over the json content 
+            payload = {
+                "content_payload": {
+                    'url': content.url,
+                    'title': content.title, 
+                    'source': "chrome_extension", 
+                    'user_id': user_id, 
+                    'first_saved_at' : utc_time,
+                    'read': False 
+                },
+                'raw_html': content.html,
+                'user_id': user_id, 
+                'notes': notes,
+                'folder_id': content.folder_id
+            }
+
+            #starting from here use the message queue and continue with the other logic 
+            
+            return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
+            #bottom logic will follow in the files 
             new_content = Content(
                 url=content.url,
                 title=content.title,
@@ -99,11 +120,14 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
             db.flush()  # generate content_id without commit
 
             # Generate embedding only for new content
+            #pass along the content url 
             print("generating manager")
             embedding_manager = ContentEmbeddingManager(db, content_url=content.url)
             print("done generating")
             raw_html = content.html
             content_ai = embedding_manager.process_content(new_content, raw_html)
+
+            #keep this 
             db.commit()
 
             if not content_ai:
