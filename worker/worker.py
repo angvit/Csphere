@@ -12,12 +12,63 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from uuid import uuid4
 from datetime import datetime, timezone
+import logging
+
+from .data_models.content import Content
+from .data_models.content_ai import ContentAI
+from .data_models.category import Category
+from .data_models.content_item import ContentItem
+from .data_models.folder_item import folder_item
+
+from classes import iab
 
 
-from app.data_models.content import Content
-from app.data_models.content_ai import ContentAI
-from app.data_models.category import Category
-from app.classes import iab
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, declarative_base
+from dotenv import load_dotenv
+
+#Logging config stuff
+logging.basicConfig(filename="csphere-logs.log",
+                    format='%(asctime)s %(message)s',
+                    filemode='w')
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+if DATABASE_URL.startswith('postgres://'):
+    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
+logging.info()
+
+try:
+    engine = create_engine(DATABASE_URL, connect_args={
+        "options": "-c timezone=UTC"
+    })
+    logging.info("Database connection established with engine ")
+except Exception as e:
+    logging.error(f"Connection falied: {e}")
+
+# managing transactions and DB state
+SessionLocal = sessionmaker(bind=engine)
+
+#Initialize the base for all datamodels -> same as the data models in the backend server 
+Base = declarative_base()
+
+# yield a fresh session per request (FASTAPI)
+def get_db():
+    logging.info('Creating new DB session')
+    # session instance
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
 
 
 class ContentEmbeddingManager:
@@ -36,15 +87,12 @@ class ContentEmbeddingManager:
         self.embedding_model_name = embedding_model_name
         self.summary_model = summary_model_name
         self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        # self.kw_model = KeyBERT(model='all-MiniLM-L6-v2')
 
-        print("Setting new files with content url: ", content_url)
-
+        
         self.categorizer = iab.SolrQueryIAB(file_path="dummy.txt", file_url=content_url)
 
         self.ai_summary = ''
 
-        print("class initalized")
 
 
 
@@ -52,8 +100,19 @@ class ContentEmbeddingManager:
     # METHODS
     ###############################################################################
 
+    #
 
-    def process_content(self, content: Content, raw_html)-> ContentAI | None:
+    # content_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    # user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"))
+    # url = Column(String, unique=True, nullable=False)   
+    # title = Column(String, nullable=True)
+    # source = Column(String, nullable=True)
+    # first_saved_at = Column(TIMESTAMP(timezone=True), default=func.now())
+    # read = Column(Boolean, nullable=False, server_default=text('false'))
+    # content_ai = relationship("ContentAI", backref="content", uselist=False)
+
+    #Note: Save contentAi directly to DB here 
+    def process_content(self, content : Content, raw_html) -> None:
         '''
         Inserts content into the database if it doesn't exist, summarizes it, and embeds the summary
         If any exceptions occur, the transaction will be rolled back
@@ -142,6 +201,8 @@ class ContentEmbeddingManager:
 
             self.db.add(content_ai)
             self.db.commit()
+
+            #start from here
             return content_ai
         
         
@@ -332,7 +393,13 @@ class ContentEmbeddingManager:
                         "role": "system", 
                          "content": (
                              "Summarize the following webpage content in 2-3 sentences"
-                      
+                            # "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
+                            # "Use the following process to ensure accuracy and relevance:\n\n"
+                            # "1. Identify the main topic of the article.\n"
+                            # "2. Extract any key details related to this main topic.\n"
+                            # "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
+                            # "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
+                            # "Make sure to keep a neutral tone throughout the summary."
                     )
                     },
                     {"role": "user", "content": summary_input},
@@ -344,3 +411,116 @@ class ContentEmbeddingManager:
         except Exception as e:
             print(f"OpenAI summarization failed: {e}")
             return None
+
+
+
+if __name__ == '__main__':
+    #pull from active MQ : 
+
+    message = {
+        "content_payload": {
+            "url": "https://www.nationalgeographic.com/travel/article/best-places-to-visit-2025",
+            "title": "The Best Places to Visit in 2025",
+            "source": "chrome_extension",
+            "user_id": "user_12345",
+            "first_saved_at": "2025-10-08T20:12:45Z",
+            "read": False
+        },
+        "raw_html": """
+            <html>
+                <head><title>The Best Places to Visit in 2025</title></head>
+                <body>
+                    <h1>Top Destinations for 2025</h1>
+                    <p>From Japan’s cherry blossoms to the fjords of Norway, these are the most anticipated travel spots for the year.</p>
+                </body>
+            </html>
+        """,
+        "user_id": "user_12345",
+        "notes": "Highlight section about Japan and Norway for next trip planning."
+    }
+
+    db = get_db() # get the DB connection 
+
+
+            # payload = {
+            #     "content_payload": {
+            #         'url': content.url,
+            #         'title': content.title, 
+            #         'source': "chrome_extension", 
+            #         'user_id': user_id, 
+            #         'first_saved_at' : utc_time,
+            #         'read': False 
+            #     },
+            #     'raw_html': content.html
+            #     'user_id' : user_id
+            #     'notes' : notes
+            # }
+
+
+    #Create the Content object 
+    user_id = message.get('user_id')
+    notes = message.get('notes')
+    folder_id = message.get('folder_id', '')
+    content_data = json.loads(message.get('content_payload', {}))
+    new_content = Content(**content_data)
+    
+    try:
+        db.add(new_content)
+        db.flush()
+        content_manager = ContentEmbeddingManager(db=db, content_url=new_content.url)
+
+        raw_html = message.get('raw_html', '')
+
+        if raw_html == '':
+            logging.info("No raw html provided, categorization and summarization may be poor")
+
+        content_ai = content_manager.process_content(new_content, raw_html)
+
+        db.commit()
+
+        if not content_ai:
+            logging.info("Embedding generation failed or skipped.")
+        else:
+            logging.debug(f"Summary Generated: {content_ai.ai_summary}")
+
+            # Check if this user already saved this content
+            existing_item = db.query(ContentItem).filter(
+                ContentItem.user_id == user_id,
+                ContentItem.content_id == new_content.content_id
+            ).first()
+
+
+            utc_time = datetime.now(timezone.utc)
+
+            if not existing_item:
+                new_item = ContentItem(
+                    user_id=user_id,
+                    content_id=new_content.content_id,
+                    saved_at=utc_time,
+                    notes=notes
+                )
+                db.add(new_item)
+                db.commit()
+
+                saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
+
+                # Add to the corresponding folder if any
+                if folder_id and folder_id != '' and folder_id != 'default':
+                    new_folder_item = folder_item(
+                        folder_item_id=uuid4(),
+                        folder_id=folder_id,
+                        user_id=user_id,
+                        content_id=new_content.content_id,
+                        added_at=datetime.utcnow()
+                    )
+
+                    db.add(new_folder_item)
+                    db.commit()
+                    db.refresh(new_folder_item)
+                else:
+                    print("No valid folder id found, skipping this part")
+
+            logging.info("Successfully saved content for user.")
+
+    except Exception as e:
+        logging.error(f"Error occurred while saving the bookmark: {str(e)}")
