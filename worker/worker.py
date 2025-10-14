@@ -11,21 +11,28 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 from uuid import uuid4
+from email.utils import quote
+import time
+
 from datetime import datetime, timezone
 import logging
 
-from .data_models.content import Content
-from .data_models.content_ai import ContentAI
-from .data_models.category import Category
-from .data_models.content_item import ContentItem
-from .data_models.folder_item import folder_item
+from data_models.content import Content
+from data_models.content_ai import ContentAI
+from data_models.category import Category
+from data_models.content_item import ContentItem
+from data_models.folder_item import folder_item
+from database import get_db
 
+from summarizer_model import SummarizerModel
 from classes import iab
 
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
+
+import instructor
 
 #Logging config stuff
 logging.basicConfig(filename="csphere-logs.log",
@@ -37,37 +44,6 @@ logger.setLevel(logging.DEBUG)
 
 
 load_dotenv()
-
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-if DATABASE_URL.startswith('postgres://'):
-    DATABASE_URL = DATABASE_URL.replace('postgres://', 'postgresql://', 1)
-logging.info()
-
-try:
-    engine = create_engine(DATABASE_URL, connect_args={
-        "options": "-c timezone=UTC"
-    })
-    logging.info("Database connection established with engine ")
-except Exception as e:
-    logging.error(f"Connection falied: {e}")
-
-# managing transactions and DB state
-SessionLocal = sessionmaker(bind=engine)
-
-#Initialize the base for all datamodels -> same as the data models in the backend server 
-Base = declarative_base()
-
-# yield a fresh session per request (FASTAPI)
-def get_db():
-    logging.info('Creating new DB session')
-    # session instance
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
 
 
 
@@ -86,7 +62,8 @@ class ContentEmbeddingManager:
         self.embedding_model = embedding_model_name
         self.embedding_model_name = embedding_model_name
         self.summary_model = summary_model_name
-        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY")) 
+        self.instructor_client = instructor.from_provider('openai/gpt-4o-mini', api_key=os.getenv("OPENAI_API_KEY"))
 
         
         self.categorizer = iab.SolrQueryIAB(file_path="dummy.txt", file_url=content_url)
@@ -129,7 +106,7 @@ class ContentEmbeddingManager:
 
 
             # Use LLM to summarize the content
-            summary = self._summarize_content(summary_input) 
+            summary, categories = self._summarize_content(summary_input) 
 
             self._store_article_summary_pair(
                 article_text= summary_input,
@@ -144,8 +121,7 @@ class ContentEmbeddingManager:
             
             self.ai_summary = summary
             
-            print("generating categories: ")
-            categories = self.generateCategories()
+            # categories = self.generateCategories()
 
             print("categories returned: ", categories)
 
@@ -153,10 +129,9 @@ class ContentEmbeddingManager:
             #Now create categories that are not yet in the DB
             category_set = set()
             db = self.db
-            for tag, cat_list in categories.items():
+            for category_name in categories:
                 # get the first element's name from the list of tuples
 
-                category_name = cat_list[0][0]
                 if category_name.strip() != '':
 
                     exists = db.query(Category).filter(Category.category_name == category_name).first()
@@ -386,60 +361,81 @@ class ContentEmbeddingManager:
     
     def _summarize_content(self, summary_input):
         try:
-            response = self.openai_client.chat.completions.create(
-                model=self.summary_model,
-                messages=[
-                    {
-                        "role": "system", 
-                         "content": (
-                             "Summarize the following webpage content in 2-3 sentences"
-                            # "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
-                            # "Use the following process to ensure accuracy and relevance:\n\n"
-                            # "1. Identify the main topic of the article.\n"
-                            # "2. Extract any key details related to this main topic.\n"
-                            # "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
-                            # "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
-                            # "Make sure to keep a neutral tone throughout the summary."
-                    )
-                    },
-                    {"role": "user", "content": summary_input},
-                ],
-                temperature=0.6,
-                max_tokens=150,
+            categories = [
+                "Science & Technology",
+                "Arts & Entertainment",
+                "News & Politics",
+                "History & Culture",
+                "Health & Wellness",
+                "Business & Finance",
+                "Education & Learning",
+                "Home & Lifestyle",
+                "Nature & Environment",
+                "Sports & Recreation"
+            ]
+            # response = self.openai_client.chat.completions.create(
+            #     model=self.summary_model,
+            #     messages=[
+            #         {
+            #             "role": "system", 
+            #              "content": (
+            #                  "Summarize the following webpage content in 2-3 sentences"
+                   
+            #         )
+            #         },
+            #         {"role": "user", "content": summary_input},
+            #     ],
+            #     temperature=0.9,
+            #     max_tokens=150,
+            # )
+            # return response.choices[0].message.content.strip()
+
+
+            summarizer_data = self.instructor_client.chat.completions.create(
+                response_model = SummarizerModel,
+                    messages=[{
+                        "role": "user", 
+                        "content": f"""
+                         Summarize the following webpage content in 2-3 sentences. Along with summarizing the content 
+                         give me 2 categories the content can fall into these categories {categories}. 
+                         Here is the content : {summary_input} 
+                        """
+                    }],
+                    max_retries=3
             )
-            return response.choices[0].message.content.strip()
+            logging.info(f"The following data: {summarizer_data}")
+            return summarizer_data.summary, summarizer_data.categories
         except Exception as e:
             print(f"OpenAI summarization failed: {e}")
             return None
 
+def handle_message(message):
+    print("made it into handle message")
+    # message = {
+    #     "content_payload": {
+    #         "url": "https://www.nationalgeographic.com/travel/article/best-places-to-visit-2025",
+    #         "title": "The Best Places to Visit in 2025",
+    #         "source": "chrome_extension",
+    #         "user_id": "user_12345",
+    #         "first_saved_at": "2025-10-08T20:12:45Z",
+    #         "read": False
+    #     },
+    #     "raw_html": """
+    #         <html>
+    #             <head><title>The Best Places to Visit in 2025</title></head>
+    #             <body>
+    #                 <h1>Top Destinations for 2025</h1>
+    #                 <p>From Japan’s cherry blossoms to the fjords of Norway, these are the most anticipated travel spots for the year.</p>
+    #             </body>
+    #         </html>
+    #     """,
+    #     "user_id": "user_12345",
+    #     "notes": "Highlight section about Japan and Norway for next trip planning."
+    # }
 
+    db_gen = get_db()
+    db = next(db_gen)
 
-if __name__ == '__main__':
-    #pull from active MQ : 
-
-    message = {
-        "content_payload": {
-            "url": "https://www.nationalgeographic.com/travel/article/best-places-to-visit-2025",
-            "title": "The Best Places to Visit in 2025",
-            "source": "chrome_extension",
-            "user_id": "user_12345",
-            "first_saved_at": "2025-10-08T20:12:45Z",
-            "read": False
-        },
-        "raw_html": """
-            <html>
-                <head><title>The Best Places to Visit in 2025</title></head>
-                <body>
-                    <h1>Top Destinations for 2025</h1>
-                    <p>From Japan’s cherry blossoms to the fjords of Norway, these are the most anticipated travel spots for the year.</p>
-                </body>
-            </html>
-        """,
-        "user_id": "user_12345",
-        "notes": "Highlight section about Japan and Norway for next trip planning."
-    }
-
-    db = get_db() # get the DB connection 
 
 
             # payload = {
@@ -461,7 +457,7 @@ if __name__ == '__main__':
     user_id = message.get('user_id')
     notes = message.get('notes')
     folder_id = message.get('folder_id', '')
-    content_data = json.loads(message.get('content_payload', {}))
+    content_data = message.get('content_payload', {})
     new_content = Content(**content_data)
     
     try:
@@ -524,3 +520,175 @@ if __name__ == '__main__':
 
     except Exception as e:
         logging.error(f"Error occurred while saving the bookmark: {str(e)}")
+
+    logging.info("Pulled succesfully")
+
+def poll_and_process():
+    ACTIVEMQ_URL='http://feeltiptop.com:8161' 
+    ACTIVEMQ_QUEUE='CSPHEREQUEUE' 
+    ACTIVEMQ_USER='admin'
+    ACTIVEMQ_PASS='tiptop'
+
+    queue_url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue&oneShot=true"
+    print("here")
+
+    while True:
+        logging.info(f"Queue URL: {queue_url}")
+        try:
+            response = requests.get(queue_url, auth=(ACTIVEMQ_USER, ACTIVEMQ_PASS))
+            if response.text or response.text != "":
+                logging.info(f"Response status code: {response.status_code}")
+                logging.info(f"Response text: {response.text}")
+            
+            # Check if the response is valid and not empty
+            if response.status_code == 200 and response.text.strip():
+                message = response.text.strip()
+
+                logging.info(f"Received message form queue: {message}")
+
+                try:
+                    msg_json = json.loads(message)
+                    logging.info(f"Message json: {msg_json}")
+                    try:
+                        handle_message(msg_json)
+                    except Exception as e:
+                        logging.error(f"[ERROR] An error occurred in handle_message: {e} \n Message: {msg_json}")
+                        # retryCount = msg.get('retryCount', 0) + 1
+                        # msg['retryCount'] = retryCount
+
+                        # if 'timestamp' not in msg:
+                        #     msg['timestamp'] = datetime.now().isoformat()
+
+                        # logger.info(f"[REQUEUE] Requeueing message: {msg}")
+                        # if requeue_message(json.dumps(msg)):
+                        #     logging.info(f"[REQUEUE] Message requeued successfully: {msg}")
+                        # else:
+                        #     logging.error(f"[REQUEUE ERROR] Failed to requeue message: {msg}, message will not be processed again")
+                        
+                        # requeue_message(msg_json)
+                except json.JSONDecodeError:
+                    logging.error(f"[ERROR] Failed to decode JSON: {message}")
+
+            time.sleep(5)
+
+        except Exception as e:
+            logging.error(f"[ERROR] Polling error: {e}")
+            time.sleep(5)
+
+
+if __name__ == '__main__':
+    #pull from active MQ : 
+    print("staring polling")
+    logging.info("here21")
+    poll_and_process()
+
+
+
+
+    # message = {
+    #     "content_payload": {
+    #         "url": "https://www.nationalgeographic.com/travel/article/best-places-to-visit-2025",
+    #         "title": "The Best Places to Visit in 2025",
+    #         "source": "chrome_extension",
+    #         "user_id": "user_12345",
+    #         "first_saved_at": "2025-10-08T20:12:45Z",
+    #         "read": False
+    #     },
+    #     "raw_html": """
+    #         <html>
+    #             <head><title>The Best Places to Visit in 2025</title></head>
+    #             <body>
+    #                 <h1>Top Destinations for 2025</h1>
+    #                 <p>From Japan’s cherry blossoms to the fjords of Norway, these are the most anticipated travel spots for the year.</p>
+    #             </body>
+    #         </html>
+    #     """,
+    #     "user_id": "user_12345",
+    #     "notes": "Highlight section about Japan and Norway for next trip planning."
+    # }
+
+    # db = get_db() # get the DB connection 
+
+
+    #         # payload = {
+    #         #     "content_payload": {
+    #         #         'url': content.url,
+    #         #         'title': content.title, 
+    #         #         'source': "chrome_extension", 
+    #         #         'user_id': user_id, 
+    #         #         'first_saved_at' : utc_time,
+    #         #         'read': False 
+    #         #     },
+    #         #     'raw_html': content.html
+    #         #     'user_id' : user_id
+    #         #     'notes' : notes
+    #         # }
+
+
+    # #Create the Content object 
+    # user_id = message.get('user_id')
+    # notes = message.get('notes')
+    # folder_id = message.get('folder_id', '')
+    # content_data = json.loads(message.get('content_payload', {}))
+    # new_content = Content(**content_data)
+    
+    # try:
+    #     db.add(new_content)
+    #     db.flush()
+    #     content_manager = ContentEmbeddingManager(db=db, content_url=new_content.url)
+
+    #     raw_html = message.get('raw_html', '')
+
+    #     if raw_html == '':
+    #         logging.info("No raw html provided, categorization and summarization may be poor")
+
+    #     content_ai = content_manager.process_content(new_content, raw_html)
+
+    #     db.commit()
+
+    #     if not content_ai:
+    #         logging.info("Embedding generation failed or skipped.")
+    #     else:
+    #         logging.debug(f"Summary Generated: {content_ai.ai_summary}")
+
+    #         # Check if this user already saved this content
+    #         existing_item = db.query(ContentItem).filter(
+    #             ContentItem.user_id == user_id,
+    #             ContentItem.content_id == new_content.content_id
+    #         ).first()
+
+
+    #         utc_time = datetime.now(timezone.utc)
+
+    #         if not existing_item:
+    #             new_item = ContentItem(
+    #                 user_id=user_id,
+    #                 content_id=new_content.content_id,
+    #                 saved_at=utc_time,
+    #                 notes=notes
+    #             )
+    #             db.add(new_item)
+    #             db.commit()
+
+    #             saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
+
+    #             # Add to the corresponding folder if any
+    #             if folder_id and folder_id != '' and folder_id != 'default':
+    #                 new_folder_item = folder_item(
+    #                     folder_item_id=uuid4(),
+    #                     folder_id=folder_id,
+    #                     user_id=user_id,
+    #                     content_id=new_content.content_id,
+    #                     added_at=datetime.utcnow()
+    #                 )
+
+    #                 db.add(new_folder_item)
+    #                 db.commit()
+    #                 db.refresh(new_folder_item)
+    #             else:
+    #                 print("No valid folder id found, skipping this part")
+
+    #         logging.info("Successfully saved content for user.")
+
+    # except Exception as e:
+    #     logging.error(f"Error occurred while saving the bookmark: {str(e)}")
