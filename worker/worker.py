@@ -108,6 +108,7 @@ class ContentEmbeddingManager:
             # Use LLM to summarize the content
             summary, categories = self._summarize_content(summary_input) 
 
+            #possible remove later 
             self._store_article_summary_pair(
                 article_text= summary_input,
                 summary= summary,
