@@ -1,0 +1,47 @@
+FROM python:3.10-slim
+
+RUN apt update && apt install -y git
+#RUN apk add --no-cache --update openssh-client # in short
+
+# Set the working directory in the container
+WORKDIR /app
+
+
+# Clone the "frontend" directory from your GitHub repositorydd the SSH public keys of the Git server to the known hosts (here, github.com)
+RUN mkdir -p -m 0700 ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+RUN apt-get update -y
+RUN apt-get install -y python3-dev build-essential
+RUN apt-get install -y default-libmysqlclient-dev pkg-config
+
+RUN apt-get install -y libpq-dev
+
+# bust the cache everytime
+COPY timedatenow.txt /etc/
+
+
+RUN --mount=type=ssh git clone 'git@github.com:TipTop-Tech/csphere-app.git' /app
+
+WORKDIR /app/backend
+
+RUN pip install -r requirements.txt
+
+
+
+ENV DATABASE_URL=
+ENV NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
+ENV GOOGLE_API_KEY=
+ENV AWS_ACCESS_KEY=
+ENV AWS_SECRET_KEY=
+ENV BUCKET_NAME = 'csphere-bucket'
+ENV GOOGLE_REDIRECT_URI=https://nndlnonojjbaihdabcflefdmfbjbcdep.chromiumapp.org
+ENV GOOGLE_CLIENT_ID=
+ENV GOOGLE_CLIENT_SECRET=
+ENV SECRET_KEY="512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf"
+ENV OPENAI_API_KEY=
+ENV VERCEL_PROJECT_ID=
+ENV VERCEL_ORG_ID=
+
+
+
+CMD ["uvicorn", "app.api.main:app", "--reload"]
