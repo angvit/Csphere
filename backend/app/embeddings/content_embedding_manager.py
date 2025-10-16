@@ -332,7 +332,13 @@ class ContentEmbeddingManager:
                         "role": "system", 
                          "content": (
                              "Summarize the following webpage content in 2-3 sentences"
-                      
+                            # "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
+                            # "Use the following process to ensure accuracy and relevance:\n\n"
+                            # "1. Identify the main topic of the article.\n"
+                            # "2. Extract any key details related to this main topic.\n"
+                            # "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
+                            # "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
+                            # "Make sure to keep a neutral tone throughout the summary."
                     )
                     },
                     {"role": "user", "content": summary_input},
