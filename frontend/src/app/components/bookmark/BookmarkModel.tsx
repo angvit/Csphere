@@ -168,18 +168,6 @@ export function BookmarkDetailModal({
 
             <Separator className="bg-gray-500" />
 
-            {/* Original Description */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <FileText className="w-4 h-4" />
-                <span className="font-medium">Description</span>
-              </div>
-              <p className="text-sm leading-relaxed text-muted-foreground">
-                place holder for now
-                {/* {bookmark.description} */}
-              </p>
-            </div>
-
             {/* AI Summary */}
             <div>
               <div className="flex items-center gap-2 mb-3">
