@@ -19,12 +19,19 @@ from app.utils.hashing import get_current_user_id
 from sqlalchemy.orm import Session
 from uuid import UUID
 from sqlalchemy import desc, select 
+import requests
+import json
+from email.utils import quote
+
+
 
 router = APIRouter(
     # prefix="/content"
 )
 
 logger = logging.getLogger(__name__) 
+
+PAGE_SIZE = 18
 
 
 
@@ -56,64 +63,94 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
             )
         )
 
+    #  next_cursor: Optional[str]
+    # has_next: Optional[bool]
+
     return {
         "bookmarks": bookmark_data,
-        "categories": []  # or `None`, depending on how you define Optional
+        "categories": [] , # or `None`, depending on how you define Optional
+        "next_cursor" : None,
+        "has_next" : None
     }
 
 
 
 
+def push_to_activemq(message: str):
+
+    ACTIVEMQ_URL='http://feeltiptop.com:8161' 
+    ACTIVEMQ_QUEUE='CSPHEREQUEUE' 
+    ACTIVEMQ_USER='admin'
+    ACTIVEMQ_PASS='tiptop'
+
+
+    try:
+        url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue"
+        headers = {'Content-Type': 'text/plain'}
+
+        response = requests.post(url, data=message, headers=headers, auth=(ACTIVEMQ_USER, ACTIVEMQ_PASS))
+
+        logging.debug(f"Response from ActiveMQ: {response.status_code} - {response.text}")
+        return response.status_code == 200
+    
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error pushing to ActiveMQ: {e}")
+        return False
 
 
 
+
+#switching to the active MQ arch
 @router.post("/content/save")
 def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    notes = content.notes
+    
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
 
-    
+    notes = content.notes
     try:
-        user_id = user.id
+        user_id = str(user.id)
 
         existing_content = db.query(Content).filter(Content.url == content.url).first()
 
-        utc_time = datetime.now(timezone.utc)
 
-
-
+        #adding the content shouldn't take long, getting the categories is what we shoud push to the MQ 
         if not existing_content:
             #create the new content
-            new_content = Content(
-                url=content.url,
-                title=content.title,
-                source="chrome_extension",
-                user_id=user_id,
-                first_saved_at=utc_time,
-                read=False
-            )
-            db.add(new_content)
-            db.flush()  # generate content_id without commit
+            print('here')
 
-            # Generate embedding only for new content
-            print("generating manager")
-            embedding_manager = ContentEmbeddingManager(db, content_url=content.url)
-            print("done generating")
-            raw_html = content.html
-            content_ai = embedding_manager.process_content(new_content, raw_html)
-            db.commit()
+            #send over the json content 
+            utc_time = datetime.now(timezone.utc)
 
-            if not content_ai:
-                print("Embedding generation failed or skipped.")
-            else:
-                print("Summary Generated:", content_ai.ai_summary)
+            payload = {
+                "content_payload": {
+                    'url': content.url,
+                    'title': content.title, 
+                    'source': "chrome_extension", 
+                    'user_id': user_id, 
+                    'first_saved_at': utc_time.isoformat(),
+                    'read': False 
+                },
+                'raw_html': content.html[0:50],
+                'user_id': str(user_id), 
+                'notes': notes,
+                'folder_id': content.folder_id
+            }
+
+            message = json.dumps(payload)
+
+            push_to_activemq(message=message)
+
+            return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
+    
         else:
-            print("Existing content link")
-            new_content = existing_content
-            content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
+            logging.info(f"The content is found")
+            
+        new_content = existing_content
+
+        utc_time = datetime.now(timezone.utc)
 
         # Check if this user already saved this content
         existing_item = db.query(ContentItem).filter(
@@ -121,7 +158,6 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
             ContentItem.content_id == new_content.content_id
         ).first()
 
-        print("current utc timezone: ", datetime.now(timezone.utc))
 
         utc_time = datetime.now(timezone.utc)
 
@@ -135,8 +171,6 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
             db.add(new_item)
             db.commit()
 
-            saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
-            print(f"Retrieved from DB: {saved_item.saved_at}")
          
 
             #add to the corresponding folder if any 
@@ -159,12 +193,12 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
                 print("no valid fodler id found so skipping this part")
             
 
-        print("Successfully saved content for user.")
+        logging.info(f"Successfully saved content for user {user_id}")
 
         return {"status": "Success"}
 
     except Exception as e:
-        print("error occured in saving the bookmark: ", str(e))
+        logging.error(f"error occured in saving the bookmark: {str(e)}")
         return {'status': "unsucessful", 'error': str(e)}
     
 
@@ -184,18 +218,38 @@ def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session =
 
 
 @router.get("/content/unread", response_model=UserSavedContentResponse)
-def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def get_unread_content(cursor : str = None,  user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
-    results = (
+
+    cursor_dt = None
+    if cursor:
+        try:
+            cursor_dt = isoparse(cursor)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid cursor format. Use ISO8601 datetime.")
+
+
+
+    query = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
-        .options(joinedload(Content.categories))  # Eager load categories
+        .options(joinedload(Content.categories)) 
         .filter(ContentItem.user_id == user_id, Content.read == False)
-        .order_by(desc(ContentItem.saved_at))
-        .all()
+        # .order_by(desc(ContentItem.saved_at))
+        # .all()
     )
 
+    if cursor_dt:
+        query = query.filter(ContentItem.saved_at < cursor_dt)
+
+    query = query.order_by(desc(ContentItem.saved_at)).limit(PAGE_SIZE + 1)
+
+    results = query.all()
+
+    has_next = len(results) > PAGE_SIZE
+
+        
     bookmark_data = []
     category_list = []
 
@@ -217,10 +271,14 @@ def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session
 
     # Deduplicate categories by category_id
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
+    next_cursor = bookmark_data[-1].first_saved_at.isoformat() if bookmark_data else None
+
 
     return {
         "bookmarks": bookmark_data,
-        "categories": list(unique_categories)
+        "categories": list(unique_categories),
+        "next_cursor" : next_cursor, 
+        "has_next" : has_next
     }
 
 
@@ -231,7 +289,7 @@ def get_user_content(
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-    PAGE_SIZE = 18
+
 
     # Parse cursor into datetime if provided
     cursor_dt = None
@@ -278,7 +336,10 @@ def get_user_content(
                 tags=tags
             )
         )
+
         category_list.extend(tags)
+
+    
 
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
 
