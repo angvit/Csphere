@@ -18,14 +18,14 @@ export default function SearchInput({ onSearch }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full relative">
+    <form onSubmit={handleSubmit} className=" max-w-2xl relative">
       <input
         id="search-form"
         type="text"
         placeholder="Search..."
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        className="w-full px-4 py-2 pr-12 rounded-full border border-black text-black placeholder-gray-400 bg-gray-300
+        className="w-full px-4 py-2 pr-12 rounded-2xl border border-black text-black placeholder-gray-400 bg-gray-300
     focus:outline-none focus:ring-2 focus:ring-gray-600 
     hover:ring-2 hover:ring-gray-600"
       />

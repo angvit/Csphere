@@ -6,6 +6,9 @@ from sqlalchemy.sql import func
 
 from app.db.database import Base
 import uuid
+from app.data_models.content_category import ContentCategory
+from app.data_models.category import Category
+
 
 class Content(Base):
     __tablename__ = "content"
@@ -18,4 +21,10 @@ class Content(Base):
     first_saved_at = Column(TIMESTAMP(timezone=True), default=func.now())
     read = Column(Boolean, nullable=False, server_default=text('false'))
     content_ai = relationship("ContentAI", backref="content", uselist=False)
-    
+
+
+    categories = relationship(
+        "Category",                      
+        secondary=ContentCategory,
+        back_populates="contents"      
+    )

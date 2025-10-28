@@ -1,32 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import SearchInput from "./SearchInput";
-import CategoryFilter from "./CategoryFilter";
 import BookmarkList from "./BookmarkList";
-import { DotPattern } from "@/components/ui/dot-pattern";
 import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
-
+import CategoryFilter from "./CategoryFilter";
 import Loading from "./ux/Loading";
 
-export default function BookmarksPage() {
-  const [bookmarks, setBookmarks] = useState([]);
+type ChildProps = {
+  activeTab?: string;
+};
 
-  const fetchBookmarks = async (query = "") => {
+const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
+  const [bookmarks, setBookmarks] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [cursor, setCursor] = useState("");
+  const [hasNext, setHasNext] = useState(false);
+
+  const loadNextBatch = async (query = "") => {
     const token = document.cookie
       .split("; ")
       .find((row) => row.startsWith("token="))
       ?.split("=")[1];
 
-    if (!token) return;
-
     try {
+      let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
+      console.log("CURRENT CURSOR:", cursor);
+      if (cursor !== "") {
+        contentApi += "?cursor=" + encodeURIComponent(cursor);
+      }
+      console.log("fetching at this api endpoint: ", contentApi);
       const url = query.trim()
         ? `${
             process.env.NEXT_PUBLIC_API_BASE_URL
-          }/search?query=${encodeURIComponent(query)}`
-        : `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
+          }/content/search?query=${encodeURIComponent(query)}`
+        : contentApi;
 
       const res = await fetch(url, {
         headers: {
@@ -38,7 +46,54 @@ export default function BookmarksPage() {
 
       const data = await res.json();
       console.log("bookmark data being returned: ", data);
-      setBookmarks(data);
+
+      setBookmarks((prev) => [...prev, ...data.bookmarks]);
+      // setBookmarks(data.bookmarks);
+      setCategories((prev) => [...prev, ...data.categories]);
+      // setCategories(data.categories);
+      setHasNext(data.has_next);
+      if (data.has_next) {
+        setCursor(data.next_cursor);
+      }
+    } catch (err) {
+      console.error("Error fetching bookmarks:", err);
+    }
+  };
+
+  const fetchBookmarks = async (query = "") => {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    if (!token) return;
+
+    try {
+      let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
+      if (cursor !== "") {
+        contentApi += cursor;
+      }
+      const url = query.trim()
+        ? `${
+            process.env.NEXT_PUBLIC_API_BASE_URL
+          }/content/search?query=${encodeURIComponent(query)}`
+        : contentApi;
+
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch content");
+
+      const data = await res.json();
+      console.log("bookmark data being returned: ", data);
+      setBookmarks(data.bookmarks);
+      setCategories(data.categories);
+      if (data.has_next) {
+        setCursor(data.next_cursor);
+      }
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
     }
@@ -50,9 +105,15 @@ export default function BookmarksPage() {
 
   return (
     <BookmarkLayout onSearch={fetchBookmarks}>
+      <CategoryFilter categories={categories} />
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}
+      {hasNext && bookmarks.length > 0 && (
+        <button onClick={() => loadNextBatch()}>load next</button>
+      )}
     </BookmarkLayout>
   );
-}
+};
+
+export default BookmarksPage;

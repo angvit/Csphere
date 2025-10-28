@@ -10,9 +10,14 @@ from readability import Document
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from uuid import uuid4
+from datetime import datetime, timezone
+
 
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
+from app.data_models.category import Category
+from app.classes import iab
 
 
 class ContentEmbeddingManager:
@@ -25,21 +30,22 @@ class ContentEmbeddingManager:
         - Handling database interactions for both `Content` and `ContentAI` models
     '''
 
-    def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo'):
+    def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo', content_url : str = ''):
         self.db = db
         self.embedding_model = embedding_model_name
         self.embedding_model_name = embedding_model_name
         self.summary_model = summary_model_name
-        
-        # openai client for embeddings
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        self._embedding_client = openai
+        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        # self.kw_model = KeyBERT(model='all-MiniLM-L6-v2')
 
-        # OpenRouter client for summarizations
-        self._summary_client = openai.OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=os.getenv("OPENROUTER_API_KEY")
-        )
+        print("Setting new files with content url: ", content_url)
+
+        self.categorizer = iab.SolrQueryIAB(file_path="dummy.txt", file_url=content_url)
+
+        self.ai_summary = ''
+
+        print("class initalized")
+
 
 
     ###############################################################################
@@ -47,20 +53,21 @@ class ContentEmbeddingManager:
     ###############################################################################
 
 
-    def process_content(self, content: Content) -> ContentAI | None:
+    def process_content(self, content: Content, raw_html)-> ContentAI | None:
         '''
         Inserts content into the database if it doesn't exist, summarizes it, and embeds the summary
         If any exceptions occur, the transaction will be rolled back
         '''
         try:
             if self._content_ai_exists(content.content_id):
-                print(f"Embedding already exists for content ID: {content.content_id}")
                 return None
 
             # Enrich the content by parsing the raw_html. If getting the html fails, default the summary_input to title
-            summary_input = self._enrich_content(content.url, content.content_id, self.db)
+            #add in raw html to the enrich content function 
+            summary_input = self._enrich_content(content.url, content.content_id, self.db, raw_html)
             if not summary_input:
                 summary_input = content.title or "No title avaliable"
+
 
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
@@ -72,10 +79,54 @@ class ContentEmbeddingManager:
                 title= content.title
             )
 
-            print(f"Generated summary: {summary}")
             
             if not summary: 
                 raise Exception("Failed to summarize content and/or there is no title")
+            
+            self.ai_summary = summary
+            
+            print("generating categories: ")
+            categories = self.generateCategories()
+
+            print("categories returned: ", categories)
+
+
+            #Now create categories that are not yet in the DB
+            category_set = set()
+            db = self.db
+            for tag, cat_list in categories.items():
+                # get the first element's name from the list of tuples
+
+                category_name = cat_list[0][0]
+                if category_name.strip() != '':
+
+                    exists = db.query(Category).filter(Category.category_name == category_name).first()
+
+                    if exists:
+                        category_set.add(exists.category_id)
+                        continue
+
+                    utc_time = datetime.now(timezone.utc)
+
+                    new_category = Category(
+                        category_id=uuid4(),
+                        category_name=category_name,
+                        created_at=utc_time,
+                        date_modified=utc_time
+                    )
+
+                    db.add(new_category)
+                    category_set.add(new_category.category_id)
+
+            db.flush()
+
+            #add them to the corresponding content object
+
+            content.categories = db.query(Category).filter(Category.category_id.in_(category_set)).all()
+
+
+
+
 
             # Embed the summary associated with the content ORM
             embedding = self._generate_embedding(summary)
@@ -91,7 +142,6 @@ class ContentEmbeddingManager:
 
             self.db.add(content_ai)
             self.db.commit()
-            print(f"ContentAI created for content_id={content.content_id}")
             return content_ai
         
         
@@ -131,6 +181,14 @@ class ContentEmbeddingManager:
     # HELPER METHODS
     ###############################################################################
 
+
+    def generateCategories(self):
+        self.categorizer.setAiSummary(ai_summary=self.ai_summary)
+        self.categorizer.index_data()
+        categories_dic = self.categorizer.get_categories()
+
+        return categories_dic
+
     def _store_article_summary_pair(self, article_text, summary, url, title):
         record = {
             "url": url,
@@ -149,14 +207,10 @@ class ContentEmbeddingManager:
             print(f"Failed to write with error: {e}")
     
 
-    def _enrich_content(self, url: str, content_id: UUID, db: Session):
+    def _enrich_content(self, url: str, content_id: UUID, db: Session, raw_html):
         try:
-            response = requests.get(url, timeout=5)
-            if response.status_code != 200:
-                print(f"Error: {response.status_code}: failed get request for {url}, defaulting to title for summarization input")
-                return None
-            
-            raw_html = response.text
+           
+            # print("extracting raw html from : ", raw_html[:20])
             metadata = self._extract_metadata_and_body(raw_html)
             metadata["body_text"] = self._clean_text(metadata["body_text"])
 
@@ -217,7 +271,6 @@ class ContentEmbeddingManager:
         # html snippet of main content body with boilerplate (nav bars, ads, footers) removed
         body = BeautifulSoup(doc.summary(), "html.parser").get_text()
 
-        print(f"The title from soup is: {title}")
 
         return {
             "title": title,
@@ -241,7 +294,6 @@ class ContentEmbeddingManager:
         
         # snippet = metadata["body_text"][:500]
         # input_parts.append(f"Content Snippet: {snippet}")
-        print("\n".join(input_parts))
         return "\n".join(input_parts)
 
 
@@ -278,15 +330,20 @@ class ContentEmbeddingManager:
                 messages=[
                     {
                         "role": "system", 
-                        "content": (
-                            "You are a concise technical summarizer. "
-                            "Summarize the article in exactly **2 short sentences**. "
-                            "Focus only on the main point. Ignore ads, disclaimers, and unrelated text."
-                        )
+                         "content": (
+                             "Summarize the following webpage content in 2-3 sentences"
+                            # "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
+                            # "Use the following process to ensure accuracy and relevance:\n\n"
+                            # "1. Identify the main topic of the article.\n"
+                            # "2. Extract any key details related to this main topic.\n"
+                            # "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
+                            # "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
+                            # "Make sure to keep a neutral tone throughout the summary."
+                    )
                     },
                     {"role": "user", "content": summary_input},
                 ],
-                temperature=0.7,
+                temperature=0.6,
                 max_tokens=150,
             )
             return response.choices[0].message.content.strip()

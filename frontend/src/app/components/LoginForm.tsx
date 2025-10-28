@@ -73,7 +73,7 @@ export default function LoginForm() {
     };
 
     try {
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/google/login`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/google/login`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -104,7 +104,7 @@ export default function LoginForm() {
       console.log("Form values:", values);
       console.log("API Base URL:", process.env.NEXT_PUBLIC_API_BASE_URL);
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/login`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/login`;
       console.log("API URL:", apiUrl);
 
       const response = await fetch(apiUrl, {

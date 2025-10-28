@@ -104,11 +104,14 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error("Upload failed");
 
       const data = await res.json();
-      console.log("data from media; ", data);
+      console.log("data from media: ", data);
       console.log("Uploaded image URL:", data.profile_media);
 
       // Update your UI with the returned image URL
       setProfileImage(data.profile_media);
+      const new_jwt = data.token;
+      //set the new jwt token
+      document.cookie = `token=${new_jwt}; path=/; max-age=3600`;
     } catch (err) {
       console.error("Upload error:", err);
     }
@@ -193,19 +196,14 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {/* <div className="space-y-2">
+              <div className="space-y-2">
                 <Label htmlFor="password" className="flex items-center gap-2">
                   <Lock className="w-4 h-4" />
-                  Current Password
+                  Google account connected
                 </Label>
-                <PasswordInput
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your current password"
-                />
-              </div> */}
+                <h1>✔</h1>
+                <h1>✗</h1>
+              </div>
             </div>
 
             {/* Action Buttons */}

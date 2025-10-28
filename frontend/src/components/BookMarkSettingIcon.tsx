@@ -1,9 +1,11 @@
 import React, { useEffect, useState, useRef } from "react";
 import { fetchToken } from "@/functions/user/UserData";
 import { toast } from "sonner";
+import ShareModal from "./ShareModal";
 
 interface BookMarkSettingProps {
   content_id: string;
+  url: string;
 }
 
 interface FolderProps {
@@ -98,16 +100,6 @@ const FolderPopover = ({
                 </div>
               ))}
             </div>
-            {/* <div className="border-t border-gray-200 mt-2 pt-2">
-              <div
-                className="px-2 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded cursor-pointer transition-colors"
-                onClick={() =>
-                  onAddToFolder({ id: "new", name: "Create New Folder" })
-                }
-              >
-                + Create New Folder
-              </div>
-            </div> */}
           </div>
         </div>
       )}
@@ -115,8 +107,9 @@ const FolderPopover = ({
   );
 };
 
-function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
+function BookMarkSettingIcon({ content_id, url }: BookMarkSettingProps) {
   const [mainPopoverOpen, setMainPopoverOpen] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
   const handleAddToFolder = async (folder: FolderProps) => {
     try {
       const API_URL = `${process.env.NEXT_PUBLIC_API_BASE_URL}/users/folder/add`;
@@ -163,11 +156,14 @@ function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
               <div className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors">
                 <p className="text-gray-700">Edit bookmark</p>
               </div>
-              <div className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors">
+              <div
+                className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors"
+                onClick={() => {
+                  setMainPopoverOpen(false);
+                  setShareModalOpen(true);
+                }}
+              >
                 <p className="text-gray-700">Share</p>
-              </div>
-              <div className="cursor-pointer hover:bg-gray-200 p-2 rounded transition-colors text-red-600">
-                <p className="text-red-600">Delete</p>
               </div>
             </div>
           </div>
@@ -178,6 +174,12 @@ function BookMarkSettingIcon({ content_id }: BookMarkSettingProps) {
         <div
           className="fixed inset-0 z-30"
           onClick={() => setMainPopoverOpen(false)}
+        />
+      )}
+      {shareModalOpen && (
+        <ShareModal
+          onClose={() => setShareModalOpen(false)}
+          bookmarkUrl={url}
         />
       )}
     </div>

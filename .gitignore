@@ -18,3 +18,4 @@ backend/app/db/__pycache__/database.cpython-312.pyc
 /bin.py
 /input.bin
 
+/worker

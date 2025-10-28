@@ -1,0 +1,22 @@
+services:
+  csphere-backend:
+    build:
+      context: .
+      dockerfile: 'csphere-backend'
+    ports:
+      - "80:80" 
+
+    
+    # volumes:
+    #   - ./nginx.conf:/etc/nginx/nginx.conf
+  # csphere-database:
+  #   image: postgres:latest
+  #   environment:
+  #     POSTGRES_DB: mydatabase
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  #   volumes:
+  #     - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:

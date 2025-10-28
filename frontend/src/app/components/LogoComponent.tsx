@@ -1,24 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import React from "react";
+// import { usePathname } from "next/navigation";
 import Image from "next/image";
 
 import Link from "next/link";
 
 function LogoComponent() {
-  const isTokenPresent = true;
-  const pathname = usePathname();
-  const [token, setToken] = useState(null);
-
-  useEffect(() => {
-    const cookie = document.cookie
-      .split("; ")
-      .find((row) => row.startsWith("token="));
-    const foundToken = cookie ? cookie.split("=")[1] : null;
-    setToken(foundToken);
-  }, [pathname]);
-
   return (
     <>
       <Link href="/" className="flex items-center">
@@ -37,18 +25,9 @@ function LogoComponent() {
         </div>
       </Link>
       <nav className="hidden md:flex md:items-center md:space-x-6">
-        {!token ? (
-          <>
-            <a
-              href="#"
-              className="text-base font-medium text-[#202A29] hover:text-gray-700"
-            >
-              {/* About us */}
-            </a>
-          </>
-        ) : (
-          <></>
-        )}
+        <Link href="/chrome-setup" className="text-sm">
+          Chrome setup
+        </Link>
       </nav>
     </>
   );

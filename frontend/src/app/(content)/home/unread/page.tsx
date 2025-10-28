@@ -1,7 +1,16 @@
 import UnreadBookmarksPage from "@/components/UnreadBookmarksPage";
 
-function page() {
-  return <UnreadBookmarksPage />;
-}
+type ChildProps = {
+  activeTab?: string;
+};
+const Page: React.FC<ChildProps> = ({ activeTab }) => {
+  return <UnreadBookmarksPage activeTab={activeTab} />;
+};
 
-export default page;
+export default Page;
+
+// function page() {
+//   return <UnreadBookmarksPage />;
+// }
+
+// export default page;

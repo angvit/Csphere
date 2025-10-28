@@ -88,7 +88,7 @@ export default function SignupForm() {
         google_id: data.sub,
       };
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/google/signup`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/google/signup`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -127,7 +127,7 @@ export default function SignupForm() {
         return;
       }
 
-      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/signup`;
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/signup`;
       const response = await fetch(apiUrl, {
         method: "POST",
         headers: {
