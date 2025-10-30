@@ -24,4 +24,4 @@ class User(Base):
 #     created_at: datetime = None  # Optional: you can default this to now on the server-side
 
 #     class Config:
-#         orm_mode = True
+#         orm_mode = Trueimage.pngimage.png
