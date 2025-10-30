@@ -1,7 +1,7 @@
 import os
 import re
 import json
-import requests
+import logging
 
 from openai import OpenAI
 from uuid import UUID
@@ -12,13 +12,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from uuid import uuid4
 from datetime import datetime, timezone
-
-
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
 from app.data_models.category import Category
 from app.classes import iab
+from dotenv import load_dotenv
 
+load_dotenv()
+logger = logging.getLogger(__name__)
 
 class ContentEmbeddingManager:
     '''
@@ -33,20 +34,20 @@ class ContentEmbeddingManager:
     def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo', content_url : str = ''):
         self.db = db
         self.embedding_model = embedding_model_name
-        self.embedding_model_name = embedding_model_name
         self.summary_model = summary_model_name
-        self.openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-        # self.kw_model = KeyBERT(model='all-MiniLM-L6-v2')
-
-        print("Setting new files with content url: ", content_url)
-
         self.categorizer = iab.SolrQueryIAB(file_path="dummy.txt", file_url=content_url)
-
         self.ai_summary = ''
+        
+        self.openrouter_client = OpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key= os.getenv("OPENROUTER_API_KEY")
+        )
 
-        print("class initalized")
+        self.openai_client = OpenAI(
+            api_key= os.getenv("OPENAI_API_KEY")
+        )
 
-
+        
 
     ###############################################################################
     # METHODS
@@ -71,15 +72,6 @@ class ContentEmbeddingManager:
 
             # Use LLM to summarize the content
             summary = self._summarize_content(summary_input) 
-
-            self._store_article_summary_pair(
-                article_text= summary_input,
-                summary= summary,
-                url= content.url,
-                title= content.title
-            )
-
-            
             if not summary: 
                 raise Exception("Failed to summarize content and/or there is no title")
             
@@ -123,10 +115,6 @@ class ContentEmbeddingManager:
             #add them to the corresponding content object
 
             content.categories = db.query(Category).filter(Category.category_id.in_(category_set)).all()
-
-
-
-
 
             # Embed the summary associated with the content ORM
             embedding = self._generate_embedding(summary)
@@ -188,23 +176,6 @@ class ContentEmbeddingManager:
         categories_dic = self.categorizer.get_categories()
 
         return categories_dic
-
-    def _store_article_summary_pair(self, article_text, summary, url, title):
-        record = {
-            "url": url,
-            "title": title,
-            "article": article_text,
-            "summary": summary
-        }
-
-        try:
-            with open("../data/summaries.json", "r") as f:
-                data = json.load(f)
-                data.append(record)
-                f.seek(0)
-                json.dump(data, f)
-        except Exception as e:
-            print(f"Failed to write with error: {e}")
     
 
     def _enrich_content(self, url: str, content_id: UUID, db: Session, raw_html):
@@ -309,7 +280,7 @@ class ContentEmbeddingManager:
             return db_data
         except SQLAlchemyError as e:
             self.db.rollback()
-            print(f"Error Inserting into {Data_Model.__tablename__}: {e}")
+            logger.error(f"Error Inserting into {Data_Model.__tablename__}: {e}")
             return None
 
 
@@ -318,35 +289,27 @@ class ContentEmbeddingManager:
         if url:
             existing_content = self.db.scalar(select(Content).where(Content.url == url))
             if existing_content:
-                print(f"Content with URL '{url}' already exists. Skipping insertion.")
+                logger.info(f"Content with URL '{url}' already exists. Skipping insertion.")
                 return existing_content  
         return False
     
     
     def _summarize_content(self, summary_input):
         try:
-            response = self.openai_client.chat.completions.create(
-                model=self.summary_model,
+            logger.info(f"Summarizing content with input: {summary_input}")
+            response = self.openrouter_client.chat.completions.create(
+                model="openrouter/auto:floor",
                 messages=[
-                    {
-                        "role": "system", 
-                         "content": (
-                             "Summarize the following webpage content in 2-3 sentences"
-                            # "As a concise technical summarizer, your task is to generate a summary of the article in exactly two short sentences. "
-                            # "Use the following process to ensure accuracy and relevance:\n\n"
-                            # "1. Identify the main topic of the article.\n"
-                            # "2. Extract any key details related to this main topic.\n"
-                            # "3. Construct a two-sentence summary encompassing the main topic and key details.\n\n"
-                            # "Keep the focus on the main point by disregarding ads, disclaimers, and unrelated text in the article. "
-                            # "Make sure to keep a neutral tone throughout the summary."
-                    )
-                    },
+                    {"role": "system", "content": (
+                        "You are a concise technical summarizer. "
+                        "Summarize the article in exactly two short sentences. "
+                        "Focus on the main point only."
+                    )},
                     {"role": "user", "content": summary_input},
-                ],
-                temperature=0.6,
-                max_tokens=150,
+                ]
             )
+            logger.info(f"OpenRouter summarization response: {response.choices[0].message.content.strip()}")
             return response.choices[0].message.content.strip()
         except Exception as e:
-            print(f"OpenAI summarization failed: {e}")
+            logging.error(f"OpenRouter summarization failed: {e}")
             return None
