@@ -48,10 +48,11 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       console.log("bookmark data being returned: ", data);
 
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
-      // setBookmarks(data.bookmarks);
       setCategories((prev) => [...prev, ...data.categories]);
-      // setCategories(data.categories);
+
+      console.log("setting has next to: ", data.has_next);
       setHasNext(data.has_next);
+
       if (data.has_next) {
         setCursor(data.next_cursor);
       }
@@ -88,9 +89,9 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       if (!res.ok) throw new Error("Failed to fetch content");
 
       const data = await res.json();
-      console.log("bookmark data being returned: ", data);
       setBookmarks(data.bookmarks);
       setCategories(data.categories);
+      setHasNext(data.has_next);
       if (data.has_next) {
         setCursor(data.next_cursor);
       }
@@ -109,9 +110,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}
-      {hasNext && bookmarks.length > 0 && (
-        <button onClick={() => loadNextBatch()}>load next</button>
-      )}
+      {hasNext && <button onClick={() => loadNextBatch()}>load next</button>}
     </BookmarkLayout>
   );
 };
