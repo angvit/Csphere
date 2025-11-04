@@ -289,7 +289,7 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
           {showNotes && <NotePopup note={bookmark.notes} />}
 
           {/* Footer */}
-          <div className="flex justify-between items-center mt-auto pt-1 border-t border-gray-100">
+          <div className="flex justify-between items-center mt-auto pt-1 ">
             <a
               href={bookmark.url}
               onClick={(e) => setReadLink(e)}
