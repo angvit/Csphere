@@ -52,7 +52,7 @@ function renderInterface() {
       <header class="popup-header">
         <div class="header-left" >
         <a href = "https://csphere-nly9.vercel.app/"  target="_blank"> 
-          <img class="logo" src="/images/Logo.png" />
+          <img class="logo" src="images/Csphere-icon-128.png" />
         </a>
         </div>
         <button class="logout-btn">logout</button>
@@ -158,11 +158,11 @@ function renderInterface() {
 
 function renderLoginInterface() {
   app.innerHTML = `
-    <header>
-      <img class="logo" src="/images/Logo.png" />
+    <header class="login_header">
+      <img class="logo" src="images/Csphere-icon-128.png" />
     </header>
     <div class="login-message">
-      <p>Please log in to use CSphere Bookmarks</p>
+      <p>Please log in to use Csphere bookmarks</p>
       <form id="loginForm" class="login-form">
         <input type="text" id="username" placeholder="Username" required />
         <input type="password" id="password" placeholder="Password" required />
@@ -170,7 +170,7 @@ function renderLoginInterface() {
       </form>
       <div class="divider">OR</div>
       <button id="googleAuthBtn" class="google-button">
-        <img src="/images/google.svg" class="google-icon" />
+        <img src="images/google.svg" class="google-icon" />
         Continue with Google
       </button>
       <p class="message-p"></p>
