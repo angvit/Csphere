@@ -6,8 +6,10 @@ from app.data_models.content_ai import ContentAI
 from app.data_models.folder_item import folder_item
 from app.data_models.folder import Folder
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate, UserSavedContentResponse, CategoryOut
-from app.preprocessing.preprocessor import QueryPreprocessor
+from app.preprocessing.query_preprocessor import QueryPreprocessor
 from app.embeddings.content_embedding_manager import ContentEmbeddingManager
+from app.deps.services import get_shared_services
+from app.ai.categorizer import Categorizer
 from app.data_models.user import User
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -33,7 +35,8 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
     preprocessor = QueryPreprocessor()
     parsed_query = preprocessor.preprocess_query(query)
 
-    manager = ContentEmbeddingManager(db)
+    pre, sumz, emb = get_shared_services()
+    manager = ContentEmbeddingManager(db, preprocessor=pre, summarizer=sumz, embedder=emb)
     results = manager.query_similar_content(
         query=parsed_query,
         user_id=user_id,
@@ -100,7 +103,16 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             # Generate embedding only for new content
             print("generating manager")
-            embedding_manager = ContentEmbeddingManager(db, content_url=content.url)
+            pre, sumz, emb = get_shared_services()
+            categorizer = Categorizer(file_url=content.url)
+            embedding_manager = ContentEmbeddingManager(
+                db,
+                preprocessor=pre,
+                summarizer=sumz,
+                embedder=emb,
+                categorizer=categorizer,
+                content_url=content.url,
+            )
             print("done generating")
             raw_html = content.html
             content_ai = embedding_manager.process_content(new_content, raw_html)

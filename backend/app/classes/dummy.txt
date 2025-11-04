@@ -1,0 +1,1 @@
+The article describes building a state machine in iOS to manage complex travel requirements, such as visa checks and passport rules, when government systems don't provide clear APIs. This approach helps automate and simplify the process of determining eligibility for travel, turning a manual, error-prone task into a structured, code-driven workflow.
