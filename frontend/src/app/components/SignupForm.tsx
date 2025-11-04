@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -63,20 +62,12 @@ export default function SignupForm() {
     defaultValues: {
       username: "",
       email: "",
-      confirmemail: "",
       password: "",
       confirmpassword: "",
     },
   });
 
-  const [message, setMessage] = useState("");
-
-  const watchedEmail = form.watch("email");
   const router = useRouter();
-
-  useEffect(() => {
-    console.log("Email changed:", watchedEmail);
-  }, [watchedEmail]);
 
   const googleSignUp = async (credentials: any) => {
     try {
@@ -120,10 +111,6 @@ export default function SignupForm() {
       console.log(values);
       if (values.password !== values.confirmpassword) {
         toast.error("Passwords do not match.");
-        return;
-      }
-      if (values.email !== values.confirmemail) {
-        toast.error("Emails do not match.");
         return;
       }
 
@@ -184,21 +171,6 @@ export default function SignupForm() {
               <FormControl>
                 <Input placeholder="Email " type="email" {...field} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="confirmemail"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Confirm Email </FormLabel>
-              <FormControl>
-                <Input placeholder="confirm email " type="email" {...field} />
-              </FormControl>
-
               <FormMessage />
             </FormItem>
           )}

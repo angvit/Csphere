@@ -15,7 +15,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
   const [categories, setCategories] = useState([]);
   const [cursor, setCursor] = useState("");
-  const [hasNext, setHasNext] = useState(false);
+  const [hasNext, setHasNext] = useState(true);
 
   const loadNextBatch = async (query = "") => {
     const token = document.cookie

@@ -23,8 +23,6 @@ const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [cursor, setCursor] = useState("");
   const [hasNext, setHasNext] = useState(false);
 
-  const viewMode = useContext(LayoutContext);
-
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
       .split("; ")
@@ -69,6 +67,49 @@ const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     }
   };
 
+  const loadNextBatch = async (query = "") => {
+    const token = document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("token="))
+      ?.split("=")[1];
+
+    try {
+      let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
+      console.log("CURRENT CURSOR:", cursor);
+      if (cursor !== "") {
+        contentApi += "?cursor=" + encodeURIComponent(cursor);
+      }
+      console.log("fetching at this api endpoint: ", contentApi);
+      const url = query.trim()
+        ? `${
+            process.env.NEXT_PUBLIC_API_BASE_URL
+          }/content/search?query=${encodeURIComponent(query)}`
+        : contentApi;
+
+      const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) throw new Error("Failed to fetch content");
+
+      const data = await res.json();
+      console.log("bookmark data being returned: ", data);
+
+      setBookmarks((prev) => [...prev, ...data.bookmarks]);
+      // setBookmarks(data.bookmarks);
+      setCategories((prev) => [...prev, ...data.categories]);
+      // setCategories(data.categories);
+      setHasNext(data.has_next);
+      if (data.has_next) {
+        setCursor(data.next_cursor);
+      }
+    } catch (err) {
+      console.error("Error fetching bookmarks:", err);
+    }
+  };
+
   useEffect(() => {
     fetchBookmarks(); // calls /content on initial load
   }, []);
@@ -77,6 +118,10 @@ const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     <BookmarkLayout onSearch={fetchBookmarks}>
       <CategoryFilter categories={categories} />
       <BookmarkList items={bookmarks} />
+
+      {hasNext && bookmarks.length > 0 && (
+        <button onClick={() => loadNextBatch()}>load next</button>
+      )}
     </BookmarkLayout>
   );
 };
