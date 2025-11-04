@@ -184,8 +184,43 @@ def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session =
 
 
 @router.get("/content/unread", response_model=UserSavedContentResponse)
-def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def get_unread_content(cursor: str = None, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+    print("in here")
 
+    PAGE_SIZE = 18
+    cursor_dt = None
+    if cursor:
+
+        try:
+            cursor_dt = isoparse(cursor)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid cursor format. Use ISO8601 datetime.")
+        
+
+    query = (
+        db.query(ContentItem, Content, ContentAI.ai_summary)
+        .join(Content, ContentItem.content_id == Content.content_id)
+        .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
+        .options(joinedload(Content.categories))
+        .filter(ContentItem.user_id == user_id, Content.read == False)
+    )
+
+    if cursor_dt:
+        query.filter(ContentItem.saved_at < cursor_dt)
+
+    query = query.order_by(desc(ContentItem.saved_at)).limit(PAGE_SIZE + 1)
+
+    results = query.all()
+
+    # Check if we have more results
+    has_next = len(results) > PAGE_SIZE
+    results = results[:PAGE_SIZE]
+
+    category_list = []
+    bookmark_data = []
+
+
+    
     results = (
         db.query(ContentItem, Content, ContentAI.ai_summary)
         .join(Content, ContentItem.content_id == Content.content_id)
@@ -215,13 +250,44 @@ def get_unread_content(user_id: UUID = Depends(get_current_user_id), db: Session
         )
         category_list.extend(tags)
 
-    # Deduplicate categories by category_id
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
+
+    # The new cursor = last item’s saved_at
+    next_cursor = bookmark_data[-1].first_saved_at.isoformat() if bookmark_data else None
 
     return {
         "bookmarks": bookmark_data,
-        "categories": list(unique_categories)
+        "categories": list(unique_categories)[:10],
+        "next_cursor": next_cursor,
+        "has_next": has_next
     }
+
+
+    # for item, content, ai_summary in results:
+    #     tags = [CategoryOut.from_orm(cat) for cat in content.categories]
+    #     bookmark_data.append(
+    #         UserSavedContent(
+    #             content_id=content.content_id,
+    #             url=content.url,
+    #             title=content.title,
+    #             source=content.source,
+    #             ai_summary=ai_summary,
+    #             first_saved_at=item.saved_at,
+    #             notes=item.notes,
+    #             tags=tags
+    #         )
+    #     )
+    #     category_list.extend(tags)
+
+    # # Deduplicate categories by category_id
+    # unique_categories = {cat.category_id: cat for cat in category_list}.values()
+
+    # return {
+    #     "bookmarks": bookmark_data,
+    #     "categories": list(unique_categories),
+    #     "has_next": True,
+    #     "next_cursor": ''
+    # }
 
 
 
