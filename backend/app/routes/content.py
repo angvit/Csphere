@@ -172,7 +172,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
 
     try:
-        total_count = db.query(Content).filter(Content.user_id == user_id, Content.read == False).count()
+        total_count = db.query(ContentItem).filter(ContentItem.user_id == user_id, ContentItem.read == False).count()
 
         logger.debug(f"Total count fetched for user id {user_id} : {total_count}")
         return {'status' : "succesful", 'total_count' : total_count}
@@ -202,7 +202,7 @@ def get_unread_content(cursor: str = None, user_id: UUID = Depends(get_current_u
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
         .options(joinedload(Content.categories))
-        .filter(ContentItem.user_id == user_id, Content.read == False)
+        .filter(ContentItem.user_id == user_id, ContentItem.read == False)
     )
 
     if cursor_dt:
@@ -226,7 +226,7 @@ def get_unread_content(cursor: str = None, user_id: UUID = Depends(get_current_u
         .join(Content, ContentItem.content_id == Content.content_id)
         .outerjoin(ContentAI, Content.content_id == ContentAI.content_id)
         .options(joinedload(Content.categories))  # Eager load categories
-        .filter(ContentItem.user_id == user_id, Content.read == False)
+        .filter(ContentItem.user_id == user_id, ContentItem.read == False)
         .order_by(desc(ContentItem.saved_at))
         .all()
     )
@@ -475,7 +475,7 @@ def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db))
 
 @router.post("/user/content/{content_id}")
 def update_read(content_id: UUID, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
+    content = db.query(ContentItem).filter(ContentItem.content_id == content_id, ContentItem.user_id == user_id).first()
 
     if not content:
         raise HTTPException(status_code=404, detail="Content not found or not owned by user")

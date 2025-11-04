@@ -1,4 +1,4 @@
-from sqlalchemy import Column, ForeignKey, TIMESTAMP, String
+from sqlalchemy import Column, ForeignKey, TIMESTAMP, String, Boolean, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -12,6 +12,8 @@ class ContentItem(Base):
     saved_at = Column(TIMESTAMP(timezone=True), default=func.now())
     notes = Column(String, nullable=True)
     content = relationship("Content", backref="content_items")
+    read = Column(Boolean, nullable=False, server_default=text('false'))
+
 
 
 # class ContentItem(Base):
