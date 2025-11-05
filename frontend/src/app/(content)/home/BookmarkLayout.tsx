@@ -69,8 +69,8 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
             Organize and rediscover your saved content
           </p>
         </div>
-        <div className="flex items-center space-x-3">
-          <div className="flex border rounded-lg">
+        <div className="flex items-center space-x-3 ">
+          <div className="flex border rounded-lg border-black">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
               size="sm"
