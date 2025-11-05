@@ -294,12 +294,18 @@ def get_unread_content(cursor: str = None, user_id: UUID = Depends(get_current_u
 @router.get("/content", response_model=UserSavedContentResponse)
 def get_user_content(
     cursor: str = None,
+    categories: list[str] = None, 
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-    PAGE_SIZE = 18
+    PAGE_SIZE = 10
+
+    if categories:
+        categories = set(categories)
 
     # Parse cursor into datetime if provided
+
+    #note: adding in another param - filters of categories we need to fetch 
     cursor_dt = None
     if cursor:
         try:
@@ -319,6 +325,8 @@ def get_user_content(
     if cursor_dt:
         query = query.filter(ContentItem.saved_at < cursor_dt)
 
+    
+
     query = query.order_by(desc(ContentItem.saved_at)).limit(PAGE_SIZE + 1)
 
     results = query.all()
@@ -332,19 +340,44 @@ def get_user_content(
 
     for item, content, ai_summary in results:
         tags = [CategoryOut.from_orm(cat) for cat in content.categories]
-        bookmark_data.append(
-            UserSavedContent(
-                content_id=content.content_id,
-                url=content.url,
-                title=content.title,
-                source=content.source,
-                ai_summary=ai_summary,
-                first_saved_at=item.saved_at,
-                notes=item.notes,
-                tags=tags
+
+        #calculate the intersection between the two 
+        
+        if categories:
+            common_tags = set(tags).intersection(categories)
+
+            if len(common_tags) >= 1:
+                bookmark_data.append(
+                    UserSavedContent(
+                        content_id=content.content_id,
+                        url=content.url,
+                        title=content.title,
+                        source=content.source,
+                        ai_summary=ai_summary,
+                        first_saved_at=item.saved_at,
+                        notes=item.notes,
+                        tags=tags
+                    )
+                )
+                category_list.extend(tags)
+
+        #no categories being filteres - Just add them in 
+        else:
+            bookmark_data.append(
+                UserSavedContent(
+                    content_id=content.content_id,
+                    url=content.url,
+                    title=content.title,
+                    source=content.source,
+                    ai_summary=ai_summary,
+                    first_saved_at=item.saved_at,
+                    notes=item.notes,
+                    tags=tags
+                )
             )
-        )
-        category_list.extend(tags)
+            category_list.extend(tags)
+
+        
 
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
 
