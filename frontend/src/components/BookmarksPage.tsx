@@ -6,6 +6,7 @@ import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 import CategoryFilter from "./CategoryFilter";
 import Loading from "./ux/Loading";
+import { List } from "postcss/lib/list";
 
 type ChildProps = {
   activeTab?: string;
@@ -13,9 +14,12 @@ type ChildProps = {
 
 const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [cursor, setCursor] = useState("");
-  const [hasNext, setHasNext] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [cursor, setCursor] = useState<string>("");
+  const [hasNext, setHasNext] = useState<boolean>(true);
+  const [choosenCategories, setChoosenCategories] = useState<string[]>([]);
+
+  console.log(choosenCategories);
 
   const loadNextBatch = async (query = "") => {
     const token = document.cookie
@@ -106,7 +110,11 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
   return (
     <BookmarkLayout onSearch={fetchBookmarks}>
-      <CategoryFilter categories={categories} />
+      <CategoryFilter
+        choosenCategories={choosenCategories}
+        categories={categories}
+        setChoosenCategories={setChoosenCategories}
+      />
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}
