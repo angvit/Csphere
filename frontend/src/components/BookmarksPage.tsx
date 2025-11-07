@@ -14,12 +14,17 @@ type ChildProps = {
   activeTab?: string;
 };
 
+interface Tags {
+  category_id: string;
+  category_name: string;
+}
+
 const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   //Make a type for the bookmarks later
   const [originalBookmarks, setOriginalBookmarks] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
 
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Tags[]>([]);
   const [cursor, setCursor] = useState<string>("");
   const [hasNext, setHasNext] = useState<boolean>(true);
   const [choosenCategories, setChoosenCategories] = useState<string[]>([]);
