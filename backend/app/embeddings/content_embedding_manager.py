@@ -150,7 +150,7 @@ class ContentEmbeddingManager:
         results = (
             self.db.query(ContentAI, Content)
             .join(Content, ContentAI.content_id == Content.content_id)
-            .filter(Content.user_id == user_id)
+            .filter(Content.user_id == user_id) #Note: update the content with userId 
         )
 
         if start_date and end_date:
