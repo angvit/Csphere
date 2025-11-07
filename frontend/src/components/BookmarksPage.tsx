@@ -7,13 +7,18 @@ import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 import CategoryFilter from "./CategoryFilter";
 import Loading from "./ux/Loading";
 import { List } from "postcss/lib/list";
+import { BoomBox } from "lucide-react";
+import { set } from "zod";
 
 type ChildProps = {
   activeTab?: string;
 };
 
 const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
+  //Make a type for the bookmarks later
+  const [originalBookmarks, setOriginalBookmarks] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
+
   const [categories, setCategories] = useState<string[]>([]);
   const [cursor, setCursor] = useState<string>("");
   const [hasNext, setHasNext] = useState<boolean>(true);
@@ -29,7 +34,6 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
     try {
       let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
-      console.log("CURRENT CURSOR:", cursor);
       if (cursor !== "") {
         contentApi += "?cursor=" + encodeURIComponent(cursor);
       }
@@ -50,11 +54,11 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
       const data = await res.json();
       console.log("bookmark data being returned: ", data);
+      setOriginalBookmarks((prev) => [...prev, ...data.bookmarks]);
 
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
       setCategories((prev) => [...prev, ...data.categories]);
 
-      console.log("setting has next to: ", data.has_next);
       setHasNext(data.has_next);
 
       if (data.has_next) {
@@ -76,8 +80,15 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     try {
       let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
       if (cursor !== "") {
-        contentApi += cursor;
+        contentApi += "?cursor=" + encodeURIComponent(cursor);
       }
+
+      if (choosenCategories.length > 0) {
+        const categoryString = choosenCategories.join(",");
+        contentApi += `?categories=${categoryString}`;
+        console.log(contentApi);
+      }
+
       const url = query.trim()
         ? `${
             process.env.NEXT_PUBLIC_API_BASE_URL
@@ -93,6 +104,8 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       if (!res.ok) throw new Error("Failed to fetch content");
 
       const data = await res.json();
+      console.log("all data: ", data);
+      setOriginalBookmarks(data.bookmarks);
       setBookmarks(data.bookmarks);
       setCategories(data.categories);
       setHasNext(data.has_next);
@@ -107,6 +120,29 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   useEffect(() => {
     fetchBookmarks(); // calls /content on initial load
   }, []);
+
+  useEffect(() => {
+    const filterBookmarks = () => {
+      const chosenCategorySet = new Set(choosenCategories);
+
+      if (chosenCategorySet.size === 0) {
+        setBookmarks(originalBookmarks);
+        return;
+      }
+
+      const filtered = originalBookmarks.filter((bookmark) => {
+        const bookmarkNames = bookmark.tags.map((tag) => tag.category_name);
+        const categorySet = new Set(bookmarkNames);
+
+        // If `.intersection()` exists:
+        const intersection = categorySet.intersection(chosenCategorySet);
+        return intersection.size > 0;
+      });
+
+      setBookmarks(filtered);
+    };
+    filterBookmarks();
+  }, [choosenCategories]);
 
   return (
     <BookmarkLayout onSearch={fetchBookmarks}>
