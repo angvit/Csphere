@@ -35,7 +35,14 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     try {
       let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
       if (cursor !== "") {
-        contentApi += "?cursor=" + encodeURIComponent(cursor);
+        contentApi += `?cursor=${encodeURIComponent(cursor)}`;
+      }
+
+      if (choosenCategories.length > 0) {
+        const categoryString = choosenCategories.join(",");
+        contentApi +=
+          (contentApi.includes("?") ? "&" : "?") +
+          `categories=${categoryString}`;
       }
       console.log("fetching at this api endpoint: ", contentApi);
       const url = query.trim()
@@ -53,7 +60,6 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       if (!res.ok) throw new Error("Failed to fetch content");
 
       const data = await res.json();
-      console.log("bookmark data being returned: ", data);
       setOriginalBookmarks((prev) => [...prev, ...data.bookmarks]);
 
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
@@ -85,8 +91,9 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
       if (choosenCategories.length > 0) {
         const categoryString = choosenCategories.join(",");
-        contentApi += `?categories=${categoryString}`;
-        console.log(contentApi);
+        contentApi +=
+          (contentApi.includes("?") ? "&" : "?") +
+          `categories=${categoryString}`;
       }
 
       const url = query.trim()

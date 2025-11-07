@@ -104,9 +104,9 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="mb-8 space-y-4"
+        className="mb-8 space-y-4 "
       >
-        <TabsList className="grid w-full max-w-md grid-cols-3 mb-6 border rounded-lg bg-transparent">
+        <TabsList className="grid w-full max-w-md grid-cols-3 p-0 mb-6 border rounded-lg bg-transparent border-black">
           {(() => {
             const pathname = usePathname();
 
@@ -114,7 +114,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
               <>
                 <Link
                   href="/home"
-                  className={`flex items-center justify-center space-x-2 rounded-l-lg border-r border-gray-700 transition-colors
+                  className={`flex items-center h-full justify-center space-x-2 rounded-l-lg border-r border-gray-700 transition-colors
             ${
               pathname === "/home"
                 ? "bg-[#202A29] text-white"
@@ -127,7 +127,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
 
                 <Link
                   href="/home/unread"
-                  className={`flex items-center justify-center space-x-2 border-r border-gray-700 transition-colors
+                  className={`flex items-center h-full justify-center space-x-2 border-r border-gray-700 transition-colors
             ${
               pathname === "/home/unread"
                 ? "bg-[#202A29] text-white"
@@ -144,9 +144,28 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
                   </Badge>
                 </Link>
 
+                {/* <Link
+                  href="/home/unread"
+                  className={`flex items-center h-full justify-center space-x-2 border-r border-gray-700 transition-colors
+            ${
+              pathname === "/home/unread"
+                ? "bg-[#202A29] text-white"
+                : "bg-transparent text-[#202A29] hover:bg-gray-100"
+            }`}
+                >
+                  <BookOpen className="h-4 w-4" />
+                  <span>Unread</span>
+                  <Badge
+                    variant="secondary"
+                    className="ml-1 bg-blue-300 text-white"
+                  >
+                    {metaData.unreadCount}
+                  </Badge>
+                </Link> */}
+
                 <Link
                   href="/home/folders"
-                  className={`flex items-center justify-center space-x-2 rounded-r-lg transition-colors
+                  className={`flex items-center h-full justify-center space-x-2 border-r border-gray-700 transition-colors
             ${
               pathname === "/home/folders"
                 ? "bg-[#202A29] text-white"
