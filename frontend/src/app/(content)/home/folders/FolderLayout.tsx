@@ -102,7 +102,7 @@ export default function FolderLayout({ children }: Props) {
         onValueChange={setActiveTab}
         className="mb-8 space-y-4"
       >
-        <TabsList className="grid w-full max-w-md grid-cols-3 mb-6 border rounded-lg bg-transparent">
+        <TabsList className="grid p-0 w-full max-w-md grid-cols-3 mb-6 border rounded-lg bg-transparent border-black">
           {(() => {
             const pathname = usePathname();
 
@@ -110,7 +110,7 @@ export default function FolderLayout({ children }: Props) {
               <>
                 <Link
                   href="/home"
-                  className={`flex items-center justify-center space-x-2 rounded-l-lg border-r border-gray-700 transition-colors
+                  className={`flex items-center h-full justify-center space-x-2 rounded-l-lg border-r border-gray-700 transition-colors
             ${
               pathname === "/home"
                 ? "bg-[#202A29] text-white"
@@ -123,7 +123,7 @@ export default function FolderLayout({ children }: Props) {
 
                 <Link
                   href="/home/unread"
-                  className={`flex items-center justify-center space-x-2 border-r border-gray-700 transition-colors
+                  className={`flex items-center h-full justify-center space-x-2 border-r border-gray-700 transition-colors
             ${
               pathname === "/home/unread"
                 ? "bg-[#202A29] text-white"
@@ -142,7 +142,7 @@ export default function FolderLayout({ children }: Props) {
 
                 <Link
                   href="/home/folders"
-                  className={`flex items-center justify-center space-x-2 rounded-r-lg transition-colors
+                  className={`flex items-center h-full justify-center space-x-2 rounded-r-lg transition-colors
             ${
               pathname === "/home/folders"
                 ? "bg-[#202A29] text-white"
