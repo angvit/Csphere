@@ -86,30 +86,30 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
 
         if not existing_content:
-            #create the new content
             new_content = Content(
                 url=content.url,
                 title=content.title,
                 source="chrome_extension",
-                user_id=user_id,
                 first_saved_at=utc_time,
-                read=False
             )
             db.add(new_content)
-            db.flush()  # generate content_id without commit
+            db.flush()  # generate content_id
 
-            # Generate embedding only for new content
-            print("generating manager")
             embedding_manager = ContentEmbeddingManager(db, content_url=content.url)
-            print("done generating")
             raw_html = content.html
-            content_ai = embedding_manager.process_content(new_content, raw_html)
-            db.commit()
+
+            try:
+                content_ai = embedding_manager.process_content(new_content, raw_html)
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                print(f"Embedding generation failed: {e}")
+                # Prevent downstream foreign key error
+                return {"status": "unsuccessful", "error": "Failed to generate summary"}
 
             if not content_ai:
                 print("Embedding generation failed or skipped.")
-            else:
-                print("Summary Generated:", content_ai.ai_summary)
+
         else:
             print("Existing content link")
             new_content = existing_content
@@ -126,11 +126,14 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
         utc_time = datetime.now(timezone.utc)
 
         if not existing_item:
+
             new_item = ContentItem(
                 user_id=user_id,
                 content_id=new_content.content_id,
                 saved_at=utc_time,  
-                notes=notes 
+                notes=notes ,
+
+                read=False
             )
             db.add(new_item)
             db.commit()
@@ -345,7 +348,7 @@ def get_user_content(
         
         if categories:
             common_tags = set(tags).intersection(categories)
-            
+
 
             if len(common_tags) >= 1:
                 bookmark_data.append(
