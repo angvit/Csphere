@@ -71,25 +71,20 @@ class ContentEmbeddingManager:
 
 
             # Use LLM to summarize the content
-            summary = self._summarize_content(summary_input) 
+            summary, categories = self._summarize_content(summary_input) 
             if not summary: 
                 raise Exception("Failed to summarize content and/or there is no title")
             
             self.ai_summary = summary
             
-            print("generating categories: ")
-            categories = self.generateCategories()
-
-            print("categories returned: ", categories)
-
+        
 
             #Now create categories that are not yet in the DB
             category_set = set()
             db = self.db
-            for tag, cat_list in categories.items():
+            for category_name in categories:
                 # get the first element's name from the list of tuples
 
-                category_name = cat_list[0][0]
                 if category_name.strip() != '':
 
                     exists = db.query(Category).filter(Category.category_name == category_name).first()
@@ -295,21 +290,65 @@ class ContentEmbeddingManager:
     
     
     def _summarize_content(self, summary_input):
+        categories = [
+            "Science & Technology",
+            "Arts & Entertainment",
+            "News & Politics",
+            "History & Culture",
+            "Health & Wellness",
+            "Business & Finance",
+            "Education & Learning",
+            "Home & Lifestyle",
+            "Nature & Environment",
+            "Sports & Recreation",
+        ]
         try:
             logger.info(f"Summarizing content with input: {summary_input}")
             response = self.openrouter_client.chat.completions.create(
                 model="openrouter/auto:floor",
                 messages=[
-                    {"role": "system", "content": (
-                        "You are a concise technical summarizer. "
-                        "Summarize the article in exactly two short sentences. "
-                        "Focus on the main point only."
-                    )},
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are a concise technical summarizer. "
+                            "Summarize the article in exactly two short sentences. "
+                            "Focus on the main point only. "
+                            f"You will also return 1 to 3 categories you believe match the content based on this list here: {categories}"
+                        ),
+                    },
                     {"role": "user", "content": summary_input},
-                ]
+                ],
+                response_format={
+                    "type": "json_schema",
+                    "json_schema": {
+                        "name": "response",
+                        "strict": True,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "summary": {
+                                    "type": "string",
+                                    "description": "Short summary of the content",
+                                },
+                                "categories": {
+                                    "type": "array",
+                                    "description": "List of matched categories",
+                                    "items": {"type": "string"},
+                                },
+                            },
+                            "required": ["summary", "categories"],
+                            "additionalProperties": False,
+                        },
+                    },
+                },
             )
-            logger.info(f"OpenRouter summarization response: {response.choices[0].message.content.strip()}")
-            return response.choices[0].message.content.strip()
+
+            raw_content = response.choices[0].message.content.strip()
+            logger.info(f"OpenRouter summarization response: {raw_content}")
+
+            data = json.loads(raw_content)
+            return data['summary'], data['categories']
+
         except Exception as e:
-            logging.error(f"OpenRouter summarization failed: {e}")
+            logger.error(f"OpenRouter summarization failed: {e}")
             return None
