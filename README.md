@@ -7,7 +7,7 @@
 
 A full-stack web app and browser extension that helps users **save**, **summarize**, and **search** web content using **embeddings** and **ai-generated summaries**. 
 
-**Live App**: [https://csphere-nly9.vercel.app/]
+**Live App**: [https://www.csphere.io/]
 
 ---
 
