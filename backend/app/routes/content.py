@@ -345,6 +345,7 @@ def get_user_content(
         
         if categories:
             common_tags = set(tags).intersection(categories)
+            
 
             if len(common_tags) >= 1:
                 bookmark_data.append(
