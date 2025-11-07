@@ -161,7 +161,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}
-      {hasNext && <button onClick={() => loadNextBatch()}>load next</button>}
+      {hasNext && <button onClick={() => loadNextBatch()}>load nexts</button>}
     </BookmarkLayout>
   );
 };
