@@ -1,9 +1,25 @@
 // components/CategoryFilter.tsx
 import React, { useState } from "react";
 
+interface Tags {
+  category_id: string;
+  category_name: string;
+}
+
+interface CategoryData {
+  ai_summary: string;
+  content_id: string;
+  first_saved_at: string;
+  notes: string;
+  source: string;
+  tags: Tags[];
+  title: string;
+  url: string;
+}
+
 interface ChildProps {
   choosenCategories: string[];
-  categories: any;
+  categories: Tags[];
   setChoosenCategories: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
