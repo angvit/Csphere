@@ -3,4 +3,4 @@
 
 export const BACKEND_URL = "https://csphere.feeltiptop.com";
 export const FRONTEND_URL = "https://csphere-nly9.vercel.app";
-export const DEPLOYED = true;
+export const DEPLOYED = false;
