@@ -17,6 +17,7 @@ from app.data_models.content_ai import ContentAI
 from app.data_models.category import Category
 from app.classes import iab
 from dotenv import load_dotenv
+from app.data_models.content_item import ContentItem
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -143,10 +144,13 @@ class ContentEmbeddingManager:
         ).data[0].embedding
 
         results = (
-            self.db.query(ContentAI, Content)
+            self.db.query(ContentAI, Content, ContentItem)
             .join(Content, ContentAI.content_id == Content.content_id)
-            .filter(Content.user_id == user_id) #Note: update the content with userId 
+            .join(ContentItem, Content.content_id == ContentItem.content_id)
+            .filter(ContentItem.user_id == user_id)
+            .all()
         )
+        
 
         if start_date and end_date:
             results = results.filter(Content.first_saved_at.between(start_date, end_date))
