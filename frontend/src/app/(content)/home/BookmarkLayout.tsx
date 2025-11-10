@@ -2,7 +2,6 @@
 "use client";
 import React, { ReactNode, useState, createContext, useEffect } from "react";
 import SearchInput from "@/components/SearchInput";
-import CategoryFilter from "@/components/CategoryFilter";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Grid3X3, List, Folder, Clock, BookOpen } from "lucide-react";
@@ -28,7 +27,6 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
   const [metaData, setMetaData] = useState<MetaDataProps>({
     unreadCount: 0,
   });
-  console.log("active tab in bookmark layout: ", activeTab);
 
   useEffect(() => {
     const FetchMetaData = async () => {
@@ -106,7 +104,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
         onValueChange={setActiveTab}
         className="mb-8 space-y-4 "
       >
-        <TabsList className="grid w-full max-w-md grid-cols-3 p-0 mb-6 border rounded-lg bg-transparent border-black">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4 p-0 mb-6 border rounded-lg bg-transparent border-black">
           {(() => {
             const pathname = usePathname();
 
@@ -144,24 +142,17 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
                   </Badge>
                 </Link>
 
-                {/* <Link
-                  href="/home/unread"
+                <Link
+                  href="/home"
                   className={`flex items-center h-full justify-center space-x-2 border-r border-gray-700 transition-colors
             ${
-              pathname === "/home/unread"
+              pathname === "/home/tags"
                 ? "bg-[#202A29] text-white"
                 : "bg-transparent text-[#202A29] hover:bg-gray-100"
             }`}
                 >
-                  <BookOpen className="h-4 w-4" />
-                  <span>Unread</span>
-                  <Badge
-                    variant="secondary"
-                    className="ml-1 bg-blue-300 text-white"
-                  >
-                    {metaData.unreadCount}
-                  </Badge>
-                </Link> */}
+                  <span>Tags</span>
+                </Link>
 
                 <Link
                   href="/home/folders"
