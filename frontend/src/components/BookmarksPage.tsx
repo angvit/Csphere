@@ -6,9 +6,6 @@ import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 import CategoryFilter from "./CategoryFilter";
 import Loading from "./ux/Loading";
-import { List } from "postcss/lib/list";
-import { BoomBox } from "lucide-react";
-import { set } from "zod";
 
 type ChildProps = {
   activeTab?: string;
