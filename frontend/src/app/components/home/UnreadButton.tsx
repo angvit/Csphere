@@ -12,7 +12,7 @@ function UnreadButton() {
         size="sm"
         className="text-gray-600 hover:text-gray-400"
       >
-        Unreadsssss
+        Unread
       </Button>
     </Link>
   );
