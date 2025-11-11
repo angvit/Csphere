@@ -12,12 +12,17 @@ from sqlalchemy.orm import Session
 from sqlalchemy import select
 from uuid import uuid4
 from datetime import datetime, timezone
+
+#data models for the DB 
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
 from app.data_models.category import Category
+from app.data_models.content_item import ContentItem
+
+
 from app.classes import iab
 from dotenv import load_dotenv
-from app.data_models.content_item import ContentItem
+
 
 load_dotenv()
 logger = logging.getLogger(__name__)

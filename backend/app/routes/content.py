@@ -20,6 +20,11 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from sqlalchemy import desc, select 
 
+import requests 
+import json 
+
+from email.utils import quote
+
 router = APIRouter(
     # prefix="/content"
 )
@@ -63,7 +68,26 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
 
 
+def push_to_activemq(message: str):
 
+    ACTIVEMQ_URL='http://feeltiptop.com:8161' 
+    ACTIVEMQ_QUEUE='CSPHEREQUEUE' 
+    ACTIVEMQ_USER='admin'
+    ACTIVEMQ_PASS='tiptop'
+
+
+    try:
+        url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue"
+        headers = {'Content-Type': 'text/plain'}
+
+        response = requests.post(url, data=message, headers=headers, auth=(ACTIVEMQ_USER, ACTIVEMQ_PASS))
+
+        logging.debug(f"Response from ActiveMQ: {response.status_code} - {response.text}")
+        return response.status_code == 200
+    
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error pushing to ActiveMQ: {e}")
+        return False
 
 
 
@@ -77,7 +101,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
     
     try:
-        user_id = user.id
+        user_id = str(user.id)
 
         existing_content = db.query(Content).filter(Content.url == content.url).first()
 
@@ -86,30 +110,53 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
 
         if not existing_content:
+            payload = {
+                "content_payload": {
+                    'url': content.url,
+                    'title': content.title, 
+                    'source': "chrome_extension", 
+                    'first_saved_at': utc_time.isoformat(),
+                },
+                'raw_html': content.html[0:50],
+                'user_id': str(user_id), 
+                'notes': notes,
+                'folder_id': content.folder_id
+            }
+
+            message = json.dumps(payload)
+
+            logger.info(f"Succesfully pushed message to the queue for url: {content.url}")
+
+            push_to_activemq(message=message)
+
+            return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
+
+
+            push_to_activemq(message=message)
+            #create the new content
             new_content = Content(
                 url=content.url,
                 title=content.title,
                 source="chrome_extension",
+                user_id=user_id,
                 first_saved_at=utc_time,
+                read=False
             )
             db.add(new_content)
-            db.flush()  # generate content_id
+            db.flush()  # generate content_id without commit
 
+            # Generate embedding only for new content
+            print("generating manager")
             embedding_manager = ContentEmbeddingManager(db, content_url=content.url)
+            print("done generating")
             raw_html = content.html
-
-            try:
-                content_ai = embedding_manager.process_content(new_content, raw_html)
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                print(f"Embedding generation failed: {e}")
-                # Prevent downstream foreign key error
-                return {"status": "unsuccessful", "error": "Failed to generate summary"}
+            content_ai = embedding_manager.process_content(new_content, raw_html)
+            db.commit()
 
             if not content_ai:
                 print("Embedding generation failed or skipped.")
-
+            else:
+                print("Summary Generated:", content_ai.ai_summary)
         else:
             print("Existing content link")
             new_content = existing_content
@@ -126,14 +173,11 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
         utc_time = datetime.now(timezone.utc)
 
         if not existing_item:
-
             new_item = ContentItem(
                 user_id=user_id,
                 content_id=new_content.content_id,
                 saved_at=utc_time,  
-                notes=notes ,
-
-                read=False
+                notes=notes 
             )
             db.add(new_item)
             db.commit()
@@ -297,18 +341,12 @@ def get_unread_content(cursor: str = None, user_id: UUID = Depends(get_current_u
 @router.get("/content", response_model=UserSavedContentResponse)
 def get_user_content(
     cursor: str = None,
-    categories: list[str] = None, 
     user_id: UUID = Depends(get_current_user_id),
     db: Session = Depends(get_db)
 ):
-    PAGE_SIZE = 10
-
-    if categories:
-        categories = set(categories)
+    PAGE_SIZE = 18
 
     # Parse cursor into datetime if provided
-
-    #note: adding in another param - filters of categories we need to fetch 
     cursor_dt = None
     if cursor:
         try:
@@ -328,8 +366,6 @@ def get_user_content(
     if cursor_dt:
         query = query.filter(ContentItem.saved_at < cursor_dt)
 
-    
-
     query = query.order_by(desc(ContentItem.saved_at)).limit(PAGE_SIZE + 1)
 
     results = query.all()
@@ -343,45 +379,19 @@ def get_user_content(
 
     for item, content, ai_summary in results:
         tags = [CategoryOut.from_orm(cat) for cat in content.categories]
-
-        #calculate the intersection between the two 
-        
-        if categories:
-            common_tags = set(tags).intersection(categories)
-
-
-            if len(common_tags) >= 1:
-                bookmark_data.append(
-                    UserSavedContent(
-                        content_id=content.content_id,
-                        url=content.url,
-                        title=content.title,
-                        source=content.source,
-                        ai_summary=ai_summary,
-                        first_saved_at=item.saved_at,
-                        notes=item.notes,
-                        tags=tags
-                    )
-                )
-                category_list.extend(tags)
-
-        #no categories being filteres - Just add them in 
-        else:
-            bookmark_data.append(
-                UserSavedContent(
-                    content_id=content.content_id,
-                    url=content.url,
-                    title=content.title,
-                    source=content.source,
-                    ai_summary=ai_summary,
-                    first_saved_at=item.saved_at,
-                    notes=item.notes,
-                    tags=tags
-                )
+        bookmark_data.append(
+            UserSavedContent(
+                content_id=content.content_id,
+                url=content.url,
+                title=content.title,
+                source=content.source,
+                ai_summary=ai_summary,
+                first_saved_at=item.saved_at,
+                notes=item.notes,
+                tags=tags
             )
-            category_list.extend(tags)
-
-        
+        )
+        category_list.extend(tags)
 
     unique_categories = {cat.category_id: cat for cat in category_list}.values()
 
@@ -512,7 +522,7 @@ def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db))
 
 @router.post("/user/content/{content_id}")
 def update_read(content_id: UUID, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    content = db.query(ContentItem).filter(ContentItem.content_id == content_id, ContentItem.user_id == user_id).first()
+    content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
 
     if not content:
         raise HTTPException(status_code=404, detail="Content not found or not owned by user")
@@ -537,19 +547,20 @@ def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session 
 def get_recent_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     try:
         results = (
-            db.query(Content, Folder)
+            db.query(Content, Folder, ContentItem)
             .join(ContentAI, ContentAI.content_id == Content.content_id)
             .outerjoin(folder_item, folder_item.content_id == Content.content_id)
+            .join(ContentItem, ContentItem.content_id == Content.content_id)
             .outerjoin(Folder, folder_item.folder_id == Folder.folder_id)
-            .filter(Content.user_id == user_id)
-            .order_by(Content.first_saved_at.desc())
+            .filter(ContentItem.user_id == user_id)
+            .order_by(ContentItem.saved_at.desc())
             .limit(10)
             .all()
         )
 
 
         response = []
-        for content, folder in results:
+        for content, folder, _ in results:
             response.append(ContentWithSummary(
                 content_id=content.content_id,
                 title=content.title,
