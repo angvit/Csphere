@@ -195,7 +195,7 @@ export default async function RootLayout({ children }) {
 
             <div className="mt-8 pt-8 text-center text-white z-40">
               <h3 className="!important !text-white ">
-                2025 CSphere. All rights reserved.
+                2025 Csphere. All rights reserved.
               </h3>
             </div>
           </div>

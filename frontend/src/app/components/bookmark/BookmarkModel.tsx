@@ -62,7 +62,7 @@ export function BookmarkDetailModal({
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
-      month: "long",
+      month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
@@ -71,7 +71,7 @@ export function BookmarkDetailModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[1000px] sm:max-w-none max-h-[100vh] bg-white p-2 flex flex-col">
+      <DialogContent className="w-[1000px] sm:max-w-none max-h-[100vh] bg-gray-300 p-2 flex flex-col">
         <DialogHeader className="p-6 pb-4 ">
           <div className="flex items-start gap-4">
             {bookmark.url ? (
@@ -110,7 +110,6 @@ export function BookmarkDetailModal({
                 size="sm"
                 onClick={() => window.open(bookmark.url, "_blank")}
               >
-                <ExternalLink className="w-4 h-4 mr-2" />
                 Visit
               </Button>
             </div>

@@ -16,10 +16,10 @@ export function formatDate(dateString: string): string {
     month: "short",
     day: "numeric",
     year: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-    timeZoneName: "short",
+    // hour: "numeric",
+    // minute: "numeric",
+    // hour12: true,
+    // timeZoneName: "short",
   }).format(date);
 
   return local_date;

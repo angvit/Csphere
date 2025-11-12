@@ -146,7 +146,7 @@ export default function LandingPage() {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="block mt-4 font-bold italic text-[#202A29] text-5xl md:text-6xl lg:text-7xl bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text "
               >
-                CSphere
+                Csphere
               </motion.span>
             </motion.h1>
 
@@ -207,7 +207,7 @@ export default function LandingPage() {
               className="text-xl text-gray-300"
             >
               Join thousands of users who have already transformed their
-              bookmark management with CSphere. Download the extension today and
+              bookmark management with Csphere. Download the extension today and
               see the difference.
             </motion.p>
             <motion.div
