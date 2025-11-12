@@ -4,14 +4,21 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 from uuid import uuid4
 from datetime import datetime, timezone
+
+#data models for the DB 
 from app.data_models.content import Content
 from app.data_models.content_ai import ContentAI
 from app.data_models.category import Category
+from app.data_models.content_item import ContentItem
+
+
+from app.classes import iab
 from dotenv import load_dotenv
 from app.preprocessing.content_preprocessor import ContentPreprocessor
 from app.ai.summarizer import Summarizer
 from app.ai.embedder import Embedder
 from app.ai.categorizer import Categorizer
+
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -68,11 +75,7 @@ class ContentEmbeddingManager:
             
             self.ai_summary = summary
             
-            print("generating categories: ")
-            categories = self.categorizer.categorize(self.ai_summary)
-
-            print("categories returned: ", categories)
-
+        
 
             #Now create categories that are not yet in the DB
             category_set = set()

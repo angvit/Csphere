@@ -22,6 +22,11 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from sqlalchemy import desc, select 
 
+import requests 
+import json 
+
+from email.utils import quote
+
 router = APIRouter(
     # prefix="/content"
 )
@@ -66,7 +71,26 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
 
 
+def push_to_activemq(message: str):
 
+    ACTIVEMQ_URL='http://feeltiptop.com:8161' 
+    ACTIVEMQ_QUEUE='CSPHEREQUEUE' 
+    ACTIVEMQ_USER='admin'
+    ACTIVEMQ_PASS='tiptop'
+
+
+    try:
+        url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue"
+        headers = {'Content-Type': 'text/plain'}
+
+        response = requests.post(url, data=message, headers=headers, auth=(ACTIVEMQ_USER, ACTIVEMQ_PASS))
+
+        logging.debug(f"Response from ActiveMQ: {response.status_code} - {response.text}")
+        return response.status_code == 200
+    
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error pushing to ActiveMQ: {e}")
+        return False
 
 
 
@@ -80,7 +104,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
     
     try:
-        user_id = user.id
+        user_id = str(user.id)
 
         existing_content = db.query(Content).filter(Content.url == content.url).first()
 
@@ -89,6 +113,30 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
 
         if not existing_content:
+            payload = {
+                "content_payload": {
+                    'url': content.url,
+                    'title': content.title, 
+                    'source': "chrome_extension", 
+                    'first_saved_at': utc_time.isoformat(),
+                },
+                'raw_html': content.html[0:50],
+                'user_id': str(user_id), 
+                'notes': notes,
+                'folder_id': content.folder_id
+            }
+
+            message = json.dumps(payload)
+
+            logger.info(f"Succesfully pushed message to the queue for url: {content.url}")
+
+            push_to_activemq(message=message)
+
+            return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
+
+
+            push_to_activemq(message=message)
+            #create the new content
             new_content = Content(
                 url=content.url,
                 title=content.title,
@@ -552,19 +600,20 @@ def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session 
 def get_recent_content(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     try:
         results = (
-            db.query(Content, Folder)
+            db.query(Content, Folder, ContentItem)
             .join(ContentAI, ContentAI.content_id == Content.content_id)
             .outerjoin(folder_item, folder_item.content_id == Content.content_id)
+            .join(ContentItem, ContentItem.content_id == Content.content_id)
             .outerjoin(Folder, folder_item.folder_id == Folder.folder_id)
-            .filter(Content.user_id == user_id)
-            .order_by(Content.first_saved_at.desc())
+            .filter(ContentItem.user_id == user_id)
+            .order_by(ContentItem.saved_at.desc())
             .limit(10)
             .all()
         )
 
 
         response = []
-        for content, folder in results:
+        for content, folder, _ in results:
             response.append(ContentWithSummary(
                 content_id=content.content_id,
                 title=content.title,
