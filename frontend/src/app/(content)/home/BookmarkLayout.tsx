@@ -136,7 +136,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
                   <span>Unread</span>
                   <Badge
                     variant="secondary"
-                    className="ml-1 bg-blue-300 text-white"
+                    className="ml-1 bg-[#202A29] text-white"
                   >
                     {metaData.unreadCount}
                   </Badge>
@@ -156,7 +156,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
 
                 <Link
                   href="/home/folders"
-                  className={`flex items-center h-full justify-center space-x-2 border-r border-gray-700 transition-colors
+                  className={`flex items-center h-full justify-center space-x-2 rounded-r-lg border-gray-700 transition-colors
             ${
               pathname === "/home/folders"
                 ? "bg-[#202A29] text-white"

@@ -135,7 +135,7 @@ export default function FeatureSection() {
             id="csphere-demo"
             className="text-3xl md:text-4xl font-bold pt-serif-regular mb-8"
           >
-            See CSphere in action
+            Csphere in action
           </h3>
           <div className="relative max-w-4xl mx-auto">
             <div className="absolute inset-0 bg-gradient-to-r from-white/20 via-white/10 to-white/20 rounded-2xl blur-2xl" />
@@ -146,7 +146,7 @@ export default function FeatureSection() {
                   <div className="w-3 h-3 bg-yellow-400 rounded-full" />
                   <div className="w-3 h-3 bg-green-400 rounded-full" />
                   <div className="ml-4 text-sm text-gray-400">
-                    CSphere Extension
+                    Csphere Extension
                   </div>
                 </div>
                 <div className="aspect-video bg-gradient-to-br from-[#202A29] to-[#1a2221] flex items-center justify-center">

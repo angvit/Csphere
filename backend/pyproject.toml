@@ -1,4 +1,4 @@
-uvicorn[project]
+[project]
 name = "backend"
 version = "0.1.0"
 description = "Add your description here"

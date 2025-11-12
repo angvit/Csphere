@@ -54,8 +54,8 @@ const CategoryButton: React.FC<CategoryButtonProps> = ({
   return (
     <button
       onClick={handleAppend}
-      className={`px-3 py-1 rounded-full border-[0.5px] border-black text-sm text-black hover:bg-gray-100 transition-colors
-      ${selected ? "bg-gray-100" : "bg-gray-300"}`}
+      className={`px-3 py-1 rounded-full border-[0.5px] border-black text-sm text-black hover:bg-[#202A29] hover:text-white transition-colors
+      ${selected ? "bg-[#202A29] text-white" : ""}`}
     >
       {category_name}
     </button>

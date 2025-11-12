@@ -24,6 +24,17 @@ import {
 } from "@/components/ui/popover";
 import BookMarkSettingIcon from "./BookMarkSettingIcon";
 import { BookmarkDetailModal } from "@/app/components/bookmark/BookmarkModel";
+import { NoteButton } from "./NoteButton";
+
+interface NoteButtonProps {
+  handleNotePopoverClick: (e: React.MouseEvent) => void;
+  editNotes: boolean;
+  setEditNotes: (editNotes: boolean) => void;
+  noteContent: string;
+  setNoteContent: (noteContent: string) => void;
+  bookmark: Bookmark;
+  saveNoteToBackend: (bookmarkId: string, content: string) => Promise<boolean>;
+}
 
 interface BookmarkCardProps {
   bookmark: Bookmark;
@@ -218,74 +229,7 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
         )}
 
         <div className="relative mt-4">
-          <div onClick={handleNotePopoverClick}>
-            <Popover>
-              <PopoverTrigger asChild>
-                <NotebookPen className="text-gray-700 px-1 hover:cursor-pointer" />
-              </PopoverTrigger>
-              <PopoverContent
-                side="top"
-                align="start"
-                sideOffset={10}
-                className="w-80 z-10 relative bg-gradient-to-br from-white/80 to-white/60 text-black rounded-2xl shadow-xl p-0"
-              >
-                <div className="h-64">
-                  {/* Content Area */}
-                  <div className="relative h-full">
-                    {editNotes ? (
-                      <textarea
-                        onChange={(e) => setNoteContent(e.target.value)}
-                        value={noteContent}
-                        placeholder="Start typing your note..."
-                        className="w-full h-full resize-none rounded-xl p-3 bg-white/80 text-gray-800 placeholder-gray-500 text-sm leading-relaxed transition-all duration-200 focus:outline-none focus:ring-0 focus:border-none border-none"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-white/60 backdrop-blur-sm rounded-xl p-3 overflow-y-auto">
-                        {noteContent ? (
-                          <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                            {noteContent}
-                          </p>
-                        ) : (
-                          <p className="text-gray-500 text-sm italic flex items-center justify-center h-full">
-                            Click the pen to add a note...
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <button
-                      onClick={async () => {
-                        if (editNotes) {
-                          const success = await saveNoteToBackend(
-                            bookmark.content_id,
-                            noteContent
-                          );
-                          if (success) {
-                            setEditNotes(false); // Exit edit mode
-                          }
-                        } else {
-                          setEditNotes(true); // Enter edit mode
-                        }
-                      }}
-                      className={`group overflow-hidden rounded-full w-12 h-12 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 absolute bottom-4 right-4 focus:outline-none focus:ring-0 focus:border-none border-none ${
-                        editNotes
-                          ? "bg-green-600 hover:bg-green-700 shadow-lg shadow-green-600/30"
-                          : "bg-gray-800 hover:bg-gray-700 shadow-lg shadow-gray-800/30"
-                      }`}
-                      title={editNotes ? "Save note" : "Edit note"}
-                    >
-                      <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
-                      {editNotes ? (
-                        <Check className="text-white h-5 w-5 relative z-10 transition-transform duration-200 group-hover:scale-110" />
-                      ) : (
-                        <Pen className="text-white h-5 w-5 relative z-10 transition-transform duration-200 group-hover:scale-110" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-
+      
           {showNotes && <NotePopup note={bookmark.notes} />}
 
           {/* Footer */}
@@ -295,20 +239,19 @@ export default function BookmarkCard({ bookmark }: BookmarkCardProps) {
               onClick={(e) => setReadLink(e)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-blue-500 text-sm underline flex items-center"
+              className="inline-flex items-center gap-2 border border-black rounded-md px-3 py-1 text-sm text-black hover:bg-[#202A29] hover:text-white transition-colors"
             >
-              Visit <ExternalLink className="h-4 w-4 ml-1" />
+              Visit
             </a>
             <Button
               variant="ghost"
               size="icon"
-              className="hover:bg-gray-100"
+              className="text-[#202A29]"
               onClick={toggleSaved}
             >
               <BookmarkIcon
-                className={`h-4 w-4 ${
-                  saved ? "fill-current text-blue-500" : "text-gray-400"
-                }`}
+                className="h-4 w-4 text-[#202A29]"
+                fill={saved ? "currentColor" : "none"}
               />
             </Button>
           </div>
