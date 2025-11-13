@@ -3,8 +3,9 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from typing import Annotated
+from uuid import UUID
+from jwt import exceptions as jwt_exceptions
 
-from jose import JWTError
 
 import jwt
 
@@ -15,16 +16,23 @@ import os
 from dotenv import load_dotenv
 
 
+from pathlib import Path
+dotenv_path = Path(__file__).resolve().parent.parent / "api" / ".env"
+print("Loading .env file from:", dotenv_path)
+load_dotenv(dotenv_path)
 
-load_dotenv()
 SECRET_KEY = os.getenv('SECRET_KEY')
+print("Secret key from .env within hashing file:", SECRET_KEY)
 
 if isinstance(SECRET_KEY, str):
     print("Secret key loaded successfully")
 
+else:
+    print("Secret key not loaded. Please check your .env file.")
+
 
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 
 
 
 class Token(BaseModel):
@@ -66,17 +74,17 @@ def create_access_token(data: dict, expires_delta=None):
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
     else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        expire = datetime.utcnow() + timedelta(days=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     if "sub" not in to_encode:
         raise ValueError("Token data must include 'sub' key for username")
-    encoded_jwt = jwt.encode(to_encode, "512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf", algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
 
 
 def decode_token(token: str):
     try:
-        payload = jwt.decode(token, "512bcfdd4ffa9ee829d06e4539032242c16cb9bcba75110cb0cdca4f799954cf", algorithms=[ALGORITHM])
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
             raise KeyError("sub")
@@ -86,7 +94,7 @@ def decode_token(token: str):
     return token_data
 
 
-def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+def get_current_user_id(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -94,11 +102,15 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
     )
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        user_id: str = payload.get("sub")
+        print("Decoded token payload:", payload)
+        print("User ID extracted from token:", user_id)
+        if user_id is None:
             raise credentials_exception
-        token_data = TokenData(username=username)
-    except JWTError:
+        # token_data = TokenData(username=username)
+        return UUID(user_id)
+    except jwt_exceptions.PyJWTError:
+        print("error occured in get_current_user_id")
         raise credentials_exception
 
     # You can fetch the user from your DB here, but for example purposes:
@@ -106,4 +118,3 @@ def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 
   
     
-    return True

@@ -3,43 +3,33 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AI Content Curator</title>
+    <title>CSphere Bookmark</title>
     <link rel="stylesheet" href="popup.css" />
     <script src="popup.js" type="module"></script>
   </head>
   <body>
     <div id="app">
-      <header>
-        <div class="logo">
-          <i class="fas fa-robot"></i>
-        </div>
-        <h1>AI Content Curator</h1>
-        <button id="settingsBtn" class="icon-button" title="Settings">
-          <i class="fas fa-cog"></i>
-        </button>
+      <!-- <header>
+        <a
+          target="_blank"
+          href="https://csphere-nly9.vercel.app/"
+          rel="noopener noreferrer"
+        >
+          <img class="logo" src="images/Csphere-icon-128.png"/>
+        </a>
       </header>
+      <textarea id="emailTextarea" class="EmailTextarea"></textarea>
 
-      <div class="search-container">
-        <div class="search-input-wrapper">
-          <i class="fas fa-search search-icon"></i>
-          <input
-            type="text"
-            id="searchInput"
-            placeholder="Search your bookmarks..."
-          />
-        </div>
+      <div class="notes-container">
+        <textarea
+          id="notesTextarea"
+          class="notes-textarea"
+          placeholder="Add any notes here..."
+        ></textarea>
+        <div class="character-counter"><span id="charCount">0</span>/280</div>
       </div>
 
-      <div id="content" class="content-container">
-        <!-- Content will be loaded dynamically -->
-        <div class="empty-state">
-          <div class="empty-icon">
-            <i class="fas fa-bookmark"></i>
-          </div>
-          <p>No bookmarks yet</p>
-          <span>Bookmark interesting content to see it here</span>
-        </div>
-      </div>
+      <div class="user-folders"></div>
 
       <div class="action-bar">
         <button id="bookMarkBtn" class="primary-button">
@@ -47,8 +37,7 @@
           Bookmark Page
         </button>
       </div>
+      <p class="message-p"></p> -->
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
   </body>
 </html>

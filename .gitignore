@@ -7,3 +7,15 @@ __pycache__/
 backend/app/data_models/__pycache__/content.cpython-312.pyc
 backend/app/db/__pycache__/database.cpython-312.pyc
 **/venv
+
+/chrome_extension.zip
+**/chrome_extension.zip
+**/chrome_extension (2).zip
+
+
+/backend/.vercel
+
+/bin.py
+/input.bin
+
+/worker

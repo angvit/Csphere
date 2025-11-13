@@ -1,39 +1,35 @@
 import uvicorn 
-from fastapi import FastAPI, Depends, Query, HTTPException, Request, Header
-from sqlalchemy.orm import Session
-from uuid import UUID
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import create_engine
-from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from uuid import uuid4
-from uuid import UUID
+from starlette.requests import Request
+
 from dotenv import load_dotenv
-from datetime import datetime
 import os 
+import logging
+import sys
 
-from app.db.database import get_db
-from app.data_models.content import Content
-from app.data_models.content_item import ContentItem
-from app.schemas.content import ContentCreate, ContentRead
-from app.schemas.user import UserCreate, UserSignIn
-from app.utils.preprocessor import QueryPreprocessor
-from app.embeddings.content_embedding_manager import ContentEmbeddingManager
-from app.data_models.user import User
-from app.db import init_db
 
-from app.utils.hashing import get_password_hash, verify_password, create_access_token, decode_token
+from app.routes import user_router, folder_router, auth_router, content_router, setting_router
 
+# Load environment variables from a .env file
 load_dotenv()
+
 
 app = FastAPI()
 
-# change link later once deployed
-origins = [
-    "*",
-    "http://localhost:3000"
-]
+logger = logging.getLogger(__name__)
+
+# StreamHandler
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger.info('API is starting up')
+
+
+# Update CORS origins
+origins = ["*"]
 
 app.add_middleware(
     CORSMiddleware,
@@ -43,167 +39,30 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-class ContentFromUrl(BaseModel):
-    url: str
-    title: str
+
+app.include_router(user_router)
+app.include_router(folder_router)
+app.include_router(auth_router)
+app.include_router(content_router)
+app.include_router(setting_router)
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(f"Response status: {response.status_code} for {request.method} {request.url.path}")
+    return response
+
+@app.post("/")
+def status():
+    return {'status' : 'alive'}
+
+
+logger.info('API has started up')
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app.api.main:app", host="0.0.0.0", port=port)
 
 
 
-@app.post("/api/signup", response_model=UserCreate)
-def create_user(user: UserCreate, db: Session = Depends(get_db)):
-    print("User being created: ", user)
-
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid user data")
-    
-    hashed_password = get_password_hash(user.password)
-    print("Hashed password: ", hashed_password)
-    user.password = hashed_password
-
-    # Check if user already exists by username
-    existing_user = db.query(User).filter(User.username == user.username).first()
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Username already registered")
-    
-    #Insert user into the database
-    new_user = User(
-        id=uuid4(),  # Generate UUID for the user
-        username=user.username,
-        email=user.email,
-        password=user.password,
-        created_at=datetime.utcnow() if not user.created_at else user.created_at,
-    )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)  # Refresh to get the user with the generated ID
-
-    print("User created: ", new_user)
-
-    return {"username": user.username, "email": user.email, "password": user.password}
-
-
-@app.post("/api/login")
-def login(user: UserSignIn,  request: Request, db: Session = Depends(get_db)):
-    if not user:
-        raise HTTPException(status_code=400, detail="Invalid user data")
-
-    # Check if the user exists
-    db_user = db.query(User).filter(User.username == user.username).first()
-    if not db_user:
-        print("User not found: ", user.username)
-        raise HTTPException(status_code=400, detail="User not found")
-    
-    print("User found: ", db_user, "id of user: ", db_user.id)
-
-    # Verify the password
-    if not verify_password(user.password, db_user.password):
-        print("Incorrect password for user: ", user.username)
-         # If the password is incorrect, raise an HTTPException
-         # This will return a 400 status code with the detail "Incorrect password"
-        raise HTTPException(status_code=400, detail="Incorrect password")
-    
-    token = create_access_token(data={"sub": str(db_user.id)})
-    print("Token created: ", token)
-
-    return {"username": db_user.username, "token": token}
-   
-
-@app.get("/search")
-def search(query: str, user_id: UUID = Query(...),db: Session = Depends(get_db)):
-    preprocessor = QueryPreprocessor()
-    parsed_query = preprocessor.preprocess_query(query)
-
-    manager = ContentEmbeddingManager(db)
-    results = manager.query_similar_content(
-        query=parsed_query,
-        user_id=user_id,
-    )
-
-    return [
-        {
-            "content_id": content_ai.content_id,
-            "title": content.title,
-            "ai_summary": content_ai.ai_summary,
-            "url": content.url
-        }
-        for content_ai, content in results
-    ]
-
-
-@app.post("/content/save", response_model=ContentRead)
-def save_content(content: ContentCreate, db: Session = Depends(get_db), request: Request = None):
-    token = request.headers.get("Authorization")[7:] if request.headers.get("Authorization") else None
-    print("Token from header:", token)
-    if not token:
-        raise HTTPException(status_code=401, detail="Token not provided")
-    
-    #decode the token to get the user id
-    data = decode_token(token) 
-    print("Decoded token data: ", data)
-    if not data:
-        raise HTTPException(status_code=401, detail="Invalid token")
-    user_id = data.username 
-
-    print("User ID from token: ", user_id)
-    print("Content being saved: ", content)
-
-    # Check if content already exists globally
-    existing_content = db.query(Content).filter(Content.url == content.url).first()
-
-    if not existing_content:
-        print("New Content link")
-        new_content = Content(**content.model_dump())
-        db.add(new_content)
-        db.commit()
-        db.flush() # generate content_id
-
-        # only embed if new content
-        embedding_manager = ContentEmbeddingManager(db)
-        content_ai = embedding_manager.process_content(new_content)
-        if not content_ai:
-            print("Embedding generation failed or skipped.")
-        else:
-            print("Summary Generated:", content_ai.ai_summary)
-    else:
-        print("Existing content link")
-        new_content = existing_content
-
-    # Check if this user already saved it
-    existing_item = db.query(ContentItem).filter(
-        ContentItem.user_id == user_id,
-        ContentItem.content_id == new_content.content_id
-    ).first()
-
-    if not existing_item:
-        db.add(ContentItem(user_id=user_id, content_id=new_content.content_id))
-        db.commit()
-
-    print("Successfully saved content for user.")
-    return new_content
-
-
-# gets all content for a specific user 
-@app.get("/content", response_model=list[ContentRead])
-def get_user_content(user_id: UUID = Query(...), db: Session = Depends(get_db)):
-    return db.query(Content).filter(Content.user_id == user_id).all()
-
-
-# gets a single piece of content for a specific user
-@app.get("/content/{content_id}", response_model=ContentRead)
-def get_piece_content(content_id: UUID, user_id: UUID = Query(...), db: Session = Depends(get_db)):
-    content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
-
-    if not content:
-        raise HTTPException(status_code=404, detail="Content not found for this user")
-    return content
-
-
-app.delete("/content/{content_id}", status_code=204)
-def delete_content(content_id: UUID, user_id: UUID, db: Session=Depends(get_db)):
-    content = db.query(Content).filter(Content.content_id == content_id, Content.user_id == user_id).first()
-    if not content:
-        raise HTTPException(status_code=404, detail="Content not found or not owned by user")
-
-    db.delete(content)
-    db.commit()
-    return

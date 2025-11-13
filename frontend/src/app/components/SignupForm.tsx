@@ -1,5 +1,4 @@
 "use client";
-import { useEffect } from "react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,7 +15,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { PasswordInput } from "@/components/ui/password-input";
 import Link from "next/link";
-import HttpClient from "@/app/classes/fetchclass";
+import { GoogleLogin } from "@react-oauth/google";
+import { jwtDecode } from "jwt-decode";
+import { useRouter } from "next/navigation";
 
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
@@ -26,10 +27,33 @@ const formSchema = z.object({
   confirmpassword: z.string(),
 });
 
-interface responseData {
-  status?: number;
-  data?: JSON;
-  error?: string;
+interface GoogleUserData {
+  username: String;
+  email: String;
+  google_id: string;
+}
+
+interface GoogleDecodeInterface {
+  aud: string;
+  azp: string;
+  email: string;
+  email_verified: boolean;
+  exp: number;
+  family_name: string;
+  given_name: string;
+  iat: number;
+  iss: string;
+  jti: string;
+  name: string;
+  nbf: number;
+  picture: string;
+  sub: string;
+}
+
+interface ResponseData {
+  success: boolean;
+  message: string;
+  token: string;
 }
 
 export default function SignupForm() {
@@ -38,43 +62,64 @@ export default function SignupForm() {
     defaultValues: {
       username: "",
       email: "",
-      confirmemail: "",
       password: "",
       confirmpassword: "",
     },
   });
 
-  const watchedEmail = form.watch("email");
+  const router = useRouter();
 
-  useEffect(() => {
-    console.log("Email changed:", watchedEmail);
-  }, [watchedEmail]);
+  const googleSignUp = async (credentials: any) => {
+    try {
+      const data: GoogleDecodeInterface = jwtDecode(credentials.credential);
 
-  async function onSubmit(
-    values: z.infer<typeof formSchema>
-  ): Promise<responseData> {
+      const googleUserInfo: GoogleUserData = {
+        username: data.name,
+        email: data.email,
+        google_id: data.sub,
+      };
+
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/google/signup`;
+
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(googleUserInfo),
+      });
+
+      if (!response.ok) {
+        console.error("Signup failed", await response.text());
+        return;
+      }
+
+      const responseData: ResponseData = await response.json();
+      console.log("data:", responseData);
+
+      if (responseData.success === true) {
+        document.cookie = `token=${responseData.token}; path=/; max-age=3600`;
+        router.push("/home");
+      }
+    } catch (error) {
+      console.error("Google signup error:", error);
+    }
+  };
+
+  async function onSubmit(values: z.infer<typeof formSchema>): Promise<void> {
     try {
       console.log(values);
       if (values.password !== values.confirmpassword) {
         toast.error("Passwords do not match.");
         return;
       }
-      if (values.email !== values.confirmemail) {
-        toast.error("Emails do not match.");
-        return;
-      }
 
-      //MAKE THE API REQUEST
-      const client = new HttpClient({
-        baseUrl: "http://127.0.0.1:8000",
-        defaultOpts: {
-          headers: {
-            "Content-Type": "application/json",
-          },
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/user/signup`;
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-      });
-
-      const response = await client.post("/api/signup", {
         body: JSON.stringify({
           username: values.username,
           email: values.email,
@@ -82,13 +127,14 @@ export default function SignupForm() {
         }),
       });
 
-      console.log("Response:", response);
-
-      if (response.status === 200) {
-        toast.success("Signup successful!");
-      } else {
-        toast.error("Signup failed. Please try again.");
+      if (!response.ok) {
+        const responseBody = await response.json();
+        console.error("HTTP Error:", responseBody);
+        toast.error(responseBody.detail || "Signup failed. Please try again.");
+        return;
       }
+
+      toast.success("Signup successful!");
     } catch (error) {
       console.error("Form submission error", error);
       toast.error("Failed to submit the form. Please try again.");
@@ -97,7 +143,10 @@ export default function SignupForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="text-black">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="text-black space-y-3"
+      >
         <FormField
           control={form.control}
           name="username"
@@ -122,21 +171,6 @@ export default function SignupForm() {
               <FormControl>
                 <Input placeholder="Email " type="email" {...field} />
               </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="confirmemail"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Confirm Email </FormLabel>
-              <FormControl>
-                <Input placeholder="confirm email " type="email" {...field} />
-              </FormControl>
-
               <FormMessage />
             </FormItem>
           )}
@@ -177,8 +211,13 @@ export default function SignupForm() {
           Submit
         </Button>
       </form>
+      <hr className="border-black mb-4" />
+      <GoogleLogin
+        onSuccess={(credentials) => googleSignUp(credentials)}
+        onError={() => toast.error("Failed to signup with google.")}
+        text="signup_with"
+      />
 
-      <hr />
       <div className="text-center text-gray-400 mt-4">
         <p className="text-sm">Have an account?</p>
         <Link href="/login">
