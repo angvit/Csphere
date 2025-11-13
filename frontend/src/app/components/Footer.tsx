@@ -94,7 +94,7 @@ export default function Footer() {
         </div>
 
         <div className="mt-4 md:mt-6 pt-0 text-center text-white z-40">
-          <h3 className="text-white">2025 Csphere. All rights reserved.</h3>
+          <h3 className="!text-white">2025 Csphere. All rights reserved.</h3>
         </div>
       </div>
     </footer>
