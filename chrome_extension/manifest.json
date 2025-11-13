@@ -22,13 +22,8 @@
     "default_popup": "popup.html",
     "default_icon": "images/Csphere-icon-128.png"
   },
-  "homepage_url": "https://csphere-nly9.vercel.app/",
+  "homepage_url": "https://csphere.io",
   "host_permissions": [
-    "http://localhost:3000/",
-    "http://127.0.0.1:3000/",
-    "http://localhost:8000/",
-    "http://127.0.0.1:8000/",
-    "https://pacific-citadel-30742-a7291f1f6593.herokuapp.com/",
-    "https://csphere-nly9.vercel.app/"
+    "https://csphere.feeltiptop.com/"
   ]
 }
