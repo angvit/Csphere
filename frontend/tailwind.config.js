@@ -9,6 +9,7 @@ module.exports = {
     extend: {
       fontFamily: {
         ptserif: "var(--font-pt-serif)",
+        custom: "var(--font-custom)",
       },
       colors: {
         "custom-teal": "#202A29",

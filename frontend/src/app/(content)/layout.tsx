@@ -1,4 +1,4 @@
-import { Geist, Geist_Mono, PT_Serif } from "next/font/google";
+import { Geist, Geist_Mono, Poppins } from "next/font/google";
 
 import "../globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -9,7 +9,7 @@ import LogoComponent from "@/app/components/LogoComponent";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import AuthNavbar from "../components/navbar/AuthNavbar";
 import AuthIcon from "../components/navbar/AuthIcon";
-import Link from "next/link";
+ 
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,14 +21,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const ptSerif = PT_Serif({
-  weight: ["400", "700"],
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-pt-serif",
+  variable: "--font-poppins",
 });
 
-const fontFamily = `${geistSans.variable}, ${geistMono.variable}, ${ptSerif.variable}`;
+const fontFamily = `${geistSans.variable}, ${geistMono.variable}, ${poppins.variable}`;
 
 export const metadata = {
   title: "Csphere",
@@ -41,9 +41,9 @@ export default async function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={ptSerif.className}
-      // style={{ "--font-custom": fontFamily }}
-    >
+      className={poppins.className}
+      style={{ ["--font-custom" as string]: fontFamily }} 
+      >
       <body className="relative font-custom">
         <header className="h-28  bg-gray-300 w-full flex items-center justify-between px-6 sm:px-8 lg:px-16">
           <div className="flex items-center space-x-4 md:space-x-8">
