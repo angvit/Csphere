@@ -120,11 +120,11 @@ function page() {
   ];
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-gray-300 text-white pt-serif">
+    <div className="min-h-screen w-full flex items-center justify-center bg-gray-300 text-white pb-24 md:pb-32">
       <div className="min-h-screen w-full flex items-center justify-center p-6 mt-32">
         <div className="max-w-6xl w-full">
           <div className="text-center mb-12">
-            <h1 className="pt-serif-bold text-4xl mb-4">
+            <h1 className="font-semibold text-4xl mb-4">
               Chrome Extension Setup
             </h1>
             <p className="text-gray-300 text-lg">
@@ -152,9 +152,9 @@ function page() {
                       <svg
                         className={`w-6 h-6 transition-transform ${
                           openSteps[step.number] ? "rotate-180" : ""
-                        }`}
+                        }`}   
                         fill="none"
-                        stroke="currentColor"
+                        stroke="black"
                         viewBox="0 0 24 24"
                       >
                         <path

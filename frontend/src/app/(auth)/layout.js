@@ -1,4 +1,5 @@
-import { Geist, Geist_Mono, PT_Serif } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
+import { Poppins } from "next/font/google";
 
 import "../globals.css";
 import { Toaster } from "@/components/ui/sonner";
@@ -20,14 +21,14 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const ptSerif = PT_Serif({
-  weight: ["400", "700"],
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700"],
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-pt-serif",
+  variable: "--font-poppins",
 });
 
-const fontFamily = `${geistSans.variable}, ${geistMono.variable}, ${ptSerif.variable}`;
+const fontFamily = `${geistSans.variable}, ${geistMono.variable}, ${poppins.variable}`;
 
 export const metadata = {
   title: "Csphere",
@@ -46,7 +47,7 @@ export default async function RootLayout({ children }) {
   return (
     <html
       lang="en"
-      className={ptSerif.className}
+      className={poppins.className}
       style={{ "--font-custom": fontFamily }}
     >
       <body className="relative font-custom">

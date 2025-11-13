@@ -137,14 +137,14 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-4xl md:text-5xl lg:text-6xl pt-serif-regular text-center  mb-6 leading-tight"
+              className="text-4xl md:text-5xl lg:text-6xl text-center mb-6 leading-tight font-normal"
             >
               Rediscover your bookmarks with{" "}
               <motion.span
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="block mt-4 font-bold italic text-[#202A29] text-5xl md:text-6xl lg:text-7xl bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text "
+                className="block mt-4 font-bold italic text-[#202A29] text-5xl md:text-6xl lg:text-7xl bg-gradient-to-r from-white via-gray-100 to-white bg-clip-text"
               >
                 Csphere
               </motion.span>
@@ -154,7 +154,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-base md:text-xl pt-serif-semibold text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed"
+              className="text-base md:text-xl font-semibold text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed"
             >
               Never lose your content again. Organize, search, and access your
               bookmarks seamlessly across all your devices.
@@ -187,7 +187,7 @@ export default function LandingPage() {
       <FeatureSection />
 
       {/* Final CTA Section */}
-      <section className="py-20 flex w-full h-full items-center justify-center md:py-32 bg-gray-300 text-white">
+      <section className="pt-24 md:pt-24 pb-20 md:pb-32 flex w-full h-full items-center justify-center bg-gray-300 text-white">
         <div className="container px-4 md:px-6 text-center">
           <div className="space-y-8 max-w-3xl mx-auto">
             <motion.h2
@@ -195,7 +195,7 @@ export default function LandingPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl"
+              className="text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl"
             >
               Ready to organize your bookmarks?
             </motion.h2>
