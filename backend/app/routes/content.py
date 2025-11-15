@@ -102,15 +102,13 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
     if not user:
         raise HTTPException(status_code=400, detail="User not found")
 
-    
     try:
         user_id = str(user.id)
+        folder_id = str(content.folder_id)
 
         existing_content = db.query(Content).filter(Content.url == content.url).first()
 
-        utc_time = datetime.now(timezone.utc)
-
-
+        utc_time = datetime.now(timezone.utc)   
 
         if not existing_content:
             payload = {
@@ -121,9 +119,9 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
                     'first_saved_at': utc_time.isoformat(),
                 },
                 'raw_html': content.html[0:50],
-                'user_id': str(user_id), 
+                'user_id': user_id,     
                 'notes': notes,
-                'folder_id': content.folder_id
+                'folder_id': folder_id
             }
 
             message = json.dumps(payload)
@@ -133,7 +131,6 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
             push_to_activemq(message=message)
 
             return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
-
 
             push_to_activemq(message=message)
             #create the new content
@@ -231,7 +228,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
     except Exception as e:
         print("error occured in saving the bookmark: ", str(e))
-        return {'status': "unsucessful", 'error': str(e)}
+        return {'status': "unsuccessful", 'error': str(e)}
     
 
 @router.get("/content/unread/count")
