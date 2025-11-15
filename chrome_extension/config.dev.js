@@ -2,5 +2,5 @@
 // export const FRONTEND_URL = "http://localhost:3000";
 
 export const BACKEND_URL = "https://csphere.feeltiptop.com";
-export const FRONTEND_URL = "https://csphere-nly9.vercel.app";
-export const DEPLOYED = false;
+export const FRONTEND_URL = "https://csphere.io";
+export const DEPLOYED = true;
