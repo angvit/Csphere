@@ -65,8 +65,16 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       setOriginalBookmarks((prev) => [...prev, ...data.bookmarks]);
 
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
-      setCategories((prev) => [...prev, ...data.categories]);
+      setCategories((prev) => {
+        let filtered_categories: Tags[] = [];
+        for (let i = 0; i < data.categories.lenth; i++) {
+          if (data.categories[i].category_name.trim() !== "")
+            filtered_categories.push(data.categories[i]);
+        }
+        const merged = [...prev, ...filtered_categories];
 
+        return [...new Set(merged)];
+      });
       setHasNext(data.has_next);
 
       if (data.has_next) {
@@ -89,8 +97,6 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       } else {
         console.log("user has reached the end of his bookmarks");
       }
-
-      // setVisibleCount((prev) => Math.min(prev + POSTS_PER_LOAD, posts.length));
     }
   };
 
