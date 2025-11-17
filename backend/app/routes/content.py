@@ -126,9 +126,10 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             message = json.dumps(payload)
 
-            logger.info(f"Succesfully pushed message to the queue for url: {content.url}")
+            
 
             push_to_activemq(message=message)
+            logger.info(f"Succesfully pushed message to the queue for url: {content.url}")
 
             return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
 
