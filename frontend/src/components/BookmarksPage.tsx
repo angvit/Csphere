@@ -77,6 +77,28 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     }
   };
 
+  const handleScroll = () => {
+    const scrollTop = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const fullHeight = document.documentElement.scrollHeight;
+
+    if (scrollTop + windowHeight >= fullHeight - 100) {
+      console.log("near the bottom");
+      if (hasNext === true) {
+        loadNextBatch();
+      } else {
+        console.log("user has reached the end of his bookmarks");
+      }
+
+      // setVisibleCount((prev) => Math.min(prev + POSTS_PER_LOAD, posts.length));
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [bookmarks.length]);
+
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
       .split("; ")
@@ -163,7 +185,11 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}
-      {hasNext && <button onClick={() => loadNextBatch()}>load nexts</button>}
+      {!hasNext && (
+        <h1 className="text-center">
+          You've reached the end of your bookmarks!{" "}
+        </h1>
+      )}
     </BookmarkLayout>
   );
 };
