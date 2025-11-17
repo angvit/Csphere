@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import BookmarkList from "./BookmarkList";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 import { LayoutContext } from "@/app/(content)/home/BookmarkLayout";
