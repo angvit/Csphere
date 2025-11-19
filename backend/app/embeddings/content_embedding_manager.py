@@ -142,12 +142,12 @@ class ContentEmbeddingManager:
             .join(Content, ContentAI.content_id == Content.content_id)
             .join(ContentItem, Content.content_id == ContentItem.content_id)
             .filter(ContentItem.user_id == user_id)
-            .all()
         )
         
 
         if start_date and end_date:
             results = results.filter(Content.first_saved_at.between(start_date, end_date))
+        logger.info(f"Current results for search: {results}")
 
         results = (
             results.order_by(ContentAI.embedding.l2_distance(query_embedding))
