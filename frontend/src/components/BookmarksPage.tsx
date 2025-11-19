@@ -25,6 +25,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [cursor, setCursor] = useState<string>("");
   const [hasNext, setHasNext] = useState<boolean>(true);
   const [choosenCategories, setChoosenCategories] = useState<string[]>([]);
+  const [nextBatchLoading, setNextBatchLoading] = useState<boolean>(false);
 
   console.log(choosenCategories);
 
@@ -90,20 +91,20 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     const windowHeight = window.innerHeight;
     const fullHeight = document.documentElement.scrollHeight;
 
-    if (scrollTop + windowHeight >= fullHeight - 100) {
-      console.log("near the bottom");
-      if (hasNext === true) {
-        loadNextBatch();
-      } else {
-        console.log("user has reached the end of his bookmarks");
-      }
+    if (
+      scrollTop + windowHeight >= fullHeight - 250 &&
+      hasNext &&
+      !nextBatchLoading
+    ) {
+      setNextBatchLoading(true);
+      loadNextBatch().finally(() => setNextBatchLoading(false));
     }
   };
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [bookmarks.length]);
+  }, []);
 
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
