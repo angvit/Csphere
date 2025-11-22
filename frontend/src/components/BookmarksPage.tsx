@@ -74,11 +74,13 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
       setCategories((prev) => {
         let filtered_categories: Tags[] = [];
-        for (let i = 0; i < data.categories.lenth; i++) {
+        for (let i = 0; i < data.categories.length; i++) {
           if (data.categories[i].category_name.trim() !== "")
             filtered_categories.push(data.categories[i]);
         }
         const merged = [...prev, ...filtered_categories];
+
+        console.log("new merged categories: ", merged);
 
         return [...new Set(merged)];
       });
