@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import BookmarkList from "./BookmarkList";
 import { Suspense } from "react";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
@@ -22,11 +22,14 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
   const [bookmarks, setBookmarks] = useState([]);
 
   const [categories, setCategories] = useState<Tags[]>([]);
-  const [cursor, setCursor] = useState<string>("");
-  const [hasNext, setHasNext] = useState<boolean>(true);
   const [choosenCategories, setChoosenCategories] = useState<string[]>([]);
 
-  console.log(choosenCategories);
+  //Use ref to not cause stale fucntions
+  const cursor = useRef<string>("");
+
+  const nextBatchLoading = useRef<boolean>(false);
+
+  const hasNext = useRef<boolean>(true);
 
   const loadNextBatch = async (query = "") => {
     const token = document.cookie
@@ -36,8 +39,10 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
     try {
       let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
-      if (cursor !== "") {
-        contentApi += `?cursor=${encodeURIComponent(cursor)}`;
+      console.log("here right now", cursor);
+      if (cursor.current !== "") {
+        console.log("adding current cursor: ", cursor.current);
+        contentApi += `?cursor=${encodeURIComponent(cursor.current)}`;
       }
 
       if (choosenCategories.length > 0) {
@@ -62,23 +67,27 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       if (!res.ok) throw new Error("Failed to fetch content");
 
       const data = await res.json();
+
+      console.log("data being returned: ", data);
       setOriginalBookmarks((prev) => [...prev, ...data.bookmarks]);
 
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
       setCategories((prev) => {
         let filtered_categories: Tags[] = [];
-        for (let i = 0; i < data.categories.lenth; i++) {
+        for (let i = 0; i < data.categories.length; i++) {
           if (data.categories[i].category_name.trim() !== "")
             filtered_categories.push(data.categories[i]);
         }
         const merged = [...prev, ...filtered_categories];
 
+        console.log("new merged categories: ", merged);
+
         return [...new Set(merged)];
       });
-      setHasNext(data.has_next);
+      hasNext.current = data.has_next;
 
       if (data.has_next) {
-        setCursor(data.next_cursor);
+        cursor.current = data.next_cursor;
       }
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
@@ -90,20 +99,21 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     const windowHeight = window.innerHeight;
     const fullHeight = document.documentElement.scrollHeight;
 
-    if (scrollTop + windowHeight >= fullHeight - 100) {
-      console.log("near the bottom");
-      if (hasNext === true) {
-        loadNextBatch();
-      } else {
-        console.log("user has reached the end of his bookmarks");
-      }
+    if (
+      scrollTop + windowHeight >= fullHeight - 250 &&
+      hasNext.current &&
+      !nextBatchLoading.current
+    ) {
+      console.log("loading new batch", cursor);
+      nextBatchLoading.current = true;
+      loadNextBatch().finally(() => (nextBatchLoading.current = false));
     }
   };
 
   useEffect(() => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [bookmarks.length]);
+  }, []);
 
   const fetchBookmarks = async (query = "") => {
     const token = document.cookie
@@ -115,8 +125,8 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
 
     try {
       let contentApi = `${process.env.NEXT_PUBLIC_API_BASE_URL}/content`;
-      if (cursor !== "") {
-        contentApi += "?cursor=" + encodeURIComponent(cursor);
+      if (cursor.current !== "") {
+        contentApi += "?cursor=" + encodeURIComponent(cursor.current);
       }
 
       if (choosenCategories.length > 0) {
@@ -145,10 +155,8 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       setOriginalBookmarks(data.bookmarks);
       setBookmarks(data.bookmarks);
       setCategories(data.categories);
-      setHasNext(data.has_next);
-      if (data.has_next) {
-        setCursor(data.next_cursor);
-      }
+      hasNext.current = data.has_next;
+      cursor.current = data.next_cursor;
     } catch (err) {
       console.error("Error fetching bookmarks:", err);
     }
@@ -191,7 +199,7 @@ const BookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       <Suspense fallback={<Loading />}>
         <BookmarkList items={bookmarks} />
       </Suspense>{" "}
-      {!hasNext && (
+      {!hasNext.current && (
         <h1 className="text-center">
           You've reached the end of your bookmarks!{" "}
         </h1>
