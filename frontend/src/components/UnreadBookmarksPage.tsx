@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useContext } from "react";
+import { useEffect, useState } from "react";
 import BookmarkList from "./BookmarkList";
 import BookmarkLayout from "@/app/(content)/home/BookmarkLayout";
 import { LayoutContext } from "@/app/(content)/home/BookmarkLayout";
@@ -75,6 +75,26 @@ const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
     }
   };
 
+  const handleScroll = () => {
+    const scrollTop = window.scrollY;
+    const windowHeight = window.innerHeight;
+    const fullHeight = document.documentElement.scrollHeight;
+
+    if (scrollTop + windowHeight >= fullHeight - 100) {
+      console.log("near the bottom");
+      if (hasNext === true) {
+        loadNextBatch();
+      } else {
+        console.log("user has reached the end of his bookmarks");
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [bookmarks.length]);
+
   const loadNextBatch = async (query = "") => {
     const token = document.cookie
       .split("; ")
@@ -107,7 +127,16 @@ const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       setOriginalBookmarks((prev) => [...prev, ...data.bookmarks]);
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
       // setBookmarks(data.bookmarks);
-      setCategories((prev) => [...prev, ...data.categories]);
+      setCategories((prev) => {
+        let filtered_categories: Tags[] = [];
+        for (let i = 0; i < data.categories.lenth; i++) {
+          if (data.categories[i].category_name.trim() !== "")
+            filtered_categories.push(data.categories[i]);
+        }
+        const merged = [...prev, ...filtered_categories];
+
+        return [...new Set(merged)];
+      });
       // setCategories(data.categories);
       setHasNext(data.has_next);
       if (data.has_next) {

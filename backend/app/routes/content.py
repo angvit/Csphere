@@ -50,7 +50,7 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
     bookmark_data = []
 
-    for content_ai, content in results:
+    for content_ai, content, ContentItem in results:
         bookmark_data.append(
             UserSavedContent(
                 content_id=content_ai.content_id,
@@ -64,9 +64,11 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
             )
         )
 
+    logger.info(f"Data for search: {bookmark_data}")
     return {
         "bookmarks": bookmark_data,
-        "categories": []  # or `None`, depending on how you define Optional
+        "categories": [],  # or `None`, depending on how you define Optional
+        "has_next" : False
     }
 
 
@@ -126,9 +128,10 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             message = json.dumps(payload)
 
-            logger.info(f"Succesfully pushed message to the queue for url: {content.url}")
+            
 
             push_to_activemq(message=message)
+            logger.info(f"Succesfully pushed message to the queue for url: {content.url}")
 
             return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
 
