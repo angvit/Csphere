@@ -102,7 +102,7 @@ export default function FolderLayout({ children }: Props) {
         onValueChange={setActiveTab}
         className="mb-8 space-y-4"
       >
-        <TabsList className="grid p-0 w-full max-w-md grid-cols-3 mb-6 border rounded-lg bg-transparent border-black">
+        <TabsList className="grid w-full max-w-2xl grid-cols-4 p-0 mb-6 border rounded-lg bg-transparent border-black">
           {(() => {
             const pathname = usePathname();
 
@@ -134,10 +134,22 @@ export default function FolderLayout({ children }: Props) {
                   <span>Unread</span>
                   <Badge
                     variant="secondary"
-                    className="ml-1 bg-blue-300 text-white"
+                    className="ml-1 bg-[#202A29] text-white"
                   >
                     {metaData.unreadCount}
                   </Badge>
+                </Link>
+
+                <Link
+                  href="/home"
+                  className={`flex items-center h-full justify-center space-x-2 border-r border-gray-700 transition-colors
+            ${
+              pathname === "/home/tags"
+                ? "bg-[#202A29] text-white"
+                : "bg-transparent text-[#202A29] hover:bg-gray-100"
+            }`}
+                >
+                  <span>Tags</span>
                 </Link>
 
                 <Link
