@@ -19,6 +19,8 @@ from app.ai.summarizer import Summarizer
 from app.ai.embedder import Embedder
 from app.ai.categorizer import Categorizer
 
+from app.content.semantic_cache import SemanticCache
+from collections import defaultdict
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -33,17 +35,25 @@ class ContentEmbeddingManager:
         - Handling database interactions for both `Content` and `ContentAI` models
     '''
 
-    def __init__(self, db, embedding_model_name='text-embedding-3-small', summary_model_name='gpt-3.5-turbo', content_url : str = '', preprocessor: ContentPreprocessor | None = None, summarizer: Summarizer | None = None, embedder: Embedder | None = None, categorizer: Categorizer | None = None):
+    def __init__(self, db, embedding_model_name='text-embedding-3-small', content_url : str = '', preprocessor: ContentPreprocessor | None = None, summarizer: Summarizer | None = None, embedder: Embedder | None = None, categorizer: Categorizer | None = None):
         self.db = db
         self.embedding_model = embedding_model_name
-        self.summary_model = summary_model_name
+        # self.summary_model = summary_model_name
         self.ai_summary = ''
 
-        # Services (DI with sensible defaults)
+        THRESHOLD = 0.10
+        CAPACITY = 1000
+
+        # Service Layers 
         self.preprocessor = preprocessor or ContentPreprocessor()
         self.summarizer = summarizer or Summarizer(model="openrouter/auto:floor")
         self.embedder = embedder or Embedder(model_name=self.embedding_model)
         self.categorizer = categorizer or Categorizer(file_url=content_url)
+        
+        # Cache Layer
+        self.user_caches = defaultdict(
+            lambda: SemanticCache(similarity_threshold=THRESHOLD, capacity=CAPACITY)
+        )
 
         
 
@@ -132,10 +142,15 @@ class ContentEmbeddingManager:
             return None
         
 
-    def query_similar_content(self, query, user_id:UUID, start_date=None,end_date=None, limit=5):
+    def query_similar_content(self, query, user_id:UUID, start_date=None,end_date=None):
         ''' Generates a query embedding and vector search the db for related content '''
         
         query_embedding = self.embedder.embed(query["semantic_query"]) 
+
+        cache = self.user_caches[user_id]
+        cached = cache.find_similar(query_embedding)
+        if cached:
+            return cached["results"]
 
         results = (
             self.db.query(ContentAI, Content, ContentItem)
@@ -148,14 +163,33 @@ class ContentEmbeddingManager:
         if start_date and end_date:
             results = results.filter(Content.first_saved_at.between(start_date, end_date))
         logger.info(f"Current results for search: {results}")
-
-        results = (
+        
+        TOP_K_FETCH = 50
+        raw_results = (
             results.order_by(ContentAI.embedding.l2_distance(query_embedding))
-            .limit(limit)
+            .limit(TOP_K_FETCH)
             .all()
         )
 
-        return results
+        if not raw_results:
+            return []
+        
+        distances = [
+            r[0].embedding.l2_distance(query_embedding)
+            for r in raw_results
+        ]
+
+        best_distance = distances[0]
+        DISTANCE_THRESHOLD = 0.10
+
+        bounded_results = [
+            r for r, dist in zip(raw_results, distances)
+            if dist <= best_distance + DISTANCE_THRESHOLD
+        ]
+
+        self.semantic_cache.add(query_embedding, bounded_results)
+
+        return bounded_results
 
 
     ###############################################################################
