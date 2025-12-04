@@ -2,7 +2,7 @@ from functools import lru_cache
 from app.preprocessing.content_preprocessor import ContentPreprocessor
 from app.ai.summarizer import Summarizer
 from app.ai.embedder import Embedder
-from app.embeddings.content_embedding_manager import ContentEmbeddingManager
+from app.embeddings.embedding_manager import ContentEmbeddingManager
 
 
 @lru_cache

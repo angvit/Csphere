@@ -7,8 +7,8 @@ from app.data_models.folder_item import folder_item
 from app.data_models.folder import Folder
 from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate, UserSavedContentResponse, CategoryOut
 from app.preprocessing.query_preprocessor import QueryPreprocessor
-from app.content.embedding_manager import ContentEmbeddingManager
-from app.dependencies.services import get_embedding_manager
+from app.embeddings.embedding_manager import ContentEmbeddingManager
+from app.deps.services import get_embedding_manager
 from app.ai.categorizer import Categorizer
 from app.data_models.user import User
 from datetime import datetime, timezone
@@ -49,7 +49,7 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
     bookmark_data = []
 
-    for content_ai, content, ContentItem in results:
+    for content_ai, content in results:
         bookmark_data.append(
             UserSavedContent(
                 content_id=content_ai.content_id,

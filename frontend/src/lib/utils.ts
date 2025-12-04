@@ -38,7 +38,7 @@ export const shareTo = {
   gmail: async (bookmarkUrl: string): ShareResult => {
     window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(
       'Check out this bookmark from CSphere!')}&body=${encodeURIComponent(
-      'I bookmarked this on CSphere: ' + bookmarkUrl + '\n\nStart bookmarking on CSphere: https://csphere-nly9.vercel.app/')}`, '_blank');
+      'I bookmarked this on CSphere: ' + bookmarkUrl + '\n\nStart bookmarking on CSphere: https://csphere.io/')}`, '_blank');
       return { success: true};
   },
   messages: async (bookmarkUrl: string): ShareResult => {

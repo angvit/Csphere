@@ -69,7 +69,7 @@ class QueryPreprocessor:
         Removes the matched time phrases and source names from the query before it's embedded.
 
         Before: 
-            query = "Articles I saved 3 months ago about AI from Reddit"
+            query = "Articles I saved 3 months ago about ai from Reddit"
             semantic_query = "articles i saved 3 months ago about ai from reddit"
 
         After:

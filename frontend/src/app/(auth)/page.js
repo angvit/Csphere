@@ -154,7 +154,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.6 }}
-              className="text-base md:text-xl text-gray-200 mb-8 max-w-3xl mx-auto leading-relaxed"
+              className="text-base md:text-xl text-gray-200 mt-8 max-w-3xl mx-auto leading-relaxed"
             >
               Never lose your content again. Organize, access, and search your
               bookmarks seamlessly across all your devices.
