@@ -221,7 +221,7 @@ export default function SignupForm() {
         <p className="text-sm">Have an account?</p>
         <Link href="/login">
           <Button variant="link" className="text-blue-500 hover:text-blue-700">
-            Sign Up
+            Log In
           </Button>
         </Link>
       </div>
