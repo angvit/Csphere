@@ -2,6 +2,7 @@ import logging
 
 from uuid import UUID
 from sqlalchemy.orm import Session
+from sqlalchemy import exists
 from uuid import uuid4
 from datetime import datetime, timezone
 
@@ -19,7 +20,7 @@ from app.ai.summarizer import Summarizer
 from app.ai.embedder import Embedder
 from app.ai.categorizer import Categorizer
 
-from app.content.semantic_cache import SemanticCache
+from app.embeddings.semantic_cache import SemanticCache
 from collections import defaultdict
 
 load_dotenv()
@@ -41,7 +42,7 @@ class ContentEmbeddingManager:
         # self.summary_model = summary_model_name
         self.ai_summary = ''
 
-        THRESHOLD = 0.10
+        THRESHOLD = 0.8
         CAPACITY = 1000
 
         # Service Layers 
@@ -152,44 +153,59 @@ class ContentEmbeddingManager:
         if cached:
             return cached["results"]
 
-        results = (
-            self.db.query(ContentAI, Content, ContentItem)
+        # results = (
+        #     self.db.query(ContentAI, Content, ContentItem)
+        #     .join(Content, ContentAI.content_id == Content.content_id)
+        #     .join(ContentItem, Content.content_id == ContentItem.content_id)
+        #     .filter(ContentItem.user_id == user_id)
+        # )
+
+        TOP_K_FETCH = 50
+
+        query = (
+            self.db.query(
+                ContentAI,
+                Content,
+                ContentAI.embedding.l2_distance(query_embedding).label("distance"),
+            )
             .join(Content, ContentAI.content_id == Content.content_id)
-            .join(ContentItem, Content.content_id == ContentItem.content_id)
-            .filter(ContentItem.user_id == user_id)
+            .filter(
+                exists()
+                .where(
+                    (ContentItem.user_id == user_id)
+                    & (ContentItem.content_id == Content.content_id)
+                )
+                # .correlate(Content)
+            )
+            .order_by("distance")
+            .limit(TOP_K_FETCH)
         )
         
 
         if start_date and end_date:
-            results = results.filter(Content.first_saved_at.between(start_date, end_date))
-        logger.info(f"Current results for search: {results}")
+            query = query.filter(Content.first_saved_at.between(start_date, end_date))
+            logger.info(f"Executing semantic search query with distance ordering")
         
-        TOP_K_FETCH = 50
-        raw_results = (
-            results.order_by(ContentAI.embedding.l2_distance(query_embedding))
-            .limit(TOP_K_FETCH)
-            .all()
-        )
+        
+        raw_results = query.all()
 
         if not raw_results:
             return []
-        
-        distances = [
-            r[0].embedding.l2_distance(query_embedding)
-            for r in raw_results
-        ]
 
+        distances = [r.distance for r in raw_results]
         best_distance = distances[0]
+
         DISTANCE_THRESHOLD = 0.10
 
-        bounded_results = [
+        filtered = [
             r for r, dist in zip(raw_results, distances)
             if dist <= best_distance + DISTANCE_THRESHOLD
         ]
 
-        self.semantic_cache.add(query_embedding, bounded_results)
+        results = [(r[0], r[1]) for r in filtered]
+        cache.add(query_embedding, results)
 
-        return bounded_results
+        return results
 
 
     ###############################################################################

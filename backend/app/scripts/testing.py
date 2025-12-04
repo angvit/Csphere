@@ -1,5 +1,5 @@
 from app.db.database import SessionLocal
-from app.embeddings.content_embedding_manager import ContentEmbeddingManager
+from app.embeddings.embedding_manager import ContentEmbeddingManager
 from app.data_models.user import User
 import uuid
 import requests

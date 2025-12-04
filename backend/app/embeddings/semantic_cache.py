@@ -27,7 +27,7 @@ class SemanticCache:
                 return entry
         return None
     
-    def store(self, embedding, results):
+    def add(self, embedding, results):
         """Store embeddings and results in the lru cache"""
         if len(self.cache) >= self.capacity:
             self.cache.popitem(last=False) # evict the oldest item
