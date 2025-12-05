@@ -20,7 +20,9 @@ jobs:
         id: check_files
         run: |
 
-          CHANGED_COUNT=$(git diff --name-only ${{github.event.before}} ${{github.event.after}} | grep -c "backend/")
+          CHANGED_FILES=$(git diff --name-only ${{github.event.before}} ${{github.sha}} || true)
+
+          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c "backend/")
 
           if [ "$CHANGED_COUNT" -gt 0 ]; then
             echo "folder_changed=true" >> $GITHUB_OUTPUT
