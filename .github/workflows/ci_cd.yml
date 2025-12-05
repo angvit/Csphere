@@ -11,9 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       folder_changed: ${{ steps.check_files.outputs.folder_changed }}
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Find name of changes files with git
         id: check_files
