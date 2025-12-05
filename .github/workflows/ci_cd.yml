@@ -6,12 +6,35 @@ on:
       - main
 
 jobs:
+  confirm-changes:
+    name: confirm there are changes in the backend
+    runs-on: ubuntu-latest
+    outputs:
+      folder_changed: ${{ steps.check_files.outputs.folder_changed }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find name of changes files with git
+        id: check_files
+        run: |
+
+          CHANGED_COUNT=$(git diff --name-only ${{github.event.before}} ${{github.sha}} | grep -c "backend/")
+
+          if [ "$CHANGED_COUNT" -gt 0 ]; then
+            echo "folder_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "folder_changed=false" >> $GITHUB_OUTPUT
+          fi
+
   deploy-backend:
     name: deploy backend to tiptops server
     runs-on: ubuntu-latest
+    needs: confirm-changes
 
     steps:
       - name: Execute remote ssh commands using passwords
+        if: needs.confirm-changes.outputs.folder_changed == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: ${{secrets.HOST}}
@@ -21,35 +44,10 @@ jobs:
 
           script: |
             echo "Starting deployment process"
+            # NOTE: Use 'sh' to avoid issues with inline script quoting
             sudo -S bash -c '
               cd /root/docker/csphere
               #run the deployment script 
               ./build-csphere-backend.sh
-
               echo "deployment was a success"
-
-            ' <<< ${{secrets.PASSWORD}}
-
-#   deploy-worker:
-#     name: deploy the worker instance to the server
-#     runs-on: ubuntu-latest
-
-#     steps:
-#       - name: Execute remote ssh commands using passwords
-#         uses: appleboy/ssh-action@v1
-#         with:
-#           host: ${{secrets.HOST}}
-#           username: ${{secrets.USERNAME}}
-#           password: ${{secrets.PASSWORD}}
-#           port: ${{secrets.PORT}}
-
-#           script: |
-#             echo "Starting deployment process"
-#             sudo -S bash -c '
-#               cd /root/docker/csphere/build-csphere-backend.sh
-#               #run the deployment script
-#               ./build-csphere-worker.sh
-
-#               echo "deployment was a success"
-
-#             ' <<< ${{secrets.PASSWORD}}
+            ' <<< "${{secrets.PASSWORD}}"
