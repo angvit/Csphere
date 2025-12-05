@@ -112,8 +112,6 @@ def get_current_user_id(token: Annotated[str, Depends(oauth2_scheme)]) -> UUID:
     except jwt_exceptions.PyJWTError:
         print("error occured in get_current_user_id")
         raise credentials_exception
-
-    # You can fetch the user from your DB here, but for example purposes:
     
 
   

@@ -51,7 +51,7 @@ function renderInterface() {
       <!-- Header -->
       <header class="popup-header">
         <div class="header-left" >
-        <a href = "https://csphere-nly9.vercel.app/"  target="_blank"> 
+        <a href = "https://csphere.io/"  target="_blank"> 
           <img class="logo" src="images/Csphere-icon-128.png" />
         </a>
         </div>
