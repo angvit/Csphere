@@ -1,0 +1,55 @@
+name: Backend deployment to tiptop's servers
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-backend:
+    name: deploy backend to tiptops server
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Execute remote ssh commands using passwords
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{secrets.HOST}}
+          username: ${{secrets.USERNAME}}
+          password: ${{secrets.PASSWORD}}
+          port: ${{secrets.PORT}}
+
+          script: |
+            echo "Starting deployment process"
+            sudo -S bash -c '
+              cd /root/docker/csphere/build-csphere-backend.sh
+              #run the deployment script 
+              ./build-csphere-backend.sh
+
+              echo "deployment was a success"
+
+            ' <<< ${{secrets.PASSWORD}}
+
+#   deploy-worker:
+#     name: deploy the worker instance to the server
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Execute remote ssh commands using passwords
+#         uses: appleboy/ssh-action@v1
+#         with:
+#           host: ${{secrets.HOST}}
+#           username: ${{secrets.USERNAME}}
+#           password: ${{secrets.PASSWORD}}
+#           port: ${{secrets.PORT}}
+
+#           script: |
+#             echo "Starting deployment process"
+#             sudo -S bash -c '
+#               cd /root/docker/csphere/build-csphere-backend.sh
+#               #run the deployment script
+#               ./build-csphere-worker.sh
+
+#               echo "deployment was a success"
+
+#             ' <<< ${{secrets.PASSWORD}}
