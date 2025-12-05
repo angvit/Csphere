@@ -43,13 +43,6 @@ export default function PrivacyPolicyPage() {
 
           <section>
             <p>
-              Summarize your security practices to protect data (e.g., encryption in transit, access
-              controls). Avoid revealing sensitive internal details.
-            </p>
-          </section>
-
-          <section>
-            <p>
               The second option is through Csphere’s web application. Authentication is handled by Csphere’s backend using a user’s account credentials (username and password). All credentials are transmitted securely over HTTPS and are stored in encrypted form.  
             </p>
           </section>

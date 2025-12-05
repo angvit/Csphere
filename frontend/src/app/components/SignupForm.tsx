@@ -22,7 +22,6 @@ import { useRouter } from "next/navigation";
 const formSchema = z.object({
   username: z.string().min(1).min(5).max(50),
   email: z.string(),
-  confirmemail: z.string(),
   password: z.string(),
   confirmpassword: z.string(),
 });
@@ -222,7 +221,7 @@ export default function SignupForm() {
         <p className="text-sm">Have an account?</p>
         <Link href="/login">
           <Button variant="link" className="text-blue-500 hover:text-blue-700">
-            Login
+            Log In
           </Button>
         </Link>
       </div>

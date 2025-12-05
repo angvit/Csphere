@@ -181,7 +181,7 @@ export default function LoginForm() {
         />
 
         <Button
-          className="bg-gray-400 hover:bg-gray-500 transition-all duration-200 text-gray-900 font-semibold py-2 px-4 rounded w-full"
+          className="bg-[#202A29] hover:bg-gray-600 transition-all duration-200 text-white font-semibold py-2 px-4 rounded w-full"
           type="submit"
         >
           Submit
