@@ -1,5 +1,6 @@
 import { BACKEND_URL, DEPLOYED } from "./config.dev.js";
-// import { chrome } from "chrome";
+importScripts("utils.js");
+
 
 const backend_url = DEPLOYED ? BACKEND_URL : "http://127.0.0.1:8000";
 const app = document.getElementById("app");
@@ -8,7 +9,7 @@ let currentTab = "bookmark";
 let tags = [];
 let recentBookmarks = [];
 
-chrome.storage.local.get(["csphere_user_token"], (result) => {
+browser.storage.local.get(["csphere_user_token"], (result) => {
   const token = result.csphere_user_token;
   if (token === null || token === undefined) {
     renderLoginInterface();
@@ -20,27 +21,18 @@ chrome.storage.local.get(["csphere_user_token"], (result) => {
 /** * ========================= * HTML Extraction Logic * ========================= */
 function extractHTMLFromPage() {
   return new Promise(async (resolve) => {
-    const [tab] = await chrome.tabs.query({
+    const [tab] = await browser.tabs.query({
       active: true,
       currentWindow: true,
     });
     const listener = (request) => {
       if (request.action === "htmlExtracted") {
-        chrome.runtime.onMessage.removeListener(listener);
+        browser.runtime.onMessage.removeListener(listener);
         resolve({ html: request.html, tab });
       }
     };
-    chrome.runtime.onMessage.addListener(listener);
-    chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      function: () => {
-        const htmlContent = document.documentElement.outerHTML;
-        chrome.runtime.sendMessage({
-          action: "htmlExtracted",
-          html: htmlContent,
-        });
-      },
-    });
+    browser.runtime.onMessage.addListener(listener);
+    utils.executeContentScript(tab.id, "content.js");
   });
 }
 
@@ -60,19 +52,16 @@ function renderInterface() {
 
       <!-- Navigation Tabs -->
       <div class="tab-navigation">
-        <button class="tab-btn ${
-          currentTab === "bookmark" ? "active" : ""
-        }" data-tab="bookmark">
+        <button class="tab-btn ${currentTab === "bookmark" ? "active" : ""
+    }" data-tab="bookmark">
           Bookmark
         </button>
-        <button class="tab-btn ${
-          currentTab === "recent" ? "active" : ""
-        }" data-tab="recent">
+        <button class="tab-btn ${currentTab === "recent" ? "active" : ""
+    }" data-tab="recent">
           Recent
         </button>
-        <button class="tab-btn ${
-          currentTab === "folders" ? "active" : ""
-        }" data-tab="folders">
+        <button class="tab-btn ${currentTab === "folders" ? "active" : ""
+    }" data-tab="folders">
           Folders
         </button>
       </div>
@@ -80,9 +69,8 @@ function renderInterface() {
       <!-- Tab Content -->
       <div class="tab-content">
         <!-- Bookmark Tab -->
-        <div class="tab-panel ${
-          currentTab === "bookmark" ? "active" : ""
-        }" id="bookmark-panel">
+        <div class="tab-panel ${currentTab === "bookmark" ? "active" : ""
+    }" id="bookmark-panel">
           <div class="scroll-area">
             <!-- Notes Section -->
             <div class="notes-container">
@@ -119,9 +107,8 @@ function renderInterface() {
         </div>
 
         <!-- Recent Tab -->
-        <div class="tab-panel ${
-          currentTab === "recent" ? "active" : ""
-        }" id="recent-panel">
+        <div class="tab-panel ${currentTab === "recent" ? "active" : ""
+    }" id="recent-panel">
           <div class="scroll-area" id="recentBookmarks">
             <div class="empty-state">
               <div class="empty-icon">📚</div>
@@ -132,9 +119,8 @@ function renderInterface() {
         </div>
 
         <!-- Folders Tab -->
-        <div class="tab-panel ${
-          currentTab === "folders" ? "active" : ""
-        }" id="folders-panel">
+        <div class="tab-panel ${currentTab === "folders" ? "active" : ""
+    }" id="folders-panel">
           <div class="scroll-area" id="foldersView">
             <div class="empty-state">
               <div class="empty-icon">📁</div>
@@ -182,7 +168,7 @@ function renderLoginInterface() {
     const username = document.getElementById("username").value;
     const password = document.getElementById("password").value;
     try {
-      const LOGIN_URL = `${backend_url}/user/chrome/login`;
+      const LOGIN_URL = `${backend_url}/user/browser/login`;
       const response = await fetch(LOGIN_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -198,7 +184,7 @@ function renderLoginInterface() {
         return;
       }
       if (data?.detail?.trim() === "sucessful login") {
-        chrome.storage.local.set({ csphere_user_token: data.token }, () => {
+        browser.storage.local.set({ csphere_user_token: data.token }, () => {
           renderInterface();
         });
       }
@@ -208,14 +194,14 @@ function renderLoginInterface() {
   });
 
   document.getElementById("googleAuthBtn").addEventListener("click", () => {
-    chrome.identity.launchWebAuthFlow(
+    browser.identity.launchWebAuthFlow(
       {
         url: `${backend_url}/auth/google`,
         interactive: true,
       },
       (redirectUrl) => {
-        if (chrome.runtime.lastError || !redirectUrl) {
-          console.error("Google login failed", chrome.runtime.lastError);
+        if (browser.runtime.lastError || !redirectUrl) {
+          console.error("Google login failed", browser.runtime.lastError);
           return;
         }
         const url = new URL(redirectUrl);
@@ -235,7 +221,7 @@ function renderLoginInterface() {
               console.error("Token missing from backend response");
               return;
             }
-            chrome.storage.local.set({ csphere_user_token: data.token }, () => {
+            browser.storage.local.set({ csphere_user_token: data.token }, () => {
               renderInterface();
             });
           })
@@ -366,27 +352,25 @@ function renderRecentBookmarks() {
       <div class="bookmark-header">
         <h4 class="bookmark-title">${bookmark.title || "Untitled"}</h4>
         <span class="bookmark-date">${formatDate(
-          bookmark.first_saved_at || bookmark.created_at
-        )}</span>
+        bookmark.first_saved_at || bookmark.created_at
+      )}</span>
       </div>
       <a href="${bookmark.url}" target="_blank" class="bookmark-url">visit</a>
       <div class="bookmark-footer">
-        ${
-          bookmark.ai_summary
-            ? `<div class="bookmark-summary">${bookmark.ai_summary}</div>`
-            : ""
+        ${bookmark.ai_summary
+          ? `<div class="bookmark-summary">${bookmark.ai_summary}</div>`
+          : ""
         }
         <div class="bookmark-meta">
           <div class="bookmark-tags">
             ${(bookmark.tags || [])
-              .map((tag) => `<span class="bookmark-tag">${tag}</span>`)
-              .join("")}
+          .map((tag) => `<span class="bookmark-tag">${tag}</span>`)
+          .join("")}
           </div>
-          ${
-            bookmark.folder
-              ? `<span class="bookmark-folder">${bookmark.folder}</span>`
-              : ""
-          }
+          ${bookmark.folder
+          ? `<span class="bookmark-folder">${bookmark.folder}</span>`
+          : ""
+        }
         </div>
       </div>
     </div>
@@ -437,7 +421,7 @@ function insertMessage(message, type) {
 
 function fetchToken() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(["csphere_user_token"], (result) => {
+    browser.storage.local.get(["csphere_user_token"], (result) => {
       resolve(result.csphere_user_token);
     });
   });
@@ -484,7 +468,7 @@ async function getRecentFolders() {
 }
 
 function logout() {
-  chrome.storage.local.remove("csphere_user_token", () => {
+  browser.storage.local.remove("csphere_user_token", () => {
     console.log("csphere_user_token removed from local storage");
   });
 }

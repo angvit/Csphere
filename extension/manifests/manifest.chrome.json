@@ -16,6 +16,12 @@
     "48": "images/Csphere-icon-48.png",
     "128": "images/Csphere-icon-128.png"
   },
+  "content_scripts": [
+  {
+    "matches": ["<all_urls>"],
+    "js": ["utils.js", "content.js"]
+  }
+],
   "background": {
     "service_worker": "background.js"
   },
