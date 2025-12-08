@@ -21,8 +21,9 @@ jobs:
         run: |
           set +e
           CHANGED_FILES=$(git diff --name-only ${{github.event.before}} ${{github.sha}} || true)
+          echo "changed files found: $CHANGED_FILES"
 
-          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c "/backend")
+          CHANGED_COUNT=$(echo "$CHANGED_FILES" | grep -c "backend")
 
           set -e
           echo "file count that was changed: $CHANGED_COUNT"
