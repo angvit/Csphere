@@ -150,7 +150,7 @@ export default function LoginForm() {
     <Form {...form}>
       <form
         onSubmit={form.handleSubmit(onSubmit)}
-        className="text-black space-y-4"
+        className="text-black space-y-4 flex items-center justify-center"
       >
         <FormField
           control={form.control}
@@ -189,10 +189,14 @@ export default function LoginForm() {
       </form>
 
       <hr className="border-black mb-4" />
-      <GoogleLogin
-        onSuccess={(credentials) => googleLogin(credentials)}
-        onError={() => toast.error("Failed to signup with google.")}
-      />
+      <div className="flex items-center justify-center w-full h-fit">
+        <GoogleLogin
+          onSuccess={(credentials) => googleLogin(credentials)}
+          onError={() => toast.error("Failed to signup with google.")}
+          width="350px"
+          shape="pill"
+        />
+      </div>
 
       <div className="text-center text-gray-400 mt-4">
         <p className="text-sm">Don't have an account?</p>
