@@ -130,7 +130,7 @@ export default function LandingPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="flex flex-col items-center justify-center w-11/12 md:w-10/12 lg:w-8/12 h-full gap-12 mt-12 relative z-10"
+          className="flex flex-col items-center justify-center w-11/12 md:w-10/12 lg:w-8/12 h-full gap-8 mt-12 relative z-10"
         >
           <section className="max-w-4xl text-center">
             <motion.h1
@@ -163,7 +163,7 @@ export default function LandingPage() {
 
           <motion.section className="flex flex-col sm:flex-row justify-center gap-4 w-full max-w-md">
             <motion.a
-              href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension"
+              href="https://chromewebstore.google.com/detail/csphere/naacmldkjnlfmhnkbbpppjpmdoiednnn"
               target="_blank"
               className="bg-white text-[#202A29] text-sm font-semibold px-6 py-3 rounded-xl w-full text-center  transition-all  flex items-center justify-center gap-2 shadow-sm "
               rel="noreferrer"
@@ -218,7 +218,7 @@ export default function LandingPage() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <motion.a
-                href="https://download-directory.github.io/?url=https%3A%2F%2Fgithub.com%2Fcrosve%2FCsphere%2Ftree%2Fmain%2Fchrome_extension"
+                href="https://chromewebstore.google.com/detail/csphere/naacmldkjnlfmhnkbbpppjpmdoiednnn"
                 target="_blank"
                 className="bg-white text-[#202A29] text-sm font-semibold px-6 py-3 rounded-xl w-auto text-center  transition-all  flex items-center justify-center gap-2 shadow-sm "
                 rel="noreferrer"

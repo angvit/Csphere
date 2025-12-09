@@ -128,14 +128,12 @@ const UnreadBookmarksPage: React.FC<ChildProps> = ({ activeTab }) => {
       setBookmarks((prev) => [...prev, ...data.bookmarks]);
       // setBookmarks(data.bookmarks);
       setCategories((prev) => {
-        let filtered_categories: Tags[] = [];
-        for (let i = 0; i < data.categories.lenth; i++) {
-          if (data.categories[i].category_name.trim() !== "")
-            filtered_categories.push(data.categories[i]);
-        }
-        const merged = [...prev, ...filtered_categories];
-
-        return [...new Set(merged)];
+        const incoming = (data.categories || []).filter(
+          (c: Tags) => c?.category_name?.trim() !== ""
+        );
+        const byId = new Map(prev.map((c) => [c.category_id, c]));
+        for (const c of incoming) byId.set(c.category_id, c);
+        return Array.from(byId.values());
       });
       // setCategories(data.categories);
       setHasNext(data.has_next);
