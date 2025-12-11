@@ -145,7 +145,9 @@ function renderInterface() {
 function renderLoginInterface() {
   app.innerHTML = `
     <header class="login_header">
-      <img class="logo" src="images/Csphere-icon-128.png" />
+      <a href = "https://csphere.io/"  target="_blank"> 
+        <img class="logo" src="images/Csphere-icon-128.png" />
+      </a>
     </header>
     <div class="login-message">
       <p>Please log in to use Csphere bookmarks</p>

@@ -54,9 +54,9 @@ async def log_requests(request: Request, call_next):
     logger.info(f"Response status: {response.status_code} for {request.method} {request.url.path}")
     return response
 
-@app.post("/")
+@app.get("/health")
 def status():
-    return {'status' : 'alive'}
+    return {'status' : 'alive', 'message': f"running on port {os.environ.get("PORT", 8000)}"}
 
 
 logger.info('API has started up')

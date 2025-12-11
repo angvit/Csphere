@@ -72,7 +72,7 @@ const itemVariants = {
 
 export default function FeatureSection() {
   return (
-    <section className="pt-12 md:pt-16 pb-0 mt-0 mb-0 bg-gradient-to-b bg-gray-300 ">
+    <section id="features" className="pt-12 md:pt-16 pb-0 mt-0 mb-0 bg-gradient-to-b bg-gray-300 ">
       <div className="container mx-auto px-4 md:px-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
