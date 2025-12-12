@@ -5,6 +5,7 @@ import SearchInput from "@/components/SearchInput";
 import { Tabs } from "@/components/ui/tabs";
 import { fetchToken } from "@/functions/user/UserData";
 import { BookmarkToolbar, ViewMode } from "./BookmarkToolbar";
+import AddBookmarkPopover from "./AddBookmarkPopover";
 
 type Props = {
   onSearch: (query: string) => void;
@@ -58,6 +59,7 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
         onValueChange={setActiveTab}
         className="mb-8 space-y-4 "
       >
+        <AddBookmarkPopover />
         <BookmarkToolbar
           viewMode={viewMode}
           onViewModeChange={setViewMode}

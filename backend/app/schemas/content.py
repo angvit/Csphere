@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, HttpUrl
 from typing import Optional
 from uuid import UUID
 from datetime import datetime
@@ -33,6 +33,9 @@ class ContentWithSummary(BaseModel):
 
     class Config:
         from_attributes = True
+
+class ContentSavedByUrl(BaseModel):
+    url: HttpUrl
 
 class CategoryOut(BaseModel):
     category_id: UUID
