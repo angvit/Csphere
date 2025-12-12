@@ -1,0 +1,7 @@
+activate.ps1
+csphere-logs.log
+.env
+.vscode
+venv
+__pycache__/
+data_models/__pycache__/
