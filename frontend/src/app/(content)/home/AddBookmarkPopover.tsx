@@ -20,9 +20,9 @@ export default function AddBookmarkPopover() {
           Authorization: `Bearer ${token}`,
         },
         method: "POST",
-        body: JSON.stringify({url: url}),
+        body: JSON.stringify({url: link}),
       });
-      const data = res.json();
+      const data = await res.json();
       console.log(data);
     } catch (err) {
       console.log("Error occurred in saving url: ", err);

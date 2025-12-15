@@ -5,6 +5,7 @@ import { TabsList } from "@/components/ui/tabs";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import AddBookmarkPopover from "./AddBookmarkPopover";
 
 export type ViewMode = "grid" | "list";
 
@@ -19,12 +20,14 @@ export function BookmarkToolbar({ viewMode, onViewModeChange, unreadCount }: Boo
 
   return (
     <div className="flex flex-col space-y-6">
+      
       <div className="flex items-center justify-between mt-4 mb-4">
         <div>
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Your Bookmarks</h2>
           <p className="text-gray-600">Organize and rediscover your saved content</p>
         </div>
-        <div className="flex items-center space-x-3 ">
+        <div className="flex items-center space-x-3">
+          <AddBookmarkPopover />
           <div className="flex border rounded-lg border-black">
             <Button
               variant={viewMode === "grid" ? "default" : "ghost"}
@@ -62,7 +65,6 @@ export function BookmarkToolbar({ viewMode, onViewModeChange, unreadCount }: Boo
             pathname === "/home" ? "bg-[#202A29] text-white" : "bg-transparent text-[#202A29] hover:bg-gray-100"
           }`}
         >
-          <Clock className="h-4 w-4" />
           <span>Latest</span>
         </Link>
 
@@ -72,7 +74,6 @@ export function BookmarkToolbar({ viewMode, onViewModeChange, unreadCount }: Boo
             pathname === "/home/unread" ? "bg-[#202A29] text-white" : "bg-transparent text-[#202A29] hover:bg-gray-100"
           }`}
         >
-          <BookOpen className="h-4 w-4" />
           <span>Unread</span>
           <Badge variant="secondary" className="ml-1 bg-[#202A29] text-white">
             {unreadCount}
@@ -94,7 +95,6 @@ export function BookmarkToolbar({ viewMode, onViewModeChange, unreadCount }: Boo
             pathname === "/home/folders" ? "bg-[#202A29] text-white" : "bg-transparent text-[#202A29] hover:bg-gray-100"
           }`}
         >
-          <Folder className="h-4 w-4" />
           <span>Folders</span>
         </Link>
       </TabsList>

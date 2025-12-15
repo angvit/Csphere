@@ -81,7 +81,6 @@ def push_to_activemq(message: str):
     ACTIVEMQ_USER='admin'
     ACTIVEMQ_PASS='tiptop'
 
-
     try:
         url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue"
         headers = {'Content-Type': 'text/plain'}
@@ -105,7 +104,7 @@ def _enqueue_new_content(
     user_id: UUID,
     notes: str | None,
     folder_id: str | UUID | None,
-):
+) -> None:
     utc_time = datetime.now(timezone.utc)
     payload = {
         "content_payload": {
@@ -120,7 +119,9 @@ def _enqueue_new_content(
         "folder_id": str(folder_id) if folder_id else None,
     }
     message = json.dumps(payload)
-    push_to_activemq(message=message)
+    result = push_to_activemq(message=message)
+    if not result:
+        raise HTTPException(status_code=503, detail="Failed to push to ActiveMQ")
 
 
 @router.post("/content/save")
@@ -253,34 +254,35 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 @router.post("/content/save/url")
 def save_content_by_url(content: ContentSavedByUrl, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
     try:
-        ensure_safe_url(content.url)
-        existing_content = db.query(Content).filter(Content.url == content.url).first()
+        safe_url = ensure_safe_url(content.url)
+        existing_content = db.query(Content).filter(Content.url == safe_url).first()
+        if existing_content:
+            return {"status": "unsuccessful", "message": "Content already exists"}
+        
+        response = requests.get(url=safe_url, timeout=10)
 
-        if not existing_content:
-            response = requests.get(url=content.url)
+        if response.status_code != 200:
+            raise HTTPException(status_code=response.status_code, detail="Failed to fetch content")
 
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail="Failed to fetch content")
+        html = response.text
+        meta = ContentPreprocessor().extract(html)
 
-            html = response.text
-            meta = ContentPreprocessor().extract(html)
+        title = meta["title"] or None
 
-            title = meta["title"] or None
+        if not html.strip():
+            raise HTTPException(status_code=400, detail="Fetched page is empty")
 
-            if not html.strip():
-                raise HTTPException(status_code=400, detail="Fetched page is empty")
-
-            _enqueue_new_content(
-                url=str(content.url),
-                title=title, 
-                source="web_app",
-                html=html,
-                user_id=user_id,
-                notes=None,
-                folder_id="default",
-            )
-            return {"status": "Success", "message": "Bookmark details sent to message queue"}
-
+        _enqueue_new_content(
+            url=safe_url,
+            title=title, 
+            source="web_app",
+            html=html,
+            user_id=user_id,
+            notes=None,
+            folder_id="default",
+        )
+        return {"status": "Success", "message": "Bookmark details sent to message queue"}
+    
     except Exception as e:
         logger.error(f"Error occurred in saving the url: ", exc_info=True)
         return {"status": "unsuccessful", "error": "Failed to save bookmark from the provided url"}    

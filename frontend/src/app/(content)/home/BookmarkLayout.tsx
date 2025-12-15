@@ -59,7 +59,6 @@ export default function BookmarkLayout({ onSearch, children }: Props) {
         onValueChange={setActiveTab}
         className="mb-8 space-y-4 "
       >
-        <AddBookmarkPopover />
         <BookmarkToolbar
           viewMode={viewMode}
           onViewModeChange={setViewMode}
