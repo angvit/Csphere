@@ -29,6 +29,10 @@ import json
 
 from email.utils import quote
 
+import os
+from dotenv import load_dotenv
+
+
 router = APIRouter(
     # prefix="/content"
 )
@@ -77,7 +81,7 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 def push_to_activemq(message: str):
 
     ACTIVEMQ_URL='http://feeltiptop.com:8161' 
-    ACTIVEMQ_QUEUE='CSPHEREQUEUE' 
+    ACTIVEMQ_QUEUE=os.getenv('ACTIVEMQ_QUEUE')
     ACTIVEMQ_USER='admin'
     ACTIVEMQ_PASS='tiptop'
 
