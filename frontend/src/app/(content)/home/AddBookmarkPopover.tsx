@@ -5,6 +5,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { toast } from "sonner";
 
 export default function AddBookmarkPopover() {
   const [open, setOpen] = useState(false);
@@ -20,12 +21,14 @@ export default function AddBookmarkPopover() {
           Authorization: `Bearer ${token}`,
         },
         method: "POST",
-        body: JSON.stringify({url: link}),
+        body: JSON.stringify({ url: link }),
       });
       const data = await res.json();
+      toast.success("bookmark saved");
       console.log(data);
     } catch (err) {
       console.log("Error occurred in saving url: ", err);
+      toast.error("Something went wrong, please try again");
     }
   };
 
