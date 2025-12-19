@@ -37,11 +37,11 @@ jobs:
   deploy-backend:
     name: deploy backend to tiptops server
     runs-on: ubuntu-latest
-    needs: confirm-changes
+    # needs: confirm-changes
 
     steps:
       - name: Execute remote ssh commands using passwords
-        if: needs.confirm-changes.outputs.folder_changed == 'true'
+        # if: needs.confirm-changes.outputs.folder_changed == 'true'
         uses: appleboy/ssh-action@v1
         with:
           host: ${{secrets.HOST}}
