@@ -157,43 +157,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
             return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
 
-            push_to_activemq(message=message)
-            #create the new content
-            new_content = Content(
-                url=content.url,
-                title=content.title,
-                source="chrome_extension",
-                first_saved_at=utc_time,
-            )
-            db.add(new_content)
-            db.flush()  # generate content_id
-
-            # Generate embedding only for new content
-            print("generating manager")
-            pre, sumz, emb = get_shared_services()
-            categorizer = Categorizer(file_url=content.url)
-            embedding_manager = ContentEmbeddingManager(
-                db,
-                preprocessor=pre,
-                summarizer=sumz,
-                embedder=emb,
-                categorizer=categorizer,
-                content_url=content.url,
-            )
-            print("done generating")
-            raw_html = content.html
-
-            try:
-                content_ai = embedding_manager.process_content(new_content, raw_html)
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                print(f"Embedding generation failed: {e}")
-                # Prevent downstream foreign key error
-                return {"status": "unsuccessful", "error": "Failed to generate summary"}
-
-            if not content_ai:
-                print("Embedding generation failed or skipped.")
+         
 
         else:
             print("Existing content link")
