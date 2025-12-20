@@ -30,8 +30,7 @@ def handle_existing_content(existing_content, user_id: str, db, notes : str, fol
                 user_id=user_id,
                 content_id=existing_content.content_id,
                 saved_at=utc_time,  
-                notes=notes ,
-
+                notes=notes,
                 read=False
             )
             db.add(new_item)
@@ -40,7 +39,6 @@ def handle_existing_content(existing_content, user_id: str, db, notes : str, fol
             saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
             logging.info(f"Retrieved from DB: {saved_item.saved_at}")
          
-
             #add to the corresponding folder if any 
 
             if folder_id and folder_id != '' and folder_id != 'default':
@@ -55,21 +53,15 @@ def handle_existing_content(existing_content, user_id: str, db, notes : str, fol
                 )
 
                 db.add(new_item)
-                db.commit()
-                db.refresh(new_item)
+                # db.commit()
+                # db.refresh(new_item)
             else:
                 logging.info("no valid fodler id found so skipping this part")
                 
-
         logging.info("Successfully saved content for user.")
-
         return True
 
 
-
-
-
     except Exception as e:
-        logging.error("issue offucred: ", str(e))
-
+        logging.error("Issue occurred: ", str(e))
         return False 
