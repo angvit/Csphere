@@ -138,14 +138,8 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
 
     try:
         user_id = str(user.id)
-        folder_id = str(content.folder_id)
-
-        existing_content = db.query(Content).filter(Content.url == content.url).first()
-
-        utc_time = datetime.now(timezone.utc)   
-
-        if not existing_content:
-            _enqueue_new_content(
+ 
+        _enqueue_new_content(
                 url=content.url,
                 title=content.title,
                 source="chrome_extension",
@@ -153,66 +147,11 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
                 user_id=user.id,
                 notes=notes,
                 folder_id=content.folder_id,
-            )
+        )
 
-            return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
+        return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
 
-         
 
-        else:
-            print("Existing content link")
-            new_content = existing_content
-            content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
-
-        # Check if this user already saved this content
-        existing_item = db.query(ContentItem).filter(
-            ContentItem.user_id == user_id,
-            ContentItem.content_id == new_content.content_id
-        ).first()
-
-        print("current utc timezone: ", datetime.now(timezone.utc))
-
-        utc_time = datetime.now(timezone.utc)
-
-        if not existing_item:
-
-            new_item = ContentItem(
-                user_id=user_id,
-                content_id=new_content.content_id,
-                saved_at=utc_time,  
-                notes=notes,
-                read=False
-            )
-            db.add(new_item)
-            db.commit()
-
-            saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
-            print(f"Retrieved from DB: {saved_item.saved_at}")
-         
-
-            #add to the corresponding folder if any 
-
-            if content.folder_id and content.folder_id != '' and content.folder_id != 'default':
-
-                new_item = folder_item(
-                    folder_item_id = uuid4(), 
-                    folder_id = content.folder_id,
-                    user_id = user_id, 
-                    content_id = new_content.content_id,
-                    added_at = datetime.utcnow()
-
-                )
-
-                db.add(new_item)
-                db.commit()
-                db.refresh(new_item)
-            else:
-                print("no valid fodler id found so skipping this part")
-            
-
-        print("Successfully saved content for user.")
-
-        return {"status": "Success"}
 
     except Exception as e:
         print("Rrror occurred in saving the bookmark: ", str(e))
