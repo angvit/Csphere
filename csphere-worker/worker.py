@@ -16,7 +16,7 @@ from data_models.content_ai import ContentAI
 from database import get_db
 
 
-from utils.utils import handle_existing_content
+from utils.utils import handle_existing_content, fetch_content
 
 from dotenv import load_dotenv
 
@@ -44,8 +44,6 @@ def handle_message(message):
 
     logger.info(f"The current message: {message}")
 
-
-
  
     #Create the Content object 
     user_id = message.get('user_id')
@@ -67,8 +65,13 @@ def handle_message(message):
     if existing_content:
         #done some logic and don't continue on , end it here 
 
-        handle_existing_content(existing_content, user_id, db, notes, folder_id)
-        logger.info("Bookmark succesfully saved to user")
+        success = handle_existing_content(existing_content, user_id, db, notes, folder_id)
+        if success:
+            db.commit()
+            logger.info("Bookmark succesfully saved to user")
+        else:
+            db.rollback()
+            logger.error("Failed to save existing content bookmark.")
         return 
     
 
@@ -81,60 +84,57 @@ def handle_message(message):
         #update the content Embedding manager when necessary 
         content_manager = ContentEmbeddingManager(db=db, content_url=new_content.url)
 
-        raw_html = message.get('raw_html', '')
+        raw_html = message.get('raw_html')
 
-        if raw_html == '':
+        if not raw_html:
+            raw_html = fetch_content(new_content.url)
             logging.info("No raw html provided, categorization and summarization may be poor")
 
         content_ai = content_manager.process_content(new_content, raw_html)
 
-        db.commit()
-
         if not content_ai:
-            logging.info("Embedding generation failed or skipped.")
+            logger.info("Embedding generation failed or skipped.")
         else:
-            logging.debug(f"Summary Generated: {content_ai.ai_summary}")
+            logger.debug(f"Summary Generated: {content_ai.ai_summary}")
 
-            # Check if this user already saved this content
-            existing_item = db.query(ContentItem).filter(
-                ContentItem.user_id == user_id,
-                ContentItem.content_id == new_content.content_id
-            ).first()
+        # Check if this user already saved this content
+        existing_item = db.query(ContentItem).filter(
+            ContentItem.user_id == user_id,
+            ContentItem.content_id == new_content.content_id
+        ).first()
 
 
-            utc_time = datetime.now(timezone.utc)
+        utc_time = datetime.now(timezone.utc)
 
-            if not existing_item:
-                new_item = ContentItem(
+        if not existing_item:
+            new_item = ContentItem(
+                user_id=user_id,
+                content_id=new_content.content_id,
+                saved_at=utc_time,
+                notes=notes
+            )
+            db.add(new_item)
+
+            # Add to the corresponding folder if any
+            if folder_id and folder_id != '' and folder_id != 'default':
+                new_folder_item = folder_item(
+                    folder_item_id=uuid4(),
+                    folder_id=folder_id,
                     user_id=user_id,
                     content_id=new_content.content_id,
-                    saved_at=utc_time,
-                    notes=notes
+                    added_at=datetime.utcnow()
                 )
-                db.add(new_item)
-                db.commit()
 
+                db.add(new_folder_item)
+            else:
+                logger.debug("No valid folder id found, skipping this part")
 
-                # Add to the corresponding folder if any
-                if folder_id and folder_id != '' and folder_id != 'default':
-                    new_folder_item = folder_item(
-                        folder_item_id=uuid4(),
-                        folder_id=folder_id,
-                        user_id=user_id,
-                        content_id=new_content.content_id,
-                        added_at=datetime.utcnow()
-                    )
-
-                    db.add(new_folder_item)
-                    db.commit()
-                    db.refresh(new_folder_item)
-                else:
-                    print("No valid folder id found, skipping this part")
-
-            logging.info("Successfully saved content for user.")
+        db.commit()
+        logger.info("Successfully saved content for user.")
 
     except Exception as e:
-        logging.error(f"Error occurred while saving the bookmark: {str(e)}")
+        db.rollback()
+        logger.error(f"Error occurred while saving the bookmark: {str(e)}")
 
     
 
@@ -145,7 +145,7 @@ def poll_and_process():
     ACTIVEMQ_USER= os.getenv('ACTIVEMQ_USER')
     ACTIVEMQ_PASS= os.getenv('ACTIVEMQ_PASS')
 
-    queue_url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue&oneShot=true"
+    queue_url = f"{ACTIVEMQ_URL}/api/message/{ACTIVEMQ_QUEUE}?type=queue&oneShot=true"
 
     while True:
         logging.info(f"Queue URL: {queue_url}")

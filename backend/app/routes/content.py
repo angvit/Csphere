@@ -19,6 +19,7 @@ from sqlalchemy.orm import joinedload
 from dateutil.parser import isoparse
 
 from app.utils.hashing import get_current_user_id
+from app.utils.user import get_current_user
 from app.utils.url import ensure_safe_url
 from sqlalchemy.orm import Session
 from uuid import UUID
@@ -42,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/content/search", response_model=UserSavedContentResponse)
-def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def search(query: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     manager = get_embedding_manager()
     manager.db = db
 
@@ -50,7 +51,7 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
     results = manager.query_similar_content(
         query=parsed_query,
-        user_id=user_id
+        user_id=user.id
     )
 
     bookmark_data = []
@@ -79,11 +80,10 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
 
 def push_to_activemq(message: str):
-
-    ACTIVEMQ_URL='http://feeltiptop.com:8161' 
-    ACTIVEMQ_QUEUE=os.getenv('ACTIVEMQ_QUEUE')
-    ACTIVEMQ_USER='admin'
-    ACTIVEMQ_PASS='tiptop'
+    ACTIVEMQ_URL=os.getenv('ACTIVEMQ_URL')
+    ACTIVEMQ_QUEUE= os.getenv('ACTIVEMQ_QUEUE')
+    ACTIVEMQ_USER= os.getenv('ACTIVEMQ_USER')
+    ACTIVEMQ_PASS= os.getenv('ACTIVEMQ_PASS')
 
     try:
         url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue"
@@ -104,7 +104,7 @@ def _enqueue_new_content(
     url: str,
     title: str | None,
     source: str,
-    html: str,
+    html: str | None,
     user_id: UUID,
     notes: str | None,
     folder_id: str | UUID | None,
@@ -117,7 +117,7 @@ def _enqueue_new_content(
             "source": source,
             "first_saved_at": utc_time.isoformat(),
         },
-        "raw_html": html[0:50],
+        "raw_html": html,
         "user_id": str(user_id),
         "notes": notes,
         "folder_id": str(folder_id) if folder_id else None,
@@ -129,76 +129,142 @@ def _enqueue_new_content(
 
 
 @router.post("/content/save")
-def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    notes = content.notes
-
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="User not found")
-
+def save_content(content: ContentCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        user_id = str(user.id)
- 
         _enqueue_new_content(
                 url=content.url,
                 title=content.title,
                 source="chrome_extension",
                 html=content.html,
                 user_id=user.id,
-                notes=notes,
+                notes=content.notes,
                 folder_id=content.folder_id,
-        )
+            )
 
-        return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
+            return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
 
+            push_to_activemq(message=message)
+            #create the new content
+            new_content = Content(
+                url=content.url,
+                title=content.title,
+                source="chrome_extension",
+                first_saved_at=utc_time,
+            )
+            db.add(new_content)
+            db.flush()  # generate content_id
 
+            # Generate embedding only for new content
+            print("generating manager")
+            pre, sumz, emb = get_shared_services()
+            categorizer = Categorizer(file_url=content.url)
+            embedding_manager = ContentEmbeddingManager(
+                db,
+                preprocessor=pre,
+                summarizer=sumz,
+                embedder=emb,
+                categorizer=categorizer,
+                content_url=content.url,
+            )
+            print("done generating")
+            raw_html = content.html
+
+            try:
+                content_ai = embedding_manager.process_content(new_content, raw_html)
+                db.commit()
+            except Exception as e:
+                db.rollback()
+                print(f"Embedding generation failed: {e}")
+                # Prevent downstream foreign key error
+                return {"status": "unsuccessful", "error": "Failed to generate summary"}
+
+            if not content_ai:
+                print("Embedding generation failed or skipped.")
+
+        else:
+            print("Existing content link")
+            new_content = existing_content
+            content_ai = db.query(ContentAI).filter_by(content_id=new_content.content_id).first()
+
+        # Check if this user already saved this content
+        existing_item = db.query(ContentItem).filter(
+            ContentItem.user_id == user_id,
+            ContentItem.content_id == new_content.content_id
+        ).first()
+
+        print("current utc timezone: ", datetime.now(timezone.utc))
+
+        utc_time = datetime.now(timezone.utc)
+
+        if not existing_item:
+
+            new_item = ContentItem(
+                user_id=user_id,
+                content_id=new_content.content_id,
+                saved_at=utc_time,  
+                notes=notes,
+                read=False
+            )
+            db.add(new_item)
+            db.commit()
+
+            saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
+            print(f"Retrieved from DB: {saved_item.saved_at}")
+         
+
+            #add to the corresponding folder if any 
+
+            if content.folder_id and content.folder_id != '' and content.folder_id != 'default':
+
+                new_item = folder_item(
+                    folder_item_id = uuid4(), 
+                    folder_id = content.folder_id,
+                    user_id = user_id, 
+                    content_id = new_content.content_id,
+                    added_at = datetime.utcnow()
+
+                )
+
+                db.add(new_item)
+                db.commit()
+                db.refresh(new_item)
+            else:
+                print("no valid fodler id found so skipping this part")
+            
+
+        print("Successfully saved content for user.")
+
+        return {"status": "Success"}
 
     except Exception as e:
-        print("Rrror occurred in saving the bookmark: ", str(e))
-        return {'status': "unsuccessful", 'error': str(e)}
+        logger.error(f"Error occurred in saving the bookmark: {str(e)}", exc_info=True)
+        return {'status': "unsuccessful", 'error': "Failed to save bookmark from chrome extension"}
 
 
 @router.post("/content/save/url")
-def save_content_by_url(content: ContentSavedByUrl, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def save_content_by_url(content: ContentSavedByUrl, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
         safe_url = ensure_safe_url(content.url)
-        existing_content = db.query(Content).filter(Content.url == safe_url).first()
-        if existing_content:
-            return {"status": "unsuccessful", "message": "Content already exists"}
-        
-        response = requests.get(url=safe_url, timeout=10)
-
-        if response.status_code != 200:
-            raise HTTPException(status_code=response.status_code, detail="Failed to fetch content")
-
-        html = response.text
-        meta = ContentPreprocessor().extract(html)
-
-        title = meta["title"] or None
-
-        if not html.strip():
-            raise HTTPException(status_code=400, detail="Fetched page is empty")
 
         _enqueue_new_content(
             url=safe_url,
-            title=title, 
+            title=None, 
             source="web_app",
-            html=html,
-            user_id=user_id,
+            html=None,
+            user_id=user.id,
             notes=None,
             folder_id="default",
         )
-        return {"status": "Success", "message": "Bookmark details sent to message queue"}
+        return {'status': "Success", 'message': 'Bookmark details sent to message queue'}
     
     except Exception as e:
-        logger.error(f"Error occurred in saving the url: ", exc_info=True)
-        return {"status": "unsuccessful", "error": "Failed to save bookmark from the provided url"}    
+        logger.error(f"Error occurred in saving the url: {str(e)}", exc_info=True)
+        return {'status': "unsuccessful", 'error': "Failed to save bookmark from the provided url"}    
 
     
 
 @router.get("/content/unread/count")
 def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-
     try:
         total_count = db.query(ContentItem).filter(ContentItem.user_id == user_id, ContentItem.read == False).count()
 

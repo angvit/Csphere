@@ -4,12 +4,19 @@ from data_models.folder_item import folder_item
 from data_models.content_ai import ContentAI
 
 import logging
-
+import requests
 from datetime import datetime, timezone
 from uuid import uuid4
 
 
-
+def fetch_content(url):
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        return response.text
+    except Exception as e:
+        print(f"Error fetching {url}: {e}")
+        return None
 
 
 def handle_existing_content(existing_content, user_id: str, db, notes : str, folder_id) -> bool:
@@ -30,8 +37,7 @@ def handle_existing_content(existing_content, user_id: str, db, notes : str, fol
                 user_id=user_id,
                 content_id=existing_content.content_id,
                 saved_at=utc_time,  
-                notes=notes ,
-
+                notes=notes,
                 read=False
             )
             db.add(new_item)
@@ -40,7 +46,6 @@ def handle_existing_content(existing_content, user_id: str, db, notes : str, fol
             saved_item = db.query(ContentItem).order_by(ContentItem.saved_at.desc()).first()
             logging.info(f"Retrieved from DB: {saved_item.saved_at}")
          
-
             #add to the corresponding folder if any 
 
             if folder_id and folder_id != '' and folder_id != 'default':
@@ -55,21 +60,15 @@ def handle_existing_content(existing_content, user_id: str, db, notes : str, fol
                 )
 
                 db.add(new_item)
-                db.commit()
-                db.refresh(new_item)
+                # db.commit()
+                # db.refresh(new_item)
             else:
                 logging.info("no valid fodler id found so skipping this part")
                 
-
         logging.info("Successfully saved content for user.")
-
         return True
 
 
-
-
-
     except Exception as e:
-        logging.error("issue offucred: ", str(e))
-
+        logging.error("Issue occurred: ", str(e))
         return False 
