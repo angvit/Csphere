@@ -16,8 +16,7 @@ from data_models.content_ai import ContentAI
 from database import get_db
 
 
-from utils.utils import handle_existing_content
-from utils.docling_parser import fetch_content
+from utils.utils import handle_existing_content, fetch_content
 
 from dotenv import load_dotenv
 
@@ -146,7 +145,7 @@ def poll_and_process():
     ACTIVEMQ_USER= os.getenv('ACTIVEMQ_USER')
     ACTIVEMQ_PASS= os.getenv('ACTIVEMQ_PASS')
 
-    queue_url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue&oneShot=true"
+    queue_url = f"{ACTIVEMQ_URL}/api/message/{ACTIVEMQ_QUEUE}?type=queue&oneShot=true"
 
     while True:
         logging.info(f"Queue URL: {queue_url}")
