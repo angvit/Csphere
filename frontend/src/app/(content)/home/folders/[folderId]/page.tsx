@@ -70,7 +70,7 @@ export default function Page({
         const data = await response.json();
         const path_data: PathProps[] = data.path;
         console.log("path_data:", path_data);
-        setPaths(path_data); // ✅ this keeps it as an array
+        setPaths(path_data);
       } catch (error) {
         console.log("error occured in fetchPathStructure", error);
       }

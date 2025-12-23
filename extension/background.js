@@ -1,13 +1,17 @@
+importScripts("utils.js");
+
 console.log("Background script loaded and running...");
-chrome.runtime.onInstalled.addListener(() => {
+browser.runtime.onInstalled.addListener(() => {
   console.log("Extension installed and background script running...");
 });
 
-chrome.action.onClicked.addListener((tab) => {
-  chrome.scripting.executeScript({
-    target: { tabId: tab.id },
-    files: ["content.js"],
-  });
+// For firefox MV2: browser.browserAction
+// For chrome/edge/opera: browser.action
+
+const clickAction = browser.action || browser.browserAction;
+
+clickAction.onClicked.addListener(async (tab) => {
+  utils.executeContentScript(tab.id, "content.js");
 });
 
 // chrome.action.onClicked.addListener((tab) => {

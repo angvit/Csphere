@@ -1,6 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { useState } from 'react';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -31,30 +30,40 @@ type ShareResult = Promise<{
 }>;
 
 export const shareTo = {
-  slack: (bookmarkUrl: string) => 
-    openLogIn('Slack', 'https://slack.com/signin#/signin', bookmarkUrl),
+  slack: (bookmarkUrl: string) =>
+    openLogIn("Slack", "https://slack.com/signin#/signin", bookmarkUrl),
   instagram: (bookmarkUrl: string) =>
-    openLogIn('Instagram', 'https://www.instagram.com', bookmarkUrl),
+    openLogIn("Instagram", "https://www.instagram.com", bookmarkUrl),
   gmail: async (bookmarkUrl: string): ShareResult => {
-    window.open(`https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(
-      'Check out this bookmark from CSphere!')}&body=${encodeURIComponent(
-      'I bookmarked this on CSphere: ' + bookmarkUrl + '\n\nStart bookmarking on CSphere: https://csphere.io/')}`, '_blank');
-      return { success: true};
+    window.open(
+      `https://mail.google.com/mail/?view=cm&fs=1&su=${encodeURIComponent(
+        "Check out this bookmark from CSphere!"
+      )}&body=${encodeURIComponent(
+        "I bookmarked this on CSphere: " +
+          bookmarkUrl +
+          "\n\nStart bookmarking on CSphere: https://csphere.io/"
+      )}`,
+      "_blank"
+    );
+    return { success: true };
   },
   messages: async (bookmarkUrl: string): ShareResult => {
-    navigator.clipboard.writeText('I bookmarked this on CSphere: ' + bookmarkUrl) // permission asked for seeing copies of images/text
-      .then(() => alert('Message copied! Please paste it into your messaging app.'))
+    navigator.clipboard
+      .writeText("I bookmarked this on CSphere: " + bookmarkUrl) // permission asked for seeing copies of images/text
+      .then(() =>
+        alert("Message copied! Please paste it into your messaging app.")
+      )
       .catch(() => {
-        const textArea = document.createElement('textarea');
-        textArea.value = 'I bookmarked this on CSphere: ' + bookmarkUrl;
+        const textArea = document.createElement("textarea");
+        textArea.value = "I bookmarked this on CSphere: " + bookmarkUrl;
         document.body.appendChild(textArea);
         textArea.select();
-        document.execCommand('copy');
+        document.execCommand("copy");
         document.body.removeChild(textArea);
-        alert('Text copied to clipboard');
+        alert("Text copied to clipboard");
       });
-      return { success: true }
-  }
+    return { success: true };
+  },
 };
 
 async function openLogIn(
@@ -67,7 +76,7 @@ async function openLogIn(
     if (!redirectPermission) {
       return {
         success: false,
-        message: 'Please allow popups for sharing to work.'
+        message: "Please allow popups for sharing to work.",
       };
     }
 
@@ -81,16 +90,18 @@ async function openLogIn(
     if (clipboardError) {
       return {
         success: false,
-        message: 'Copying was blocked! Please allow clipboard access for this site.'
+        message:
+          "Copying was blocked! Please allow clipboard access for this site.",
       };
     }
 
     alert(`Link copied for ${platformName}. Redirecting now...`);
-    const newWindow = window.open('', '_blank');
+    const newWindow = window.open("", "_blank");
     if (!newWindow || newWindow.closed) {
       return {
         success: false,
-        message: 'Redirect failed. Please make sure popups are allowed for this site.'
+        message:
+          "Redirect failed. Please make sure popups are allowed for this site.",
       };
     }
     newWindow.location.href = redirectUrl;
@@ -98,22 +109,22 @@ async function openLogIn(
   } catch {
     return {
       success: false,
-      message: 'Sharing failed. Please check permissions.'
+      message: "Sharing failed. Please check permissions.",
     };
   }
 }
 
 export const requestRedirectPermission = async (): Promise<boolean> => {
   try {
-    if ('permissions' in navigator) {
+    if ("permissions" in navigator) {
       const result = await navigator.permissions.query({
-        name: 'open-window' as any
+        name: "open-window" as any,
       });
-      return result.state === 'granted';
+      return result.state === "granted";
     }
     return true;
   } catch (err) {
-    console.warn('Permission check failed:', err);
+    console.warn("Permission check failed:", err);
     return true;
   }
 };

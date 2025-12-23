@@ -31,6 +31,7 @@ interface ResponseModel {
 const sortOptions = ["Latest", "Oldest", "Name A-Z", "Name Z-A"];
 
 function page() {
+  const[open, setOpen] = useState(false);
   const [sortBy, setSortBy] = useState("Latest");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [folderName, setFolderName] = useState("");
@@ -176,10 +177,9 @@ function page() {
       <div className="w-full space-y-6 gap-4 mb-4">
         <div className="flex items-center gap-3 mb-8">
           {/* New Button */}
-          <Popover>
+          <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <button className="bg-[#202A29] hover:bg-[#435856] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-medium transition-colors">
-                <Plus size={16} />
                 New
               </button>
             </PopoverTrigger>
@@ -200,7 +200,8 @@ function page() {
                   className="border border-black focus:border-gray-300 focus:outline-none text-black px-3 py-2 rounded-md"
                 />
                 <div className="flex items-end w-full justify-end space-x-3 text-black">
-                  <button className="rounded-lg hover:bg-amber-50 px-3 py-1.5 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                  <button className="rounded-lg hover:bg-amber-50 px-3 py-1.5 border border-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  onClick={()=>setOpen(!open)}>
                     Cancel
                   </button>
                   <button

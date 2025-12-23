@@ -5,6 +5,7 @@ import SearchInput from "@/components/SearchInput";
 import { Tabs } from "@/components/ui/tabs";
 import { fetchToken } from "@/functions/user/UserData";
 import { BookmarkToolbar, ViewMode } from "./BookmarkToolbar";
+import AddBookmarkPopover from "./AddBookmarkPopover";
 
 type Props = {
   onSearch: (query: string) => void;

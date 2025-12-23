@@ -5,7 +5,8 @@ from app.data_models.content_item import ContentItem
 from app.data_models.content_ai import ContentAI
 from app.data_models.folder_item import folder_item
 from app.data_models.folder import Folder
-from app.schemas.content import ContentCreate, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate, UserSavedContentResponse, CategoryOut
+from app.schemas.content import ContentCreate, ContentSavedByUrl, ContentWithSummary, UserSavedContent, DBContent, TabRemover, NoteContentUpdate, UserSavedContentResponse, CategoryOut
+from app.preprocessing.content_preprocessor import ContentPreprocessor
 from app.preprocessing.query_preprocessor import QueryPreprocessor
 from app.embeddings.embedding_manager import ContentEmbeddingManager
 from app.deps.services import get_embedding_manager
@@ -18,6 +19,8 @@ from sqlalchemy.orm import joinedload
 from dateutil.parser import isoparse
 
 from app.utils.hashing import get_current_user_id
+from app.utils.user import get_current_user
+from app.utils.url import ensure_safe_url
 from sqlalchemy.orm import Session
 from uuid import UUID
 from sqlalchemy import desc, select 
@@ -26,6 +29,10 @@ import requests
 import json 
 
 from email.utils import quote
+
+import os
+from dotenv import load_dotenv
+
 
 router = APIRouter(
     # prefix="/content"
@@ -36,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 @router.get("/content/search", response_model=UserSavedContentResponse)
-def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
+def search(query: str, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     manager = get_embedding_manager()
     manager.db = db
 
@@ -44,7 +51,7 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
     results = manager.query_similar_content(
         query=parsed_query,
-        user_id=user_id
+        user_id=user.id
     )
 
     bookmark_data = []
@@ -73,12 +80,10 @@ def search(query: str, user_id: UUID = Depends(get_current_user_id), db: Session
 
 
 def push_to_activemq(message: str):
-
-    ACTIVEMQ_URL='http://feeltiptop.com:8161' 
-    ACTIVEMQ_QUEUE='CSPHEREQUEUE' 
-    ACTIVEMQ_USER='admin'
-    ACTIVEMQ_PASS='tiptop'
-
+    ACTIVEMQ_URL=os.getenv('ACTIVEMQ_URL')
+    ACTIVEMQ_QUEUE= os.getenv('ACTIVEMQ_QUEUE')
+    ACTIVEMQ_USER= os.getenv('ACTIVEMQ_USER')
+    ACTIVEMQ_PASS= os.getenv('ACTIVEMQ_PASS')
 
     try:
         url = f"{ACTIVEMQ_URL}/api/message/{quote(ACTIVEMQ_QUEUE)}?type=queue"
@@ -94,43 +99,47 @@ def push_to_activemq(message: str):
         return False
 
 
+def _enqueue_new_content(
+    *,
+    url: str,
+    title: str | None,
+    source: str,
+    html: str | None,
+    user_id: UUID,
+    notes: str | None,
+    folder_id: str | UUID | None,
+) -> None:
+    utc_time = datetime.now(timezone.utc)
+    payload = {
+        "content_payload": {
+            "url": url,
+            "title": title,
+            "source": source,
+            "first_saved_at": utc_time.isoformat(),
+        },
+        "raw_html": html,
+        "user_id": str(user_id),
+        "notes": notes,
+        "folder_id": str(folder_id) if folder_id else None,
+    }
+    message = json.dumps(payload)
+    result = push_to_activemq(message=message)
+    if not result:
+        raise HTTPException(status_code=503, detail="Failed to push to ActiveMQ")
+
 
 @router.post("/content/save")
-def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-    notes = content.notes
-
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=400, detail="User not found")
-
+def save_content(content: ContentCreate, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     try:
-        user_id = str(user.id)
-        folder_id = str(content.folder_id)
-
-        existing_content = db.query(Content).filter(Content.url == content.url).first()
-
-        utc_time = datetime.now(timezone.utc)   
-
-        if not existing_content:
-            payload = {
-                "content_payload": {
-                    'url': content.url,
-                    'title': content.title, 
-                    'source': "chrome_extension", 
-                    'first_saved_at': utc_time.isoformat(),
-                },
-                'raw_html': content.html[0:50],
-                'user_id': user_id,     
-                'notes': notes,
-                'folder_id': folder_id
-            }
-
-            message = json.dumps(payload)
-
-            
-
-            push_to_activemq(message=message)
-            logger.info(f"Succesfully pushed message to the queue for url: {content.url}")
+        _enqueue_new_content(
+                url=content.url,
+                title=content.title,
+                source="chrome_extension",
+                html=content.html,
+                user_id=user.id,
+                notes=content.notes,
+                folder_id=content.folder_id,
+            )
 
             return {"status": "Success", 'message': 'Bookmark details sent to message queue'}
 
@@ -193,8 +202,7 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
                 user_id=user_id,
                 content_id=new_content.content_id,
                 saved_at=utc_time,  
-                notes=notes ,
-
+                notes=notes,
                 read=False
             )
             db.add(new_item)
@@ -229,13 +237,34 @@ def save_content(content: ContentCreate, user_id: UUID = Depends(get_current_use
         return {"status": "Success"}
 
     except Exception as e:
-        print("error occured in saving the bookmark: ", str(e))
-        return {'status': "unsuccessful", 'error': str(e)}
+        logger.error(f"Error occurred in saving the bookmark: {str(e)}", exc_info=True)
+        return {'status': "unsuccessful", 'error': "Failed to save bookmark from chrome extension"}
+
+
+@router.post("/content/save/url")
+def save_content_by_url(content: ContentSavedByUrl, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    try:
+        safe_url = ensure_safe_url(content.url)
+
+        _enqueue_new_content(
+            url=safe_url,
+            title=None, 
+            source="web_app",
+            html=None,
+            user_id=user.id,
+            notes=None,
+            folder_id="default",
+        )
+        return {'status': "Success", 'message': 'Bookmark details sent to message queue'}
+    
+    except Exception as e:
+        logger.error(f"Error occurred in saving the url: {str(e)}", exc_info=True)
+        return {'status': "unsuccessful", 'error': "Failed to save bookmark from the provided url"}    
+
     
 
 @router.get("/content/unread/count")
 def get_unread_count(user_id: UUID = Depends(get_current_user_id), db: Session = Depends(get_db)):
-
     try:
         total_count = db.query(ContentItem).filter(ContentItem.user_id == user_id, ContentItem.read == False).count()
 

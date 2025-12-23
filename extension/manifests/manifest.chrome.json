@@ -16,6 +16,12 @@
     "48": "images/Csphere-icon-48.png",
     "128": "images/Csphere-icon-128.png"
   },
+  "content_scripts": [
+  {
+    "matches": ["<all_urls>"],
+    "js": ["utils.js", "content.js"]
+  }
+],
   "background": {
     "service_worker": "background.js"
   },
@@ -25,6 +31,8 @@
   },
   "homepage_url": "https://csphere.io",
   "host_permissions": [
-    "https://csphere.feeltiptop.com/"
+    "http://127.0.0.1:8000/*",
+    "http://localhost:8000/*",
+    "https://csphere.feeltiptop.com/*"
   ]
 }
